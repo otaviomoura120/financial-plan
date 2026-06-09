@@ -20,5 +20,27 @@ services:
       - ./frontend:/home/dev/project/frontend
       - claude_data:/home/dev/claude
 
+  db:
+    image: mysql:8.4
+    restart: on-failure:5
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: financial-plan
+
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    ports:
+      - "3306:3306"
+
+    volumes:
+      - mysql_data_financial:/var/lib/mysql
+
 volumes:
   claude_data:
+    mysql_data_financial:
