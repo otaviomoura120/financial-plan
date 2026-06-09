@@ -1,0 +1,24 @@
+services:
+  claude:
+    build: .
+    working_dir: /home/dev/project
+    restart: on-failure:5
+
+    stdin_open: true
+    tty: true
+    cap_drop:
+      - ALL
+
+    security_opt:
+      - no-new-privileges:true
+
+    environment:
+      HOME: /home/dev
+
+    volumes:
+      - ./backend:/home/dev/project/backend
+      - ./frontend:/home/dev/project/frontend
+      - claude_data:/home/dev/claude
+
+volumes:
+  claude_data:
