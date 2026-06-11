@@ -4,7 +4,6 @@ import java.time.Instant;
 
 public record CreateUserRequest(
         String name,
-        String ministry,
         String nickname,
         String profilePhoto,
         String observation,

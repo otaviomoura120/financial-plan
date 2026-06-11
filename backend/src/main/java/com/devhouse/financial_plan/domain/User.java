@@ -12,7 +12,6 @@ public class User {
     private Integer version;
     private Long familyId;
     private String name;
-    private String ministry;
     private String nickname;
     private String profilePhoto;
     private String observation;
@@ -25,12 +24,11 @@ public class User {
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public User(Long id, Integer version, Long familyId, String name, String ministry, String nickname, String profilePhoto, String observation, Instant birthdate, String email, String phoneNumber, boolean active, String genre, String maritalStatus, Instant createdDate, Instant updatedDate) {
+    public User(Long id, Integer version, Long familyId, String name, String nickname, String profilePhoto, String observation, Instant birthdate, String email, String phoneNumber, boolean active, String genre, String maritalStatus, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
         this.familyId = familyId;
         this.name = name;
-        this.ministry = ministry;
         this.nickname = nickname;
         this.profilePhoto = profilePhoto;
         this.observation = observation;
@@ -53,11 +51,10 @@ public class User {
         }
     }
 
-    public void update(String name, String ministry, String nickname, String profilePhoto,
+    public void update(String name, String nickname, String profilePhoto,
                        String observation, Instant birthdate, String phoneNumber,
                        String genre, String maritalStatus) {
         this.name = name;
-        this.ministry = ministry;
         this.nickname = nickname;
         this.profilePhoto = profilePhoto;
         this.observation = observation;
@@ -87,8 +84,6 @@ public class User {
     public void setFamilyId(Long familyId) { this.familyId = familyId; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    public String getMinistry() { return ministry; }
-    public void setMinistry(String ministry) { this.ministry = ministry; }
     public String getNickname() { return nickname; }
     public void setNickname(String nickname) { this.nickname = nickname; }
     public String getProfilePhoto() { return profilePhoto; }

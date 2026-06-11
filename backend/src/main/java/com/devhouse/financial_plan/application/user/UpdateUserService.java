@@ -17,7 +17,7 @@ public class UpdateUserService {
 
     public UserResponse execute(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id);
-        user.update(request.name(), request.ministry(), request.nickname(), request.profilePhoto(),
+        user.update(request.name(), request.nickname(), request.profilePhoto(),
                 request.observation(), request.birthdate(), request.phoneNumber(),
                 request.genre(), request.maritalStatus());
         user.validate();

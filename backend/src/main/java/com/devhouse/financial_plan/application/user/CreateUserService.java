@@ -18,7 +18,7 @@ public class CreateUserService {
     }
 
     public UserResponse execute(CreateUserRequest request) {
-        User user = new User(null, 0, null, request.name(), request.ministry(), request.nickname(),
+        User user = new User(null, 0, null, request.name(), request.nickname(),
                 request.profilePhoto(), request.observation(), request.birthdate(), request.email(),
                 request.phoneNumber(), true, request.genre(), request.maritalStatus(), Instant.now(), null);
         user.validate();

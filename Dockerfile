@@ -1,13 +1,28 @@
-FROM node:24-slim
+FROM eclipse-temurin:25
 
 USER root
 
 RUN apt-get update && apt-get install -y \
     git \
     curl \
+    unzip \
     zsh \
-    bash && \
-    rm -rf /var/lib/apt/lists/*
+    vim \
+    openssh-client \
+    wget \
+    groovy
+
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+
+RUN apt-get install -y nodejs
+
+# Gradle
+ARG GRADLE_VERSION=9.1.0
+
+RUN wget https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip -P /tmp \
+    && unzip -d /opt/gradle /tmp/gradle-${GRADLE_VERSION}-bin.zip \
+    && ln -s /opt/gradle/gradle-${GRADLE_VERSION}/bin/gradle /usr/bin/gradle \
+    && rm /tmp/gradle-${GRADLE_VERSION}-bin.zip
 
 ARG UID=501
 RUN useradd -m -u ${UID} dev && \
