@@ -43,4 +43,4 @@ services:
 
 volumes:
   claude_data:
-    mysql_data_financial:
+  mysql_data_financial:

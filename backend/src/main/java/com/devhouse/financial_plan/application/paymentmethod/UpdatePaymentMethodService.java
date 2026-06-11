@@ -2,10 +2,9 @@ package com.devhouse.financial_plan.application.paymentmethod;
 
 import com.devhouse.financial_plan.application.paymentmethod.dto.PaymentMethodResponse;
 import com.devhouse.financial_plan.application.paymentmethod.dto.UpdatePaymentMethodRequest;
+import com.devhouse.financial_plan.domain.PaymentMethod;
 import com.devhouse.financial_plan.domain.repository.PaymentMethodRepository;
 import org.springframework.stereotype.Service;
-
-import java.time.Instant;
 
 @Service
 public class UpdatePaymentMethodService {
@@ -17,11 +16,10 @@ public class UpdatePaymentMethodService {
     }
 
     public PaymentMethodResponse execute(Long id, UpdatePaymentMethodRequest request) {
-        var paymentMethod = paymentMethodRepository.findById(id);
-        paymentMethod.setName(request.name());
-        paymentMethod.setUpdatedDate(Instant.now());
+        PaymentMethod paymentMethod = paymentMethodRepository.findById(id);
+        paymentMethod.rename(request.name());
         paymentMethod.validate();
-        var updated = paymentMethodRepository.update(paymentMethod);
+        PaymentMethod updated = paymentMethodRepository.update(paymentMethod);
         return new PaymentMethodResponse(updated.getId(), updated.getName(), updated.isActive());
     }
 }

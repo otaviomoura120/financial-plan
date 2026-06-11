@@ -27,11 +27,25 @@ public class SubCategory {
     }
 
     public void validate() {
-        if (name == null || name.isBlank()) throw new DomainException("SubCategory name cannot be empty");
-        if (categoryId == null) throw new DomainException("SubCategory must belong to a category");
+        if (name == null || name.isBlank()) {
+            throw new DomainException("SubCategory name cannot be empty");
+        }
+        if (categoryId == null) {
+            throw new DomainException("SubCategory must belong to a category");
+        }
     }
 
-    public void deactivate() { this.active = false; }
+    public void rename(String name) {
+        if (name == null || name.isBlank()) {
+            throw new DomainException("SubCategory name cannot be empty");
+        }
+        this.name = name;
+        this.updatedDate = Instant.now();
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

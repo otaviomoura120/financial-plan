@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.paymentmethod;
 
+import com.devhouse.financial_plan.domain.PaymentMethod;
 import com.devhouse.financial_plan.domain.repository.PaymentMethodRepository;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,7 @@ public class DeletePaymentMethodService {
     }
 
     public void execute(Long id) {
-        var paymentMethod = paymentMethodRepository.findById(id);
+        PaymentMethod paymentMethod = paymentMethodRepository.findById(id);
         paymentMethod.deactivate();
         paymentMethodRepository.update(paymentMethod);
     }

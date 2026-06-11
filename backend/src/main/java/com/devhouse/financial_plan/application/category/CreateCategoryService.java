@@ -19,7 +19,7 @@ public class CreateCategoryService {
     }
 
     public CategoryResponse execute(CreateCategoryRequest request) {
-        var category = new Category(null, 0, request.name(), true, Instant.now(), null);
+        Category category = new Category(null, 0, request.name(), true, Instant.now(), null);
         category.validate();
         Category saved = categoryRepository.save(category);
         return new CategoryResponse(saved.getId(), saved.getName(), saved.isActive(), List.of());

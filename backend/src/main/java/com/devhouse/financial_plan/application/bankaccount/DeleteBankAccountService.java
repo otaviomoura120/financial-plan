@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.bankaccount;
 
+import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,7 @@ public class DeleteBankAccountService {
     }
 
     public void execute(Long id) {
-        var account = bankAccountRepository.findById(id);
+        BankAccount account = bankAccountRepository.findById(id);
         account.deactivate();
         bankAccountRepository.update(account);
     }

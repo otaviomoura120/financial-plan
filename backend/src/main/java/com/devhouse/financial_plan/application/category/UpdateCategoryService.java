@@ -2,10 +2,10 @@ package com.devhouse.financial_plan.application.category;
 
 import com.devhouse.financial_plan.application.category.dto.CategoryResponse;
 import com.devhouse.financial_plan.application.category.dto.UpdateCategoryRequest;
+import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -18,11 +18,10 @@ public class UpdateCategoryService {
     }
 
     public CategoryResponse execute(Long id, UpdateCategoryRequest request) {
-        var category = categoryRepository.findById(id);
-        category.setName(request.name());
-        category.setUpdatedDate(Instant.now());
+        Category category = categoryRepository.findById(id);
+        category.rename(request.name());
         category.validate();
-        var updated = categoryRepository.update(category);
+        Category updated = categoryRepository.update(category);
         return new CategoryResponse(updated.getId(), updated.getName(), updated.isActive(), List.of());
     }
 }

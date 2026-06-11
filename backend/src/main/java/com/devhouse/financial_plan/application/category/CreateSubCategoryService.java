@@ -22,7 +22,8 @@ public class CreateSubCategoryService {
 
     public SubCategoryResponse execute(CreateSubCategoryRequest request) {
         categoryRepository.findById(request.categoryId());
-        var subCategory = new SubCategory(null, 0, request.categoryId(), request.name(), true, Instant.now(), null);
+        SubCategory subCategory = new SubCategory(null, 0, request.categoryId(), request.name(),
+                true, Instant.now(), null);
         subCategory.validate();
         SubCategory saved = subCategoryRepository.save(subCategory);
         return new SubCategoryResponse(saved.getId(), saved.getCategoryId(), saved.getName(), saved.isActive());

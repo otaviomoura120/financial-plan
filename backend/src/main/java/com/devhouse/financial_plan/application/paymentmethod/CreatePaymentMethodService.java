@@ -18,7 +18,7 @@ public class CreatePaymentMethodService {
     }
 
     public PaymentMethodResponse execute(CreatePaymentMethodRequest request) {
-        var paymentMethod = new PaymentMethod(null, 0, request.name(), true, Instant.now(), null);
+        PaymentMethod paymentMethod = new PaymentMethod(null, 0, request.name(), true, Instant.now(), null);
         paymentMethod.validate();
         PaymentMethod saved = paymentMethodRepository.save(paymentMethod);
         return new PaymentMethodResponse(saved.getId(), saved.getName(), saved.isActive());

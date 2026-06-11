@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.user;
 
+import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,7 @@ public class DeleteUserService {
     }
 
     public void execute(Long id) {
-        var user = userRepository.findById(id);
+        User user = userRepository.findById(id);
         user.deactivate();
         userRepository.update(user);
     }

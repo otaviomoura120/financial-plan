@@ -28,7 +28,9 @@ public class AddressEntityJpa {
     }
 
     public static AddressEntityJpa from(Address address) {
-        if (address == null) return null;
+        if (address == null) {
+            return null;
+        }
         return new AddressEntityJpa(
                 address.getStreet(),
                 address.getZipCode(),

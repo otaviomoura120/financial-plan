@@ -25,10 +25,22 @@ public class PaymentMethod {
     }
 
     public void validate() {
-        if (name == null || name.isBlank()) throw new DomainException("Payment method name cannot be empty");
+        if (name == null || name.isBlank()) {
+            throw new DomainException("Payment method name cannot be empty");
+        }
     }
 
-    public void deactivate() { this.active = false; }
+    public void rename(String name) {
+        if (name == null || name.isBlank()) {
+            throw new DomainException("Payment method name cannot be empty");
+        }
+        this.name = name;
+        this.updatedDate = Instant.now();
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

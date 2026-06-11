@@ -18,13 +18,18 @@ public class CreateTransactionService {
     }
 
     public TransactionResponse execute(CreateTransactionRequest request) {
-        var transaction = new Transaction(null, 0, request.type(), request.userId(), request.bankAccountId(), request.categoryId(), request.subCategoryId(), request.paymentMethodId(), request.amount(), request.transactionDate(), request.description(), Instant.now(), null);
+        Transaction transaction = new Transaction(null, 0, request.type(), request.userId(),
+                request.bankAccountId(), request.categoryId(), request.subCategoryId(),
+                request.paymentMethodId(), request.amount(), request.transactionDate(),
+                request.description(), Instant.now(), null);
         transaction.validate();
         Transaction saved = transactionRepository.save(transaction);
         return toResponse(saved);
     }
 
     private TransactionResponse toResponse(Transaction t) {
-        return new TransactionResponse(t.getId(), t.getType(), t.getUserId(), t.getBankAccountId(), t.getCategoryId(), t.getSubCategoryId(), t.getPaymentMethodId(), t.getAmount(), t.getTransactionDate(), t.getDescription(), t.getCreatedDate());
+        return new TransactionResponse(t.getId(), t.getType(), t.getUserId(), t.getBankAccountId(),
+                t.getCategoryId(), t.getSubCategoryId(), t.getPaymentMethodId(), t.getAmount(),
+                t.getTransactionDate(), t.getDescription(), t.getCreatedDate());
     }
 }

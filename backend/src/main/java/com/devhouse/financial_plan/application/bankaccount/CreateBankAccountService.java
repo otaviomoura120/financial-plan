@@ -18,9 +18,11 @@ public class CreateBankAccountService {
     }
 
     public BankAccountResponse execute(CreateBankAccountRequest request) {
-        var account = new BankAccount(null, 0, request.userId(), request.name(), request.bankName(), request.initialBalance(), true, Instant.now(), null);
+        BankAccount account = new BankAccount(null, 0, request.userId(), request.name(),
+                request.bankName(), request.initialBalance(), true, Instant.now(), null);
         account.validate();
         BankAccount saved = bankAccountRepository.save(account);
-        return new BankAccountResponse(saved.getId(), saved.getUserId(), saved.getName(), saved.getBankName(), saved.getBalance(), saved.isActive(), saved.getCreatedDate());
+        return new BankAccountResponse(saved.getId(), saved.getUserId(), saved.getName(),
+                saved.getBankName(), saved.getBalance(), saved.isActive(), saved.getCreatedDate());
     }
 }

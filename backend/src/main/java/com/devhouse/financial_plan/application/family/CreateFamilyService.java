@@ -18,7 +18,7 @@ public class CreateFamilyService {
     }
 
     public FamilyResponse execute(CreateFamilyRequest request) {
-        var family = new Family(null, 0, request.name(), request.ownerId(), Instant.now(), null);
+        Family family = new Family(null, 0, request.name(), request.ownerId(), Instant.now(), null);
         family.validate();
         Family saved = familyRepository.save(family);
         return new FamilyResponse(saved.getId(), saved.getName(), saved.getOwnerId(), saved.getCreatedDate());

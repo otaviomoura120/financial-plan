@@ -1,5 +1,7 @@
 package com.devhouse.financial_plan.application.family;
 
+import com.devhouse.financial_plan.domain.Family;
+import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.FamilyRepository;
 import com.devhouse.financial_plan.domain.repository.UserRepository;
@@ -17,9 +19,11 @@ public class AddFamilyMemberService {
     }
 
     public void execute(Long familyId, Long userId) {
-        var family = familyRepository.findById(familyId);
-        var user = userRepository.findById(userId);
-        if (user.getFamilyId() != null) throw new DomainException("User already belongs to a family");
+        Family family = familyRepository.findById(familyId);
+        User user = userRepository.findById(userId);
+        if (user.getFamilyId() != null) {
+            throw new DomainException("User already belongs to a family");
+        }
         user.setFamilyId(family.getId());
         userRepository.update(user);
     }

@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.category;
 
+import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +14,7 @@ public class DeleteCategoryService {
     }
 
     public void execute(Long id) {
-        var category = categoryRepository.findById(id);
+        Category category = categoryRepository.findById(id);
         category.deactivate();
         categoryRepository.update(category);
     }

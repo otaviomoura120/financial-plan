@@ -42,17 +42,49 @@ public class Transaction {
     }
 
     public void validate() {
-        if (type == null) throw new DomainException("Transaction type is required");
-        if (userId == null) throw new DomainException("User is required");
-        if (bankAccountId == null) throw new DomainException("Bank account is required");
-        if (categoryId == null) throw new DomainException("Category is required");
-        if (paymentMethodId == null) throw new DomainException("Payment method is required");
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) throw new DomainException("Amount must be positive");
-        if (transactionDate == null) throw new DomainException("Transaction date is required");
+        if (type == null) {
+            throw new DomainException("Transaction type is required");
+        }
+        if (userId == null) {
+            throw new DomainException("User is required");
+        }
+        if (bankAccountId == null) {
+            throw new DomainException("Bank account is required");
+        }
+        if (categoryId == null) {
+            throw new DomainException("Category is required");
+        }
+        if (paymentMethodId == null) {
+            throw new DomainException("Payment method is required");
+        }
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new DomainException("Amount must be positive");
+        }
+        if (transactionDate == null) {
+            throw new DomainException("Transaction date is required");
+        }
     }
 
-    public boolean isIncome() { return TransactionType.INCOME.equals(type); }
-    public boolean isExpense() { return TransactionType.EXPENSE.equals(type); }
+    public void update(TransactionType type, Long bankAccountId, Long categoryId, Long subCategoryId,
+                       Long paymentMethodId, BigDecimal amount, LocalDate transactionDate, String description) {
+        this.type = type;
+        this.bankAccountId = bankAccountId;
+        this.categoryId = categoryId;
+        this.subCategoryId = subCategoryId;
+        this.paymentMethodId = paymentMethodId;
+        this.amount = amount;
+        this.transactionDate = transactionDate;
+        this.description = description;
+        this.updatedDate = Instant.now();
+    }
+
+    public boolean isIncome() {
+        return TransactionType.INCOME.equals(type);
+    }
+
+    public boolean isExpense() {
+        return TransactionType.EXPENSE.equals(type);
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

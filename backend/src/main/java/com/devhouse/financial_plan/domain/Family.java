@@ -25,13 +25,20 @@ public class Family {
     }
 
     public void validate() {
-        if (name == null || name.isBlank()) throw new DomainException("Family name cannot be empty");
-        if (ownerId == null) throw new DomainException("Family must have an owner");
+        if (name == null || name.isBlank()) {
+            throw new DomainException("Family name cannot be empty");
+        }
+        if (ownerId == null) {
+            throw new DomainException("Family must have an owner");
+        }
     }
 
     public void rename(String newName) {
-        if (newName == null || newName.isBlank()) throw new DomainException("Family name cannot be empty");
+        if (newName == null || newName.isBlank()) {
+            throw new DomainException("Family name cannot be empty");
+        }
         this.name = newName;
+        this.updatedDate = Instant.now();
     }
 
     public Long getId() { return id; }

@@ -45,11 +45,32 @@ public class User {
     }
 
     public void validate() {
-        if (name == null || name.isBlank()) throw new DomainException("User name cannot be empty");
-        if (email == null || email.isBlank()) throw new DomainException("User email cannot be empty");
+        if (name == null || name.isBlank()) {
+            throw new DomainException("User name cannot be empty");
+        }
+        if (email == null || email.isBlank()) {
+            throw new DomainException("User email cannot be empty");
+        }
     }
 
-    public void deactivate() { this.active = false; }
+    public void update(String name, String ministry, String nickname, String profilePhoto,
+                       String observation, Instant birthdate, String phoneNumber,
+                       String genre, String maritalStatus) {
+        this.name = name;
+        this.ministry = ministry;
+        this.nickname = nickname;
+        this.profilePhoto = profilePhoto;
+        this.observation = observation;
+        this.birthdate = birthdate;
+        this.phoneNumber = phoneNumber;
+        this.genre = genre;
+        this.maritalStatus = maritalStatus;
+        this.updatedDate = Instant.now();
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
