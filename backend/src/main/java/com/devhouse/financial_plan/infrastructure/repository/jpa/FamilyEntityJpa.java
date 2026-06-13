@@ -12,17 +12,12 @@ public class FamilyEntityJpa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
-    private UserEntityJpa owner;
     @Column(name = "created_at")
     private Instant createdAt;
 
     public Long getId() { return id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    public UserEntityJpa getOwner() { return owner; }
-    public void setOwner(UserEntityJpa owner) { this.owner = owner; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 }

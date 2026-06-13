@@ -1,0 +1,12 @@
+package com.devhouse.financial_plan.infrastructure.repository.jpa;
+
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface JpaGroupMenuRepository extends JpaRepository<GroupMenuEntityJpa, Long> {
+
+    @EntityGraph(attributePaths = "children")
+    List<GroupMenuEntityJpa> findAll();
+}

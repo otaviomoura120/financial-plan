@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.family;
 
 import com.devhouse.financial_plan.domain.Family;
+import com.devhouse.financial_plan.domain.Role;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.FamilyRepository;
@@ -24,10 +25,14 @@ public class RemoveFamilyMemberService {
         if (user.getFamily() == null || !family.getId().equals(user.getFamily().getId())) {
             throw new DomainException("User does not belong to this family");
         }
-        if (family.getOwner().getId().equals(userId)) {
+        if (isOwner(user)) {
             throw new DomainException("Cannot remove the family owner");
         }
         user.setFamily(null);
         userRepository.update(user);
+    }
+
+    private boolean isOwner(User user) {
+        return user.getRole() != null && Role.OWNER_ROLE_NAME.equals(user.getRole().getName());
     }
 }

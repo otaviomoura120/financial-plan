@@ -6,6 +6,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
@@ -25,6 +26,11 @@ public class GlobalHandlerException extends ResponseEntityExceptionHandler {
     public ResponseEntity<?> handleLockException(ObjectOptimisticLockingFailureException exception, WebRequest request) {
         logger.error(exception);
         return ResponseEntity.status(HttpStatus.LOCKED).body("Registro atualizado ou excluído em outra transação, tente novamente");
+    }
+
+    @ExceptionHandler({AuthorizationDeniedException.class})
+    public ResponseEntity<?> handleAuthorizationDeniedException(AuthorizationDeniedException exception, WebRequest request) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied");
     }
 
     @ExceptionHandler({Exception.class})

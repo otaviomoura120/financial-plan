@@ -11,15 +11,13 @@ public class Family {
     private Long id;
     private Integer version;
     private String name;
-    private User owner;
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public Family(Long id, Integer version, String name, User owner, Instant createdDate, Instant updatedDate) {
+    public Family(Long id, Integer version, String name, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
         this.name = name;
-        this.owner = owner;
         this.createdDate = createdDate;
         this.updatedDate = updatedDate;
     }
@@ -27,9 +25,6 @@ public class Family {
     public void validate() {
         if (name == null || name.isBlank()) {
             throw new DomainException("Family name cannot be empty");
-        }
-        if (owner == null) {
-            throw new DomainException("Family must have an owner");
         }
     }
 
@@ -54,8 +49,6 @@ public class Family {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    public User getOwner() { return owner; }
-    public void setOwner(User owner) { this.owner = owner; }
     public Instant getCreatedDate() { return createdDate; }
     public Instant getUpdatedDate() { return updatedDate; }
     public void setUpdatedDate(Instant updatedDate) { this.updatedDate = updatedDate; }

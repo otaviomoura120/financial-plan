@@ -11,6 +11,8 @@ public class User {
     private Long id;
     private Integer version;
     private Family family;
+    private String auth0Sub;
+    private Role role;
     private String name;
     private String nickname;
     private String profilePhoto;
@@ -24,10 +26,12 @@ public class User {
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public User(Long id, Integer version, Family family, String name, String nickname, String profilePhoto, String observation, Instant birthdate, String email, String phoneNumber, boolean active, String genre, String maritalStatus, Instant createdDate, Instant updatedDate) {
+    public User(Long id, Integer version, Family family, String auth0Sub, Role role, String name, String nickname, String profilePhoto, String observation, Instant birthdate, String email, String phoneNumber, boolean active, String genre, String maritalStatus, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
         this.family = family;
+        this.auth0Sub = auth0Sub;
+        this.role = role;
         this.name = name;
         this.nickname = nickname;
         this.profilePhoto = profilePhoto;
@@ -43,12 +47,20 @@ public class User {
     }
 
     public void validate() {
+        if (auth0Sub == null || auth0Sub.isBlank()) {
+            throw new DomainException("User auth0Sub cannot be empty");
+        }
         if (name == null || name.isBlank()) {
             throw new DomainException("User name cannot be empty");
         }
         if (email == null || email.isBlank()) {
             throw new DomainException("User email cannot be empty");
         }
+    }
+
+    public void assignRole(Role role) {
+        this.role = role;
+        this.updatedDate = Instant.now();
     }
 
     public void update(String name, String nickname, String profilePhoto,
@@ -71,6 +83,11 @@ public class User {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public String getAuth0Sub() { return auth0Sub; }
+    public void setAuth0Sub(String auth0Sub) { this.auth0Sub = auth0Sub; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) {
