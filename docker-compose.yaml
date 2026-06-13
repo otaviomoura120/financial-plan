@@ -18,15 +18,18 @@ services:
     volumes:
       - ./backend:/home/dev/project/backend
       - ./frontend:/home/dev/project/frontend
+      - /dev/null:/home/dev/project/frontend/.env
       - claude_data:/home/dev/claude
 
+    env_file:
+      - .env
   db:
     image: mysql:8.4
     restart: on-failure:5
 
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: financial-plan
+      MYSQL_DATABASE: financial_plan
 
     healthcheck:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
@@ -39,8 +42,8 @@ services:
       - "3306:3306"
 
     volumes:
-      - mysql_data_financial:/var/lib/mysql
+      - mysql_data_financial_plan:/var/lib/mysql
 
 volumes:
   claude_data:
-  mysql_data_financial:
+  mysql_data_financial_plan:

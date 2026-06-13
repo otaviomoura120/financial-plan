@@ -17,3 +17,5 @@
 /.gradle/
 /.idea/
 /.pnpm-store/
+/.env
+/frontend/.env
