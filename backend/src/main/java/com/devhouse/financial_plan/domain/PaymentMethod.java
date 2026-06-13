@@ -10,14 +10,16 @@ public class PaymentMethod {
 
     private Long id;
     private Integer version;
+    private Space space;
     private String name;
     private boolean active;
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public PaymentMethod(Long id, Integer version, String name, boolean active, Instant createdDate, Instant updatedDate) {
+    public PaymentMethod(Long id, Integer version, Space space, String name, boolean active, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
+        this.space = space;
         this.name = name;
         this.active = active;
         this.createdDate = createdDate;
@@ -25,6 +27,9 @@ public class PaymentMethod {
     }
 
     public void validate() {
+        if (space == null) {
+            throw new DomainException("Payment method must belong to a space");
+        }
         if (name == null || name.isBlank()) {
             throw new DomainException("Payment method name cannot be empty");
         }
@@ -53,6 +58,8 @@ public class PaymentMethod {
         this.version = version;
     }
 
+    public Space getSpace() { return space; }
+    public void setSpace(Space space) { this.space = space; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public boolean isActive() { return active; }

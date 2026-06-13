@@ -8,6 +8,6 @@ public interface BankAccountRepository {
     BankAccount save(BankAccount bankAccount);
     BankAccount update(BankAccount bankAccount);
     BankAccount findById(Long id);
-    List<BankAccount> findByUserId(Long userId);
+    List<BankAccount> findBySpaceId(Long spaceId);
     void delete(Long id);
 }

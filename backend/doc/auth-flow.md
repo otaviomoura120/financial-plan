@@ -65,7 +65,11 @@ authentication.getName()  →  auth0Sub (the JWT sub claim)
 userRepository.findByAuth0Sub(auth0Sub)
         │
         ├─ user not found  →  deny (false)
-        ├─ user has no Role assigned  →  deny (false)
+        │
+        ▼
+spaceMemberRepository.findByUserId(userId)   ← all space memberships for the user
+        │
+        ├─ no memberships  →  deny (false)
         │
         ▼
 endpointPermissionRepository.findByType(API)   ← ordered by sequence asc
@@ -78,13 +82,15 @@ Find first EndpointPermission where:
         ├─ no match found  →  deny (false)   ← secure by default
         │
         ▼
-Check if user's role name is in permittedRoles (CSV)
+Check if ANY of the user's role names (across all spaces) is in permittedRoles (CSV)
         │
-        ├─ role not listed  →  deny (false)
-        └─ role listed      →  allow (true)
+        ├─ no role listed  →  deny (false)
+        └─ at least one listed  →  allow (true)
 ```
 
 The **sequence field controls priority**. When multiple `EndpointPermission` records match the same request, the one with the lowest sequence number wins. This allows you to create a restrictive rule with sequence=1 that overrides a broader rule with sequence=2.
+
+A user who belongs to multiple spaces may carry different roles in each. Access is granted if the matched rule permits **any** of the user's roles across all their space memberships.
 
 ---
 
@@ -100,15 +106,27 @@ POST /users  { "auth0Sub": "auth0|abc123", "name": "...", ... }
 
 Every subsequent request resolves identity via `userRepository.findByAuth0Sub(auth0Sub)`.
 
-### Role (scoped to a Family)
+### Space & SpaceMember
 
-A `Role` belongs to a specific `Family`. When assigning a role to a user, the system enforces that the role and the user belong to the same family:
+A `Space` is the top-level organizational unit (e.g. "My Family", "My Company"). A user can belong to **multiple spaces**. Each membership is represented by a `SpaceMember` record that links a `User`, a `Space`, and a `Role`:
 
 ```
-PUT /roles/{roleId}/assign-user/{userId}
+User ──< SpaceMember >── Space
+                │
+               Role
 ```
 
-This prevents a role from one family being assigned to a user in another family.
+When assigning a role to a user, the system enforces that the role belongs to the same space as the membership:
+
+```
+POST /spaces/{spaceId}/members/{userId}   { "roleId": 3 }
+```
+
+### Role (scoped to a Space)
+
+A `Role` belongs to a specific `Space`. The system prevents a role from one space being assigned to a membership in a different space.
+
+When a `Space` is created, an `OWNER` role is automatically created for it and a `SpaceMember` record linking the creator to that role is saved. This ensures every space always has at least one owner.
 
 ### EndpointPermission
 
@@ -133,17 +151,22 @@ Key fields:
 
 ## Frontend Menu Filtering (GET /menu-structure)
 
-The `/menu-structure` endpoint does not use `@PreAuthorize`. Instead it returns a menu tailored to the caller's role — pages the user cannot access simply do not appear.
+The `/menu-structure` endpoint does not use `@PreAuthorize`. Instead it returns a menu tailored to the caller's roles — pages the user cannot access simply do not appear.
 
 ```
 authentication.getName()  →  auth0Sub
         │
         ▼
-Find user  →  get role name
+Find user  →  collect all SpaceMembers for that user
+        │
+        ├─ no memberships  →  return empty list
+        │
+        ▼
+Collect all role names from all memberships (union across all spaces)
         │
         ▼
 Find all EndpointPermission where type = FRONT_PAGE
-  AND permittedRoles contains the role name
+  AND permittedRoles contains at least one of the user's role names
         │
         ▼
 Load all GroupMenus with their children
@@ -168,7 +191,7 @@ This means the same `EndpointPermission` table drives both backend security and 
 | Situation | HTTP Status | Handled by |
 |---|---|---|
 | Missing or invalid JWT | 401 Unauthorized | Auth0AuthenticationFilter |
-| User has no role / rule denies access | 403 Forbidden | GlobalHandlerException |
+| User has no space memberships / rule denies access | 403 Forbidden | GlobalHandlerException |
 | Business rule violated | 422 Unprocessable Entity | GlobalHandlerException |
 | Concurrent edit conflict | 423 Locked | GlobalHandlerException |
 
@@ -178,9 +201,9 @@ This means the same `EndpointPermission` table drives both backend security and 
 
 To make a protected endpoint accessible, follow this order:
 
-1. **Create a Family** — all users and roles are scoped to it
-2. **Create a User** with `auth0Sub` matching their Auth0 account
-3. **Create a Role** linked to the family (e.g. `ADMIN`)
-4. **Assign the Role to the User** via `PUT /roles/{id}/assign-user/{userId}`
+1. **Create a User** with `auth0Sub` matching their Auth0 account
+2. **Create a Space** — this automatically creates an `OWNER` role and a `SpaceMember` linking the creator to it
+3. *(Optional)* **Create additional Roles** linked to the space (e.g. `ADMIN`, `MEMBER`)
+4. *(Optional)* **Add more members** via `POST /spaces/{id}/members/{userId}` with the desired `roleId`
 5. **Create EndpointPermission records** (type `API`) with the routes and roles that should have access
 6. *(Optional)* **Create GroupMenu / GroupMenuChildren** and **EndpointPermission records** (type `FRONT_PAGE`) to control which pages appear in the menu for each role

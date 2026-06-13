@@ -15,14 +15,8 @@ public class UserEntityJpa {
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
     private Integer version;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "family_id")
-    private FamilyEntityJpa family;
     @Column(name = "auth0_sub", unique = true)
     private String auth0Sub;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id")
-    private RoleEntityJpa role;
     private String name;
     private String nickname;
     @Column(name = "profile_photo")
@@ -49,12 +43,8 @@ public class UserEntityJpa {
 
     public Long getId() { return id; }
     public Integer getVersion() { return version; }
-    public FamilyEntityJpa getFamily() { return family; }
-    public void setFamily(FamilyEntityJpa family) { this.family = family; }
     public String getAuth0Sub() { return auth0Sub; }
     public void setAuth0Sub(String auth0Sub) { this.auth0Sub = auth0Sub; }
-    public RoleEntityJpa getRole() { return role; }
-    public void setRole(RoleEntityJpa role) { this.role = role; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getNickname() { return nickname; }

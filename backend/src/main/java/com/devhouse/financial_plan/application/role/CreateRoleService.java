@@ -2,10 +2,10 @@ package com.devhouse.financial_plan.application.role;
 
 import com.devhouse.financial_plan.application.role.dto.CreateRoleRequest;
 import com.devhouse.financial_plan.application.role.dto.RoleResponse;
-import com.devhouse.financial_plan.domain.Family;
 import com.devhouse.financial_plan.domain.Role;
-import com.devhouse.financial_plan.domain.repository.FamilyRepository;
+import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.repository.RoleRepository;
+import com.devhouse.financial_plan.domain.repository.SpaceRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -14,16 +14,16 @@ import java.time.Instant;
 public class CreateRoleService {
 
     private final RoleRepository roleRepository;
-    private final FamilyRepository familyRepository;
+    private final SpaceRepository spaceRepository;
 
-    public CreateRoleService(RoleRepository roleRepository, FamilyRepository familyRepository) {
+    public CreateRoleService(RoleRepository roleRepository, SpaceRepository spaceRepository) {
         this.roleRepository = roleRepository;
-        this.familyRepository = familyRepository;
+        this.spaceRepository = spaceRepository;
     }
 
     public RoleResponse execute(CreateRoleRequest request) {
-        Family family = familyRepository.findById(request.familyId());
-        Role role = new Role(null, 0, family, request.name(), request.description(), Instant.now(), null);
+        Space space = spaceRepository.findById(request.spaceId());
+        Role role = new Role(null, 0, space, request.name(), request.description(), Instant.now(), null);
         role.validate();
         Role saved = roleRepository.save(role);
         return toResponse(saved);
@@ -33,7 +33,7 @@ public class CreateRoleService {
         return new RoleResponse(
                 role.getId(),
                 role.getVersion(),
-                role.getFamily().getId(),
+                role.getSpace().getId(),
                 role.getName(),
                 role.getDescription(),
                 role.getCreatedAt(),

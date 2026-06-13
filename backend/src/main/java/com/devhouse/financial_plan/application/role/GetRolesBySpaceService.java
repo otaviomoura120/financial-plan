@@ -8,16 +8,16 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class GetRolesByFamilyService {
+public class GetRolesBySpaceService {
 
     private final RoleRepository roleRepository;
 
-    public GetRolesByFamilyService(RoleRepository roleRepository) {
+    public GetRolesBySpaceService(RoleRepository roleRepository) {
         this.roleRepository = roleRepository;
     }
 
-    public List<RoleResponse> execute(Long familyId) {
-        List<Role> roles = roleRepository.findByFamilyId(familyId);
+    public List<RoleResponse> execute(Long spaceId) {
+        List<Role> roles = roleRepository.findBySpaceId(spaceId);
         return roles.stream().map(this::toResponse).toList();
     }
 
@@ -25,7 +25,7 @@ public class GetRolesByFamilyService {
         return new RoleResponse(
                 role.getId(),
                 role.getVersion(),
-                role.getFamily().getId(),
+                role.getSpace().getId(),
                 role.getName(),
                 role.getDescription(),
                 role.getCreatedAt(),

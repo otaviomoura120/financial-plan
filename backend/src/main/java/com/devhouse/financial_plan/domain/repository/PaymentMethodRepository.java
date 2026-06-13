@@ -8,6 +8,6 @@ public interface PaymentMethodRepository {
     PaymentMethod save(PaymentMethod paymentMethod);
     PaymentMethod update(PaymentMethod paymentMethod);
     PaymentMethod findById(Long id);
-    List<PaymentMethod> findAllActive();
+    List<PaymentMethod> findBySpaceId(Long spaceId);
     void delete(Long id);
 }

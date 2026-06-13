@@ -10,9 +10,7 @@ public class User {
 
     private Long id;
     private Integer version;
-    private Family family;
     private String auth0Sub;
-    private Role role;
     private String name;
     private String nickname;
     private String profilePhoto;
@@ -26,12 +24,12 @@ public class User {
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public User(Long id, Integer version, Family family, String auth0Sub, Role role, String name, String nickname, String profilePhoto, String observation, Instant birthdate, String email, String phoneNumber, boolean active, String genre, String maritalStatus, Instant createdDate, Instant updatedDate) {
+    public User(Long id, Integer version, String auth0Sub, String name, String nickname, String profilePhoto,
+                String observation, Instant birthdate, String email, String phoneNumber, boolean active,
+                String genre, String maritalStatus, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
-        this.family = family;
         this.auth0Sub = auth0Sub;
-        this.role = role;
         this.name = name;
         this.nickname = nickname;
         this.profilePhoto = profilePhoto;
@@ -58,11 +56,6 @@ public class User {
         }
     }
 
-    public void assignRole(Role role) {
-        this.role = role;
-        this.updatedDate = Instant.now();
-    }
-
     public void update(String name, String nickname, String profilePhoto,
                        String observation, Instant birthdate, String phoneNumber,
                        String genre, String maritalStatus) {
@@ -86,8 +79,6 @@ public class User {
 
     public String getAuth0Sub() { return auth0Sub; }
     public void setAuth0Sub(String auth0Sub) { this.auth0Sub = auth0Sub; }
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
 
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) {
@@ -97,8 +88,6 @@ public class User {
         this.version = version;
     }
 
-    public Family getFamily() { return family; }
-    public void setFamily(Family family) { this.family = family; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getNickname() { return nickname; }

@@ -28,7 +28,7 @@ public class UpdateRoleService {
         return new RoleResponse(
                 role.getId(),
                 role.getVersion(),
-                role.getFamily().getId(),
+                role.getSpace().getId(),
                 role.getName(),
                 role.getDescription(),
                 role.getCreatedAt(),

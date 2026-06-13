@@ -2,14 +2,16 @@ package com.devhouse.financial_plan.application.menu
 
 import com.devhouse.financial_plan.application.menu.dto.GroupMenuStructureDto
 import com.devhouse.financial_plan.domain.EndpointPermission
-import com.devhouse.financial_plan.domain.Family
 import com.devhouse.financial_plan.domain.GroupMenu
 import com.devhouse.financial_plan.domain.GroupMenuChildren
 import com.devhouse.financial_plan.domain.Role
+import com.devhouse.financial_plan.domain.Space
+import com.devhouse.financial_plan.domain.SpaceMember
 import com.devhouse.financial_plan.domain.User
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionType
 import com.devhouse.financial_plan.domain.repository.EndpointPermissionRepository
 import com.devhouse.financial_plan.domain.repository.GroupMenuRepository
+import com.devhouse.financial_plan.domain.repository.SpaceMemberRepository
 import com.devhouse.financial_plan.domain.repository.UserRepository
 import spock.lang.Specification
 
@@ -18,15 +20,20 @@ import java.time.Instant
 class GetMenuStructureServiceSpec extends Specification {
 
     UserRepository userRepository = Mock()
+    SpaceMemberRepository spaceMemberRepository = Mock()
     EndpointPermissionRepository endpointPermissionRepository = Mock()
     GroupMenuRepository groupMenuRepository = Mock()
-    GetMenuStructureService service = new GetMenuStructureService(userRepository, endpointPermissionRepository, groupMenuRepository)
+    GetMenuStructureService service = new GetMenuStructureService(userRepository, spaceMemberRepository, endpointPermissionRepository, groupMenuRepository)
 
-    private User buildUser(String roleName) {
-        Family family = new Family(1L, 0, "Smith Family", Instant.now(), null)
-        Role role = roleName != null ? new Role(1L, 0, family, roleName, "desc", Instant.now(), null) : null
-        new User(1L, 0, family, "auth0|abc", role, "John", null, null, null,
+    private User buildUser() {
+        new User(1L, 0, "auth0|abc", "John", null, null, null,
                 null, "john@test.com", null, true, null, null, Instant.now(), null)
+    }
+
+    private SpaceMember buildMemberWithRole(String roleName) {
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        Role role = new Role(1L, 0, space, roleName, "desc", Instant.now(), null)
+        new SpaceMember(1L, space, buildUser(), role, Instant.now())
     }
 
     private EndpointPermission buildFrontPagePermission(String endpointRegex, String permittedRoles) {
@@ -52,13 +59,15 @@ class GetMenuStructureServiceSpec extends Specification {
 
         then:
         result.isEmpty()
+        0 * spaceMemberRepository._
         0 * endpointPermissionRepository._
         0 * groupMenuRepository._
     }
 
-    def "returns empty list when user has no role"() {
+    def "returns empty list when user has no space memberships"() {
         given:
-        userRepository.findByAuth0Sub("auth0|abc") >> buildUser(null)
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findByUserId(1L) >> []
 
         when:
         List<GroupMenuStructureDto> result = service.execute("auth0|abc")
@@ -71,7 +80,8 @@ class GetMenuStructureServiceSpec extends Specification {
 
     def "returns full menu when all children are permitted"() {
         given:
-        userRepository.findByAuth0Sub("auth0|abc") >> buildUser("ADMIN")
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole("ADMIN")]
         endpointPermissionRepository.findByType(EndpointPermissionType.FRONT_PAGE) >> [
                 buildFrontPagePermission("/finance/transactions", "ADMIN,USER")
         ]
@@ -89,7 +99,8 @@ class GetMenuStructureServiceSpec extends Specification {
 
     def "filters out children not matching any permitted permission"() {
         given:
-        userRepository.findByAuth0Sub("auth0|abc") >> buildUser("ADMIN")
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole("ADMIN")]
         endpointPermissionRepository.findByType(EndpointPermissionType.FRONT_PAGE) >> [
                 buildFrontPagePermission("/finance/transactions", "ADMIN")
         ]
@@ -108,7 +119,8 @@ class GetMenuStructureServiceSpec extends Specification {
 
     def "excludes groups where no children are accessible"() {
         given:
-        userRepository.findByAuth0Sub("auth0|abc") >> buildUser("USER")
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole("USER")]
         endpointPermissionRepository.findByType(EndpointPermissionType.FRONT_PAGE) >> [
                 buildFrontPagePermission("/admin/.*", "ADMIN")
         ]
@@ -125,7 +137,8 @@ class GetMenuStructureServiceSpec extends Specification {
 
     def "uses regex pattern matching for endpoints"() {
         given:
-        userRepository.findByAuth0Sub("auth0|abc") >> buildUser("ADMIN")
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole("ADMIN")]
         endpointPermissionRepository.findByType(EndpointPermissionType.FRONT_PAGE) >> [
                 buildFrontPagePermission("/finance/.*", "ADMIN")
         ]

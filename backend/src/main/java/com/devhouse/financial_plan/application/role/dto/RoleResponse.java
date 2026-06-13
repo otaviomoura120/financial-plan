@@ -5,7 +5,7 @@ import java.time.Instant;
 public record RoleResponse(
         Long id,
         Integer version,
-        Long familyId,
+        Long spaceId,
         String name,
         String description,
         Instant createdAt,

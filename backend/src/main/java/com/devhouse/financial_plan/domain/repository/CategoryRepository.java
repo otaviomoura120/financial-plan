@@ -8,6 +8,6 @@ public interface CategoryRepository {
     Category save(Category category);
     Category update(Category category);
     Category findById(Long id);
-    List<Category> findAllActive();
+    List<Category> findBySpaceId(Long spaceId);
     void delete(Long id);
 }

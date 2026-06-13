@@ -3,7 +3,7 @@ package com.devhouse.financial_plan.infrastructure.controller;
 import com.devhouse.financial_plan.application.role.AssignRoleToUserService;
 import com.devhouse.financial_plan.application.role.CreateRoleService;
 import com.devhouse.financial_plan.application.role.DeleteRoleService;
-import com.devhouse.financial_plan.application.role.GetRolesByFamilyService;
+import com.devhouse.financial_plan.application.role.GetRolesBySpaceService;
 import com.devhouse.financial_plan.application.role.UpdateRoleService;
 import com.devhouse.financial_plan.application.role.dto.CreateRoleRequest;
 import com.devhouse.financial_plan.application.role.dto.RoleResponse;
@@ -23,16 +23,16 @@ public class RoleController {
     private final CreateRoleService createRoleService;
     private final UpdateRoleService updateRoleService;
     private final DeleteRoleService deleteRoleService;
-    private final GetRolesByFamilyService getRolesByFamilyService;
+    private final GetRolesBySpaceService getRolesBySpaceService;
     private final AssignRoleToUserService assignRoleToUserService;
 
     public RoleController(CreateRoleService createRoleService, UpdateRoleService updateRoleService,
-                          DeleteRoleService deleteRoleService, GetRolesByFamilyService getRolesByFamilyService,
+                          DeleteRoleService deleteRoleService, GetRolesBySpaceService getRolesBySpaceService,
                           AssignRoleToUserService assignRoleToUserService) {
         this.createRoleService = createRoleService;
         this.updateRoleService = updateRoleService;
         this.deleteRoleService = deleteRoleService;
-        this.getRolesByFamilyService = getRolesByFamilyService;
+        this.getRolesBySpaceService = getRolesBySpaceService;
         this.assignRoleToUserService = assignRoleToUserService;
     }
 
@@ -58,13 +58,14 @@ public class RoleController {
 
     @GetMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<RoleResponse> getByFamily(@RequestParam Long familyId, Authentication authentication, HttpServletRequest request) {
-        return getRolesByFamilyService.execute(familyId);
+    public List<RoleResponse> getBySpace(@RequestParam Long spaceId, Authentication authentication, HttpServletRequest request) {
+        return getRolesBySpaceService.execute(spaceId);
     }
 
     @PutMapping("/{id}/assign-user/{userId}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void assignRole(@PathVariable Long id, @PathVariable Long userId, Authentication authentication, HttpServletRequest request) {
-        assignRoleToUserService.execute(userId, id);
+    public void assignRole(@PathVariable Long id, @PathVariable Long userId, @RequestParam Long spaceId,
+                           Authentication authentication, HttpServletRequest request) {
+        assignRoleToUserService.execute(userId, id, spaceId);
     }
 }

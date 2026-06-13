@@ -1,11 +1,12 @@
 package com.devhouse.financial_plan.infrastructure.repository;
 
-import com.devhouse.financial_plan.domain.Family;
 import com.devhouse.financial_plan.domain.Role;
+import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.repository.RoleRepository;
-import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaFamilyRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaRoleRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaSpaceRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.RoleEntityJpa;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.SpaceEntityJpa;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,17 +17,17 @@ import java.util.List;
 public class RoleRepositoryImpl implements RoleRepository {
 
     private final JpaRoleRepository jpaRoleRepository;
-    private final JpaFamilyRepository jpaFamilyRepository;
+    private final JpaSpaceRepository jpaSpaceRepository;
 
-    public RoleRepositoryImpl(JpaRoleRepository jpaRoleRepository, JpaFamilyRepository jpaFamilyRepository) {
+    public RoleRepositoryImpl(JpaRoleRepository jpaRoleRepository, JpaSpaceRepository jpaSpaceRepository) {
         this.jpaRoleRepository = jpaRoleRepository;
-        this.jpaFamilyRepository = jpaFamilyRepository;
+        this.jpaSpaceRepository = jpaSpaceRepository;
     }
 
     @Override
     public Role save(Role role) {
         RoleEntityJpa entity = new RoleEntityJpa();
-        entity.setFamily(jpaFamilyRepository.getReferenceById(role.getFamily().getId()));
+        entity.setSpace(jpaSpaceRepository.getReferenceById(role.getSpace().getId()));
         entity.setVersion(role.getVersion());
         entity.setName(role.getName());
         entity.setDescription(role.getDescription());
@@ -55,8 +56,8 @@ public class RoleRepositoryImpl implements RoleRepository {
     }
 
     @Override
-    public List<Role> findByFamilyId(Long familyId) {
-        return jpaRoleRepository.findByFamilyId(familyId).stream()
+    public List<Role> findBySpaceId(Long spaceId) {
+        return jpaRoleRepository.findBySpaceId(spaceId).stream()
                 .map(this::toDomain)
                 .toList();
     }
@@ -67,7 +68,13 @@ public class RoleRepositoryImpl implements RoleRepository {
     }
 
     private Role toDomain(RoleEntityJpa entity) {
-        Family family = new Family(entity.getFamily().getId(), null, entity.getFamily().getName(), entity.getFamily().getCreatedAt(), null);
-        return new Role(entity.getId(), entity.getVersion(), family, entity.getName(), entity.getDescription(), entity.getCreatedAt(), entity.getUpdatedAt());
+        Space space = buildSpace(entity.getSpace());
+        return new Role(entity.getId(), entity.getVersion(), space, entity.getName(),
+                entity.getDescription(), entity.getCreatedAt(), entity.getUpdatedAt());
+    }
+
+    private Space buildSpace(SpaceEntityJpa entity) {
+        return new Space(entity.getId(), entity.getVersion(), entity.getName(), entity.getDescription(),
+                entity.getCreatedAt(), entity.getUpdatedAt());
     }
 }

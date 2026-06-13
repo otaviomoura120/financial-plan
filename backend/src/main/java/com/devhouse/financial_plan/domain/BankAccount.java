@@ -11,7 +11,7 @@ public class BankAccount {
 
     private Long id;
     private Integer version;
-    private Long userId;
+    private Space space;
     private String name;
     private String bankName;
     private BigDecimal balance;
@@ -19,10 +19,10 @@ public class BankAccount {
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public BankAccount(Long id, Integer version, Long userId, String name, String bankName, BigDecimal balance, boolean active, Instant createdDate, Instant updatedDate) {
+    public BankAccount(Long id, Integer version, Space space, String name, String bankName, BigDecimal balance, boolean active, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
-        this.userId = userId;
+        this.space = space;
         this.name = name;
         this.bankName = bankName;
         this.balance = balance;
@@ -35,8 +35,8 @@ public class BankAccount {
         if (name == null || name.isBlank()) {
             throw new DomainException("Bank account name cannot be empty");
         }
-        if (userId == null) {
-            throw new DomainException("Bank account must be associated with a user");
+        if (space == null) {
+            throw new DomainException("Bank account must be associated with a space");
         }
         if (balance == null) {
             throw new DomainException("Bank account balance cannot be null");
@@ -78,8 +78,8 @@ public class BankAccount {
         this.version = version;
     }
 
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public Space getSpace() { return space; }
+    public void setSpace(Space space) { this.space = space; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getBankName() { return bankName; }

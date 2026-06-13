@@ -12,16 +12,16 @@ public class Role {
 
     private Long id;
     private Integer version;
-    private Family family;
+    private Space space;
     private String name;
     private String description;
     private final Instant createdAt;
     private Instant updatedAt;
 
-    public Role(Long id, Integer version, Family family, String name, String description, Instant createdAt, Instant updatedAt) {
+    public Role(Long id, Integer version, Space space, String name, String description, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.version = version;
-        this.family = family;
+        this.space = space;
         this.name = name;
         this.description = description;
         this.createdAt = createdAt;
@@ -29,8 +29,8 @@ public class Role {
     }
 
     public void validate() {
-        if (family == null) {
-            throw new DomainException("Role family cannot be null");
+        if (space == null) {
+            throw new DomainException("Role space cannot be null");
         }
         if (name == null || name.isBlank()) {
             throw new DomainException("Role name cannot be empty");
@@ -53,8 +53,8 @@ public class Role {
         this.version = version;
     }
 
-    public Family getFamily() { return family; }
-    public void setFamily(Family family) { this.family = family; }
+    public Space getSpace() { return space; }
+    public void setSpace(Space space) { this.space = space; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }

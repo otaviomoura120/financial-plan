@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface JpaRoleRepository extends JpaRepository<RoleEntityJpa, Long> {
 
-    List<RoleEntityJpa> findByFamilyId(Long familyId);
+    List<RoleEntityJpa> findBySpaceId(Long spaceId);
 }
