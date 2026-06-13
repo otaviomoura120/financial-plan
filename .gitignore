@@ -1,3 +1,4 @@
+/.env
 /backend/Thumbs.db
 /backend/.DS_Store
 /backend/.gradle
@@ -14,8 +15,8 @@
 /backend/.factorypath
 /backend/.env
 /frontend/node_modules/
+/frontend/.env
 /.gradle/
 /.idea/
 /.pnpm-store/
-/.env
-/frontend/.env
+
