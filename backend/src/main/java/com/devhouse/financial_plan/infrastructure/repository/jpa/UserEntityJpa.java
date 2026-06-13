@@ -15,6 +15,9 @@ public class UserEntityJpa {
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
     private Integer version;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "family_id")
+    private FamilyEntityJpa family;
     private String name;
     private String nickname;
     @Column(name = "profile_photo")
@@ -41,6 +44,8 @@ public class UserEntityJpa {
 
     public Long getId() { return id; }
     public Integer getVersion() { return version; }
+    public FamilyEntityJpa getFamily() { return family; }
+    public void setFamily(FamilyEntityJpa family) { this.family = family; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getNickname() { return nickname; }

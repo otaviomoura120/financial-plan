@@ -19,6 +19,6 @@ public class UpdateFamilyService {
         Family family = familyRepository.findById(id);
         family.rename(request.name());
         Family updated = familyRepository.update(family);
-        return new FamilyResponse(updated.getId(), updated.getName(), updated.getOwnerId(), updated.getCreatedDate());
+        return new FamilyResponse(updated.getId(), updated.getName(), updated.getOwner().getId(), updated.getCreatedDate());
     }
 }

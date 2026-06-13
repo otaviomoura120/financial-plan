@@ -21,13 +21,13 @@ public class RemoveFamilyMemberService {
     public void execute(Long familyId, Long userId) {
         Family family = familyRepository.findById(familyId);
         User user = userRepository.findById(userId);
-        if (!family.getId().equals(user.getFamilyId())) {
+        if (user.getFamily() == null || !family.getId().equals(user.getFamily().getId())) {
             throw new DomainException("User does not belong to this family");
         }
-        if (family.getOwnerId().equals(userId)) {
+        if (family.getOwner().getId().equals(userId)) {
             throw new DomainException("Cannot remove the family owner");
         }
-        user.setFamilyId(null);
+        user.setFamily(null);
         userRepository.update(user);
     }
 }

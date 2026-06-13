@@ -21,10 +21,10 @@ public class AddFamilyMemberService {
     public void execute(Long familyId, Long userId) {
         Family family = familyRepository.findById(familyId);
         User user = userRepository.findById(userId);
-        if (user.getFamilyId() != null) {
+        if (user.getFamily() != null) {
             throw new DomainException("User already belongs to a family");
         }
-        user.setFamilyId(family.getId());
+        user.setFamily(family);
         userRepository.update(user);
     }
 }
