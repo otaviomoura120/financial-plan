@@ -18,6 +18,7 @@ injectSkinClasses()
 
 const user = useUser()
 const spaceStore = useSpaceStore()
+const menuStore = useMenuStore()
 const { checkAndRedirect, error: onboardingError, clearError: clearOnboardingError } = useOnboarding()
 
 watch(
@@ -25,6 +26,15 @@ watch(
   async (u) => {
     if (u && !spaceStore.activeSpace)
       await checkAndRedirect()
+  },
+  { immediate: true },
+)
+
+watch(
+  () => spaceStore.activeSpace,
+  (space) => {
+    if (space)
+      menuStore.fetchMenuStructure()
   },
   { immediate: true },
 )

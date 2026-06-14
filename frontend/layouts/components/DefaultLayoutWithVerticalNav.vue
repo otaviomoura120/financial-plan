@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import navItems from '@/navigation/vertical'
 import { themeConfig } from '@themeConfig'
 
 // Components
@@ -10,10 +9,12 @@ import NavBarI18n from '@core/components/I18n.vue'
 
 // @layouts plugin
 import { VerticalNavLayout } from '@layouts'
+
+const menuStore = useMenuStore()
 </script>
 
 <template>
-  <VerticalNavLayout :nav-items="navItems">
+  <VerticalNavLayout :nav-items="menuStore.navItems">
     <template #before-vertical-nav-items>
       <SpaceSwitcher />
     </template>
