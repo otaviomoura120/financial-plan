@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "auth0-nuxt": {
+      "source": "auth0/agent-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/auth0/skills/auth0-nuxt/SKILL.md",
+      "computedHash": "7f3e0e05e8d8198c1ed14e3db0868e4b191bb16ece2c604114d340e0be6bd90b"
+    },
+    "nuxt-ui": {
+      "source": "nuxt/ui",
+      "sourceType": "github",
+      "skillPath": "skills/nuxt-ui/SKILL.md",
+      "computedHash": "de41e63eeda35c2bfdd3ed783d3e04361dc85bff28ad71f9c4dbdc01bb8f4e57"
+    },
     "vue-best-practices": {
       "source": "vuejs-ai/skills",
       "sourceType": "github",
