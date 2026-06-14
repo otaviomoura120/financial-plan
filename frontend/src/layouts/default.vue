@@ -2,6 +2,9 @@
 import { useConfigStore } from '@core/stores/config'
 import { AppContentLayoutNav } from '@layouts/enums'
 import { switchToVerticalNavOnLtOverlayNavBreakpoint } from '@layouts/utils'
+import { useAuth0 } from '@auth0/auth0-vue'
+import { useSpaceStore } from '@/stores/space'
+import { useOnboarding } from '@/composables/useOnboarding'
 
 const DefaultLayoutWithHorizontalNav = defineAsyncComponent(() => import('./components/DefaultLayoutWithHorizontalNav.vue'))
 const DefaultLayoutWithVerticalNav = defineAsyncComponent(() => import('./components/DefaultLayoutWithVerticalNav.vue'))
@@ -11,6 +14,19 @@ const configStore = useConfigStore()
 // ℹ️ This will switch to vertical nav when define breakpoint is reached when in horizontal nav layout
 // Remove below composable usage if you are not using horizontal nav layout in your app
 switchToVerticalNavOnLtOverlayNavBreakpoint()
+
+const { isLoading, isAuthenticated } = useAuth0()
+const spaceStore = useSpaceStore()
+const { checkAndRedirect } = useOnboarding()
+
+watch(
+  [isLoading, isAuthenticated],
+  async ([loading, authenticated]) => {
+    if (!loading && authenticated && !spaceStore.activeSpace)
+      await checkAndRedirect()
+  },
+  { immediate: true },
+)
 
 const { layoutAttrs, injectSkinClasses } = useSkins()
 

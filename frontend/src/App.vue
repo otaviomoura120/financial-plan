@@ -4,6 +4,7 @@ import ScrollToTop from '@core/components/ScrollToTop.vue'
 import initCore from '@core/initCore'
 import { initConfigStore, useConfigStore } from '@core/stores/config'
 import { hexToRgb } from '@core/utils/colorConverter'
+import { useAuthenticatedUser } from '@/composables/useAuthenticatedUser'
 
 const { global } = useTheme()
 
@@ -12,6 +13,9 @@ initCore()
 initConfigStore()
 
 const configStore = useConfigStore()
+
+// Populate accessToken cookie so $api works across all layouts
+useAuthenticatedUser()
 </script>
 
 <template>

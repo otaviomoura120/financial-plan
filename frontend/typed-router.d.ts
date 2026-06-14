@@ -22,6 +22,9 @@ declare module 'vue-router/auto-routes' {
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
     'index2': RouteRecordInfo<'index2', '/index2', Record<never, never>, Record<never, never>>,
     'login': RouteRecordInfo<'login', '/login', Record<never, never>, Record<never, never>>,
+    'onboarding-profile': RouteRecordInfo<'onboarding-profile', '/onboarding/profile', Record<never, never>, Record<never, never>>,
+    'onboarding-select-space': RouteRecordInfo<'onboarding-select-space', '/onboarding/select-space', Record<never, never>, Record<never, never>>,
+    'onboarding-space': RouteRecordInfo<'onboarding-space', '/onboarding/space', Record<never, never>, Record<never, never>>,
     'second-page': RouteRecordInfo<'second-page', '/second-page', Record<never, never>, Record<never, never>>,
     'third-page': RouteRecordInfo<'third-page', '/third-page', Record<never, never>, Record<never, never>>,
   }
