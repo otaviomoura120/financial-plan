@@ -28,10 +28,12 @@ Copy `.env.example` to `.env` and fill in Auth0 credentials before running local
 
 ### API client
 
-Two patterns exist — use `$api` for imperative calls (event handlers, stores), `useApi` for declarative reactive data fetching in components:
+All backend calls go through Nuxt server routes (Nitro proxy) — never call the backend directly from the client:
 
-- `utils/api.ts` — `$fetch.create()` wrapper; reads `accessToken` from cookie and injects `Authorization: Bearer` header; base URL from `NUXT_PUBLIC_API_BASE_URL`.
-- `composables/useApi.ts` — wraps `useFetch`; fetches the token from the Nitro endpoint `/api/_auth/token` on each request (uses the server-side Auth0 session).
+- **Client → Nitro**: use `$fetch('/api/<resource>', { method, body })` for imperative calls (event handlers); use `useFetch('/api/<resource>')` for reactive data fetching in components.
+- **Nitro → backend**: each server route in `server/api/` calls `useAuth0(event).getAccessToken()` to get the token server-side and forwards the request to the real API with `Authorization: Bearer`.
+
+`utils/api.ts` and `composables/useApi.ts` are legacy helpers that injected the token client-side via cookie. They are no longer the primary pattern.
 
 ### Auth flow
 

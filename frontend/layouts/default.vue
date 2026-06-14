@@ -15,6 +15,19 @@ switchToVerticalNavOnLtOverlayNavBreakpoint()
 const { layoutAttrs, injectSkinClasses } = useSkins()
 
 injectSkinClasses()
+
+const user = useUser()
+const spaceStore = useSpaceStore()
+const { checkAndRedirect } = useOnboarding()
+
+watch(
+  user,
+  async (u) => {
+    if (u && !spaceStore.activeSpace)
+      await checkAndRedirect()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

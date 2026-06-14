@@ -14,6 +14,9 @@ import { VerticalNavLayout } from '@layouts'
 
 <template>
   <VerticalNavLayout :nav-items="navItems">
+    <template #before-vertical-nav-items>
+      <SpaceSwitcher />
+    </template>
     <!-- 👉 navbar -->
     <template #navbar="{ toggleVerticalOverlayNavActive }">
       <div class="d-flex h-100 align-center">

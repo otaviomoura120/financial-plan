@@ -13,6 +13,7 @@ initConfigStore()
 
 const configStore = useConfigStore()
 const { isMobile } = useDevice()
+
 if (isMobile)
   configStore.appContentLayoutNav = 'vertical'
 </script>
