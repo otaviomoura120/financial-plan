@@ -6,7 +6,7 @@ definePageMeta({ layout: 'onboarding' })
 const spaceStore = useSpaceStore()
 
 const isSubmitting = ref(false)
-const errorMessage = ref<string | null>(null)
+const { error, setError, clearError } = useApiError()
 
 const form = ref({
   name: '',
@@ -18,7 +18,7 @@ async function submit() {
     return
 
   isSubmitting.value = true
-  errorMessage.value = null
+  clearError()
 
   try {
     const space = await $fetch<{ id: number; name: string; description?: string }>('/api/spaces', {
@@ -34,7 +34,7 @@ async function submit() {
     await navigateTo('/')
   }
   catch {
-    errorMessage.value = 'Falha ao criar seu Espaço. Por favor, tente novamente.'
+    setError('Falha ao criar seu Espaço. Por favor, tente novamente.')
   }
   finally {
     isSubmitting.value = false
@@ -79,14 +79,10 @@ async function submit() {
           </VCol>
 
           <VCol
-            v-if="errorMessage"
+            v-if="error"
             cols="12"
           >
-            <VAlert
-              type="error"
-              variant="tonal"
-              :text="errorMessage"
-            />
+            <ApiErrorAlert :error="error" />
           </VCol>
 
           <VCol cols="12">

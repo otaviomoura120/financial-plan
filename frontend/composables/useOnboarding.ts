@@ -5,12 +5,14 @@ import type { OnboardingCheckResult } from '@/server/api/onboarding/check.get'
 export function useOnboarding() {
   const spaceStore = useSpaceStore()
   const isChecking = ref(false)
+  const { error, setError, clearError } = useApiError()
 
   async function checkAndRedirect(): Promise<void> {
     if (isChecking.value || spaceStore.activeSpace)
       return
 
     isChecking.value = true
+    clearError()
 
     try {
       const result = await $fetch<OnboardingCheckResult>('/api/onboarding/check')
@@ -34,10 +36,13 @@ export function useOnboarding() {
           break
       }
     }
+    catch (e) {
+      setError(e)
+    }
     finally {
       isChecking.value = false
     }
   }
 
-  return { checkAndRedirect, isChecking }
+  return { checkAndRedirect, isChecking, error, clearError }
 }

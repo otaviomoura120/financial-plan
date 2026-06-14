@@ -7,7 +7,7 @@ const auth0User = useUser()
 const spaceStore = useSpaceStore()
 
 const isSubmitting = ref(false)
-const errorMessage = ref<string | null>(null)
+const { error, setError, clearError } = useApiError()
 
 const form = ref({
   name: auth0User.value?.name ?? '',
@@ -27,7 +27,7 @@ async function submit() {
     return
 
   isSubmitting.value = true
-  errorMessage.value = null
+  clearError()
 
   try {
     const response = await $fetch<{ id: number; name: string }>('/api/users', {
@@ -49,7 +49,7 @@ async function submit() {
     await navigateTo('/onboarding/space')
   }
   catch {
-    errorMessage.value = 'Falha ao salvar seu perfil. Por favor, tente novamente.'
+    setError('Falha ao salvar seu perfil. Por favor, tente novamente.')
   }
   finally {
     isSubmitting.value = false
@@ -151,14 +151,10 @@ async function submit() {
           </VCol>
 
           <VCol
-            v-if="errorMessage"
+            v-if="error"
             cols="12"
           >
-            <VAlert
-              type="error"
-              variant="tonal"
-              :text="errorMessage"
-            />
+            <ApiErrorAlert :error="error" />
           </VCol>
 
           <VCol cols="12">

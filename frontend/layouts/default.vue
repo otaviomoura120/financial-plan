@@ -18,7 +18,7 @@ injectSkinClasses()
 
 const user = useUser()
 const spaceStore = useSpaceStore()
-const { checkAndRedirect } = useOnboarding()
+const { checkAndRedirect, error: onboardingError, clearError: clearOnboardingError } = useOnboarding()
 
 watch(
   user,
@@ -35,6 +35,7 @@ watch(
     v-bind="layoutAttrs"
     :is="configStore.appContentLayoutNav === AppContentLayoutNav.Vertical ? DefaultLayoutWithVerticalNav : DefaultLayoutWithHorizontalNav"
   >
+    <ApiErrorAlert :error="onboardingError" closable @dismiss="clearOnboardingError" />
     <slot />
   </Component>
 </template>
