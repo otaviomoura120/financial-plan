@@ -72,6 +72,11 @@ Navigation items for the sidebar/topbar are defined in `navigation/vertical/inde
 - **Icons**: use Iconify with the `tabler-`, `mdi-`, or `fa-` prefix in Vuetify's `icon` prop. Do not import `vuetify/components` or `vue3-apexcharts` directly — they are auto-imported.
 - **Path aliases**: use `@images/` instead of `@/assets/images/` and `@styles/` instead of `@/assets/styles/` (ESLint enforces this).
 
+## Language conventions
+
+- **Code, variable names, comments, and documentation**: always in English.
+- **User-facing labels, placeholders, validation messages, and UI text**: always in pt-BR (Brazilian Portuguese).
+
 ### ESLint style rules
 
 2-space indent, no semicolons, trailing commas, camelCase naming. Key non-obvious rules:

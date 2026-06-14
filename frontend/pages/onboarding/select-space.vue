@@ -19,10 +19,10 @@ function selectSpace(space: Space) {
   >
     <VCardText>
       <h4 class="text-h4 mb-1">
-        Choose a Space
+        Escolha um Espaço
       </h4>
       <p class="text-body-1 text-medium-emphasis mb-0">
-        You belong to multiple Spaces. Select one to continue.
+        Você pertence a múltiplos Espaços. Selecione um para continuar.
       </p>
     </VCardText>
 

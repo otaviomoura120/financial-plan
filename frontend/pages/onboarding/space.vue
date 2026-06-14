@@ -34,7 +34,7 @@ async function submit() {
     await navigateTo('/')
   }
   catch {
-    errorMessage.value = 'Failed to create your space. Please try again.'
+    errorMessage.value = 'Falha ao criar seu Espaço. Por favor, tente novamente.'
   }
   finally {
     isSubmitting.value = false
@@ -50,10 +50,10 @@ async function submit() {
   >
     <VCardText>
       <h4 class="text-h4 mb-1">
-        Create your Space
+        Crie seu Espaço
       </h4>
       <p class="text-body-1 text-medium-emphasis mb-0">
-        A Space organises all your financial information. You can invite others later.
+        Um Espaço organiza todas as suas informações financeiras. Você pode convidar outras pessoas depois.
       </p>
     </VCardText>
 
@@ -63,9 +63,9 @@ async function submit() {
           <VCol cols="12">
             <AppTextField
               v-model="form.name"
-              label="Space name"
-              placeholder="Family Budget"
-              :rules="[(v: string) => !!v || 'Space name is required']"
+              label="Nome do Espaço"
+              placeholder="Orçamento Familiar"
+              :rules="[(v: string) => !!v || 'Nome do Espaço é obrigatório']"
               required
             />
           </VCol>
@@ -73,8 +73,8 @@ async function submit() {
           <VCol cols="12">
             <AppTextField
               v-model="form.description"
-              label="Description (optional)"
-              placeholder="Our shared financial space"
+              label="Descrição (opcional)"
+              placeholder="Nosso espaço financeiro compartilhado"
             />
           </VCol>
 
@@ -95,7 +95,7 @@ async function submit() {
               type="submit"
               :loading="isSubmitting"
             >
-              Create Space
+              Criar Espaço
             </VBtn>
           </VCol>
         </VRow>

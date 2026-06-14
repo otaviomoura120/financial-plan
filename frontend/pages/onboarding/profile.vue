@@ -19,8 +19,8 @@ const form = ref({
   maritalStatus: '',
 })
 
-const genreOptions = ['Male', 'Female', 'Non-binary', 'Prefer not to say']
-const maritalStatusOptions = ['Single', 'Married', 'Divorced', 'Widowed', 'Common-law']
+const genreOptions = ['Masculino', 'Feminino']
+const maritalStatusOptions = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União estável']
 
 async function submit() {
   if (!form.value.name || !form.value.email)
@@ -49,7 +49,7 @@ async function submit() {
     await navigateTo('/onboarding/space')
   }
   catch {
-    errorMessage.value = 'Failed to save your profile. Please try again.'
+    errorMessage.value = 'Falha ao salvar seu perfil. Por favor, tente novamente.'
   }
   finally {
     isSubmitting.value = false
@@ -65,10 +65,10 @@ async function submit() {
   >
     <VCardText>
       <h4 class="text-h4 mb-1">
-        Complete your profile
+        Complete seu perfil
       </h4>
       <p class="text-body-1 text-medium-emphasis mb-0">
-        Tell us a bit about yourself to get started.
+        Conte um pouco sobre você para começar.
       </p>
     </VCardText>
 
@@ -78,9 +78,9 @@ async function submit() {
           <VCol cols="12">
             <AppTextField
               v-model="form.name"
-              label="Full name"
-              placeholder="John Smith"
-              :rules="[(v: string) => !!v || 'Name is required']"
+              label="Nome completo"
+              placeholder="João Silva"
+              :rules="[(v: string) => !!v || 'Nome é obrigatório']"
               required
             />
           </VCol>
@@ -88,10 +88,10 @@ async function submit() {
           <VCol cols="12">
             <AppTextField
               v-model="form.email"
-              label="Email"
+              label="E-mail"
               type="email"
-              placeholder="john@example.com"
-              :rules="[(v: string) => !!v || 'Email is required']"
+              placeholder="joao@exemplo.com"
+              :rules="[(v: string) => !!v || 'E-mail é obrigatório']"
               required
             />
           </VCol>
@@ -99,7 +99,7 @@ async function submit() {
           <VCol cols="12">
             <AppTextField
               v-model="form.nickname"
-              label="Nickname (optional)"
+              label="Apelido (opcional)"
               placeholder="Johnny"
             />
           </VCol>
@@ -110,8 +110,8 @@ async function submit() {
           >
             <AppTextField
               v-model="form.phoneNumber"
-              label="Phone (optional)"
-              placeholder="+1 555 000 0000"
+              label="Telefone (opcional)"
+              placeholder="+55 11 99999-9999"
             />
           </VCol>
 
@@ -121,7 +121,7 @@ async function submit() {
           >
             <AppTextField
               v-model="form.birthdate"
-              label="Birth date (optional)"
+              label="Data de nascimento (opcional)"
               type="date"
             />
           </VCol>
@@ -132,7 +132,7 @@ async function submit() {
           >
             <AppSelect
               v-model="form.genre"
-              label="Gender (optional)"
+              label="Gênero (opcional)"
               :items="genreOptions"
               clearable
             />
@@ -144,7 +144,7 @@ async function submit() {
           >
             <AppSelect
               v-model="form.maritalStatus"
-              label="Marital status (optional)"
+              label="Estado civil (opcional)"
               :items="maritalStatusOptions"
               clearable
             />
@@ -167,7 +167,7 @@ async function submit() {
               type="submit"
               :loading="isSubmitting"
             >
-              Continue
+              Continuar
             </VBtn>
           </VCol>
         </VRow>
