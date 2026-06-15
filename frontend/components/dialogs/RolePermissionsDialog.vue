@@ -102,7 +102,7 @@ function onClose() {
   emit('update:isDialogVisible', false)
 }
 
-const typeLabel: Record<string, string> = {
+const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
   API: 'API',
   FRONT_PAGE: 'Página',
 }
@@ -112,119 +112,190 @@ const typeLabel: Record<string, string> = {
   <VDialog
     :width="$vuetify.display.smAndDown ? 'auto' : 960"
     :model-value="props.isDialogVisible"
+    scrollable
     @update:model-value="onClose"
   >
     <DialogCloseBtn @click="onClose" />
 
-    <VCard class="pa-sm-8 pa-4">
-      <VCardText>
-        <h4 class="text-h4 text-center mb-1">
+    <VCard>
+      <VCardItem class="pa-6 pb-4">
+        <VCardTitle class="text-h5 text-center">
           Permissões da Role
-        </h4>
-        <p class="text-body-1 text-center text-disabled mb-6">
+        </VCardTitle>
+        <VCardSubtitle class="text-center mt-1">
           {{ props.roleName }}
-        </p>
+        </VCardSubtitle>
+      </VCardItem>
 
+      <VDivider />
+
+      <VCardText class="pa-0 permissions-scroll">
         <ApiErrorAlert
           v-if="error"
           :error="error"
-          class="mb-4"
+          class="ma-4"
         />
 
         <div
           v-if="isLoading"
-          class="d-flex justify-center py-10"
+          class="d-flex justify-center py-12"
         >
           <VProgressCircular indeterminate />
         </div>
 
-        <template v-else-if="groupedPermissions.size > 0">
-          <div
-            v-for="[group, items] in groupedPermissions"
-            :key="group"
-            class="mb-6"
-          >
-            <div class="d-flex align-center gap-2 mb-2">
-              <span class="text-overline text-disabled font-weight-bold">{{ group }}</span>
-              <VDivider />
-            </div>
+        <VTable
+          v-else-if="groupedPermissions.size > 0"
+          fixed-header
+          class="permissions-table"
+        >
+          <colgroup>
+            <col style="inline-size: 28%">
+            <col style="inline-size: 80px">
+            <col>
+            <col style="inline-size: 150px">
+          </colgroup>
 
-            <VTable density="compact">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Tipo</th>
-                  <th>Endpoint</th>
-                  <th
-                    class="text-center"
-                    style="min-inline-size: 140px"
+          <thead>
+            <tr>
+              <th class="text-left ps-4">
+                Nome
+              </th>
+              <th class="text-left">
+                Tipo
+              </th>
+              <th class="text-left">
+                Endpoint
+              </th>
+              <th class="text-center">
+                Acesso
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <template
+              v-for="[group, items] in groupedPermissions"
+              :key="group"
+            >
+              <tr class="group-header-row">
+                <td colspan="4" class="ps-4">
+                  <span class="group-label text-primary">{{ group }}</span>
+                </td>
+              </tr>
+
+              <tr
+                v-for="perm in items"
+                :key="perm.id"
+                class="permission-row"
+              >
+                <td class="ps-4 py-3">
+                  <span class="text-body-2 font-weight-medium">{{ perm.name }}</span>
+                </td>
+                <td class="py-3">
+                  <VChip
+                    :color="perm.type === 'API' ? 'primary' : 'secondary'"
+                    size="x-small"
+                    variant="tonal"
+                    label
                   >
-                    Acesso
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="perm in items"
-                  :key="perm.id"
-                >
-                  <td class="font-weight-medium">
-                    {{ perm.name }}
-                  </td>
-                  <td>
-                    <VChip
-                      :color="perm.type === 'API' ? 'primary' : 'secondary'"
-                      size="x-small"
-                      variant="tonal"
+                    {{ typeLabel[perm.type] }}
+                  </VChip>
+                </td>
+                <td class="py-3">
+                  <code class="text-caption text-disabled">{{ perm.endpoint }}</code>
+                </td>
+                <td class="py-3">
+                  <div class="d-flex align-center justify-center gap-2">
+                    <VSwitch
+                      :model-value="perm.permission === 'ALLOW'"
+                      :loading="updatingId === perm.id"
+                      :disabled="updatingId !== null"
+                      :aria-label="`Acesso para ${perm.name}`"
+                      color="success"
+                      hide-details
+                      density="compact"
+                      @update:model-value="togglePermission(perm)"
+                    />
+                    <span
+                      class="text-caption access-label"
+                      :class="perm.permission === 'ALLOW' ? 'text-success' : 'text-disabled'"
                     >
-                      {{ typeLabel[perm.type] ?? perm.type }}
-                    </VChip>
-                  </td>
-                  <td class="text-body-2 text-disabled text-no-wrap">
-                    {{ perm.endpoint }}
-                  </td>
-                  <td class="text-center">
-                    <div class="d-flex align-center justify-center gap-2">
-                      <VSwitch
-                        :model-value="perm.permission === 'ALLOW'"
-                        :loading="updatingId === perm.id"
-                        :disabled="updatingId !== null"
-                        color="success"
-                        hide-details
-                        density="compact"
-                        @update:model-value="togglePermission(perm)"
-                      />
-                      <span
-                        class="text-body-2"
-                        :class="perm.permission === 'ALLOW' ? 'text-success' : 'text-disabled'"
-                      >
-                        {{ perm.permission === 'ALLOW' ? 'Permitido' : 'Negado' }}
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </VTable>
-          </div>
-        </template>
+                      {{ perm.permission === 'ALLOW' ? 'Permitido' : 'Negado' }}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </VTable>
 
         <p
-          v-else
-          class="text-center text-disabled py-8"
+          v-else-if="!error"
+          class="text-center text-disabled py-10"
         >
           Nenhuma permissão encontrada.
         </p>
-
-        <div class="d-flex justify-end mt-4">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="onClose"
-          >
-            Fechar
-          </VBtn>
-        </div>
       </VCardText>
+
+      <VDivider />
+
+      <VCardActions class="pa-4 justify-end">
+        <VBtn
+          color="secondary"
+          variant="tonal"
+          @click="onClose"
+        >
+          Fechar
+        </VBtn>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>
+
+<style scoped>
+.permissions-scroll {
+  max-block-size: 65vh;
+  overflow-y: auto;
+}
+
+.permissions-table :deep(table) {
+  border-collapse: collapse;
+}
+
+.permissions-table :deep(.v-table__wrapper) {
+  overflow: visible;
+}
+
+.permissions-table :deep(thead th) {
+  background-color: rgb(var(--v-theme-surface));
+}
+
+.group-header-row td {
+  padding-block: 10px;
+  border-block-end: none;
+}
+
+
+.group-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.group-header-row:not(:first-child) td {
+  padding-top: 24px;
+}
+
+.permission-row td {
+  border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.permission-row:last-child td {
+  border-block-end: none;
+}
+
+.access-label {
+  min-inline-size: 52px;
+}
+</style>
