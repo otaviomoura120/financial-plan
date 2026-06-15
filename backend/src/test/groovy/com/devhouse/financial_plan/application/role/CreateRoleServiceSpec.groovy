@@ -2,9 +2,15 @@ package com.devhouse.financial_plan.application.role
 
 import com.devhouse.financial_plan.application.role.dto.CreateRoleRequest
 import com.devhouse.financial_plan.application.role.dto.RoleResponse
+import com.devhouse.financial_plan.domain.EndpointPermission
 import com.devhouse.financial_plan.domain.Role
+import com.devhouse.financial_plan.domain.RoleEndpointPermission
 import com.devhouse.financial_plan.domain.Space
+import com.devhouse.financial_plan.domain.enums.EndpointPermissionAccess
+import com.devhouse.financial_plan.domain.enums.EndpointPermissionType
 import com.devhouse.financial_plan.domain.exception.DomainException
+import com.devhouse.financial_plan.domain.repository.EndpointPermissionRepository
+import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository
 import com.devhouse.financial_plan.domain.repository.RoleRepository
 import com.devhouse.financial_plan.domain.repository.SpaceRepository
 import spock.lang.Specification
@@ -15,48 +21,72 @@ class CreateRoleServiceSpec extends Specification {
 
     RoleRepository roleRepository = Mock()
     SpaceRepository spaceRepository = Mock()
-    CreateRoleService service = new CreateRoleService(roleRepository, spaceRepository)
+    EndpointPermissionRepository endpointPermissionRepository = Mock()
+    RoleEndpointPermissionRepository roleEndpointPermissionRepository = Mock()
+    CreateRoleService service = new CreateRoleService(roleRepository, spaceRepository, endpointPermissionRepository, roleEndpointPermissionRepository)
 
-    def "execute creates role with space and returns response"() {
+    private Space buildSpace() {
+        new Space(1L, 0, "My Space", null, Instant.now(), null)
+    }
+
+    private EndpointPermission buildEndpointPermission(Long id) {
+        new EndpointPermission(id, 0, "/path.*", "Name", null, 1, EndpointPermissionType.API, "GET", Instant.now(), null)
+    }
+
+    def "creates role and saves DENY relations for all existing endpoint permissions"() {
         given:
-        CreateRoleRequest request = new CreateRoleRequest(1L, "ADMIN", "Administrator role")
-        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        Space space = buildSpace()
+        Role savedRole = new Role(10L, 0, space, "MANAGER", "Gerente", Instant.now(), null)
+        endpointPermissionRepository.findAll() >> [buildEndpointPermission(1L), buildEndpointPermission(2L)]
         spaceRepository.findById(1L) >> space
-
-        Role savedRole = new Role(10L, 0, space, "ADMIN", "Administrator role", Instant.now(), null)
         roleRepository.save(_) >> savedRole
 
         when:
-        RoleResponse response = service.execute(request)
+        RoleResponse result = service.execute(new CreateRoleRequest(1L, "MANAGER", "Gerente"))
 
         then:
-        response.id() == 10L
-        response.name() == "ADMIN"
-        response.description() == "Administrator role"
-        response.spaceId() == 1L
+        result.id() == 10L
+        result.name() == "MANAGER"
+        1 * roleEndpointPermissionRepository.saveAll({ List<RoleEndpointPermission> relations ->
+            relations.size() == 2 &&
+            relations.every { it.getPermission() == EndpointPermissionAccess.DENY } &&
+            relations.every { it.getRole().getId() == 10L }
+        })
     }
 
-    def "execute throws DomainException when role name is blank"() {
+    def "creates role with empty permission list when no endpoint permissions exist"() {
         given:
-        CreateRoleRequest request = new CreateRoleRequest(1L, "", "description")
-        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        Space space = buildSpace()
+        Role savedRole = new Role(10L, 0, space, "MANAGER", "Gerente", Instant.now(), null)
+        endpointPermissionRepository.findAll() >> []
         spaceRepository.findById(1L) >> space
+        roleRepository.save(_) >> savedRole
 
         when:
-        service.execute(request)
+        service.execute(new CreateRoleRequest(1L, "MANAGER", "Gerente"))
+
+        then:
+        1 * roleEndpointPermissionRepository.saveAll([])
+    }
+
+    def "throws DomainException when role name is blank"() {
+        given:
+        spaceRepository.findById(1L) >> buildSpace()
+
+        when:
+        service.execute(new CreateRoleRequest(1L, "", "description"))
 
         then:
         thrown(DomainException)
         0 * roleRepository.save(_)
     }
 
-    def "execute throws DomainException when space is null"() {
+    def "throws DomainException when space is null"() {
         given:
-        CreateRoleRequest request = new CreateRoleRequest(1L, "ADMIN", "description")
         spaceRepository.findById(1L) >> null
 
         when:
-        service.execute(request)
+        service.execute(new CreateRoleRequest(1L, "ADMIN", "description"))
 
         then:
         thrown(DomainException)

@@ -18,13 +18,12 @@ public class EndpointPermission {
     private Integer sequence;
     private EndpointPermissionType type;
     private String permittedMethods;
-    private String permittedRoles;
     private final Instant createdAt;
     private Instant updatedAt;
 
     public EndpointPermission(Long id, Integer version, String endpoint, String name, String icon,
                               Integer sequence, EndpointPermissionType type,
-                              String permittedMethods, String permittedRoles, Instant createdAt, Instant updatedAt) {
+                              String permittedMethods, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.version = version;
         this.endpoint = endpoint;
@@ -33,7 +32,6 @@ public class EndpointPermission {
         this.sequence = sequence;
         this.type = type;
         this.permittedMethods = permittedMethods;
-        this.permittedRoles = permittedRoles;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -60,21 +58,14 @@ public class EndpointPermission {
         return path.matches(endpoint);
     }
 
-    public boolean isPermitted(String roleName) {
-        return Arrays.stream(permittedRoles.split(","))
-                .map(String::trim)
-                .anyMatch(r -> r.equals(roleName));
-    }
-
     public void update(String endpoint, String name, String icon, Integer sequence,
-                       EndpointPermissionType type, String permittedMethods, String permittedRoles) {
+                       EndpointPermissionType type, String permittedMethods) {
         this.endpoint = endpoint;
         this.name = name;
         this.icon = icon;
         this.sequence = sequence;
         this.type = type;
         this.permittedMethods = permittedMethods;
-        this.permittedRoles = permittedRoles;
         this.updatedAt = Instant.now();
     }
 
@@ -100,8 +91,6 @@ public class EndpointPermission {
     public void setType(EndpointPermissionType type) { this.type = type; }
     public String getPermittedMethods() { return permittedMethods; }
     public void setPermittedMethods(String permittedMethods) { this.permittedMethods = permittedMethods; }
-    public String getPermittedRoles() { return permittedRoles; }
-    public void setPermittedRoles(String permittedRoles) { this.permittedRoles = permittedRoles; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

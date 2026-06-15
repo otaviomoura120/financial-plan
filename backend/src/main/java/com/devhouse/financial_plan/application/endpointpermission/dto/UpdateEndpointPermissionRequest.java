@@ -9,6 +9,5 @@ public record UpdateEndpointPermissionRequest(
         String icon,
         Integer sequence,
         EndpointPermissionType type,
-        String permittedMethods,
-        String permittedRoles
+        String permittedMethods
 ) {}

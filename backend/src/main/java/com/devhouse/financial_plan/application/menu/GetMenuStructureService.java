@@ -8,8 +8,8 @@ import com.devhouse.financial_plan.domain.GroupMenuChildren;
 import com.devhouse.financial_plan.domain.SpaceMember;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionType;
-import com.devhouse.financial_plan.domain.repository.EndpointPermissionRepository;
 import com.devhouse.financial_plan.domain.repository.GroupMenuRepository;
+import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository;
 import com.devhouse.financial_plan.domain.repository.SpaceMemberRepository;
 import com.devhouse.financial_plan.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -23,16 +23,16 @@ public class GetMenuStructureService {
 
     private final UserRepository userRepository;
     private final SpaceMemberRepository spaceMemberRepository;
-    private final EndpointPermissionRepository endpointPermissionRepository;
+    private final RoleEndpointPermissionRepository roleEndpointPermissionRepository;
     private final GroupMenuRepository groupMenuRepository;
 
     public GetMenuStructureService(UserRepository userRepository,
                                    SpaceMemberRepository spaceMemberRepository,
-                                   EndpointPermissionRepository endpointPermissionRepository,
+                                   RoleEndpointPermissionRepository roleEndpointPermissionRepository,
                                    GroupMenuRepository groupMenuRepository) {
         this.userRepository = userRepository;
         this.spaceMemberRepository = spaceMemberRepository;
-        this.endpointPermissionRepository = endpointPermissionRepository;
+        this.roleEndpointPermissionRepository = roleEndpointPermissionRepository;
         this.groupMenuRepository = groupMenuRepository;
     }
 
@@ -47,11 +47,10 @@ public class GetMenuStructureService {
             return List.of();
         }
 
-        Set<String> roleNames = memberships.stream()
-                .map(m -> m.getRole().getName())
-                .collect(Collectors.toSet());
+        Set<Long> roleIds = extractRoleIds(memberships);
+        List<EndpointPermission> permittedPageRules = roleEndpointPermissionRepository
+                .findAllowedEndpointPermissionsByRoleIdsAndType(roleIds, EndpointPermissionType.FRONT_PAGE);
 
-        List<EndpointPermission> permittedPageRules = findPermittedPageRules(roleNames);
         List<GroupMenu> menus = groupMenuRepository.findAllWithChildren();
 
         return menus.stream()
@@ -60,11 +59,10 @@ public class GetMenuStructureService {
                 .toList();
     }
 
-    private List<EndpointPermission> findPermittedPageRules(Set<String> roleNames) {
-        return endpointPermissionRepository.findByType(EndpointPermissionType.FRONT_PAGE)
-                .stream()
-                .filter(p -> roleNames.stream().anyMatch(p::isPermitted))
-                .toList();
+    private Set<Long> extractRoleIds(List<SpaceMember> memberships) {
+        return memberships.stream()
+                .map(m -> m.getRole().getId())
+                .collect(Collectors.toSet());
     }
 
     private GroupMenuStructureDto buildStructure(GroupMenu menu, List<EndpointPermission> permittedRules) {

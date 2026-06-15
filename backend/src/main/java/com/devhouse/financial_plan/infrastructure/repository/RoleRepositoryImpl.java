@@ -56,6 +56,13 @@ public class RoleRepositoryImpl implements RoleRepository {
     }
 
     @Override
+    public List<Role> findAll() {
+        return jpaRoleRepository.findAll().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<Role> findBySpaceId(Long spaceId) {
         return jpaRoleRepository.findBySpaceId(spaceId).stream()
                 .map(this::toDomain)

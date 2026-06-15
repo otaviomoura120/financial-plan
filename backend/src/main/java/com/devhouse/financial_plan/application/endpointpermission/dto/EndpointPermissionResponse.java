@@ -13,7 +13,6 @@ public record EndpointPermissionResponse(
         Integer sequence,
         EndpointPermissionType type,
         String permittedMethods,
-        String permittedRoles,
         Instant createdAt,
         Instant updatedAt
 ) {}

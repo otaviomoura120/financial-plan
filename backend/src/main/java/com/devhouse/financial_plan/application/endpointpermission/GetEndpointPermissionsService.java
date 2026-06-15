@@ -24,7 +24,7 @@ public class GetEndpointPermissionsService {
     private EndpointPermissionResponse toResponse(EndpointPermission p) {
         return new EndpointPermissionResponse(
                 p.getId(), p.getVersion(), p.getEndpoint(), p.getName(), p.getIcon(),
-                p.getSequence(), p.getType(), p.getPermittedMethods(), p.getPermittedRoles(),
+                p.getSequence(), p.getType(), p.getPermittedMethods(),
                 p.getCreatedAt(), p.getUpdatedAt()
         );
     }

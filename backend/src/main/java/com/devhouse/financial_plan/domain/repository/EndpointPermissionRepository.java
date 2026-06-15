@@ -10,6 +10,7 @@ public interface EndpointPermissionRepository {
     EndpointPermission save(EndpointPermission permission);
     EndpointPermission update(EndpointPermission permission);
     EndpointPermission findById(Long id);
+    List<EndpointPermission> findAll();
     List<EndpointPermission> findByType(EndpointPermissionType type);
     List<EndpointPermission> findAllOrderedBySequence();
     void delete(Long id);

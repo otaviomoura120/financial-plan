@@ -44,6 +44,13 @@ public class EndpointPermissionRepositoryImpl implements EndpointPermissionRepos
     }
 
     @Override
+    public List<EndpointPermission> findAll() {
+        return jpaEndpointPermissionRepository.findAll().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public List<EndpointPermission> findByType(EndpointPermissionType type) {
         return jpaEndpointPermissionRepository.findByTypeOrderBySequenceAsc(type.name()).stream()
                 .map(this::toDomain)
@@ -70,7 +77,6 @@ public class EndpointPermissionRepositoryImpl implements EndpointPermissionRepos
         entity.setSequence(permission.getSequence());
         entity.setType(permission.getType().name());
         entity.setPermittedMethods(permission.getPermittedMethods());
-        entity.setPermittedRoles(permission.getPermittedRoles());
         entity.setCreatedAt(permission.getCreatedAt());
         entity.setUpdatedAt(permission.getUpdatedAt());
     }
@@ -78,7 +84,6 @@ public class EndpointPermissionRepositoryImpl implements EndpointPermissionRepos
     private EndpointPermission toDomain(EndpointPermissionEntityJpa entity) {
         return new EndpointPermission(entity.getId(), entity.getVersion(), entity.getEndpoint(), entity.getName(),
                 entity.getIcon(), entity.getSequence(), EndpointPermissionType.valueOf(entity.getType()),
-                entity.getPermittedMethods(), entity.getPermittedRoles(),
-                entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getPermittedMethods(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 }

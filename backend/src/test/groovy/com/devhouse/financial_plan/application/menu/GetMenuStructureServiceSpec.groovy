@@ -9,8 +9,8 @@ import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SpaceMember
 import com.devhouse.financial_plan.domain.User
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionType
-import com.devhouse.financial_plan.domain.repository.EndpointPermissionRepository
 import com.devhouse.financial_plan.domain.repository.GroupMenuRepository
+import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository
 import com.devhouse.financial_plan.domain.repository.SpaceMemberRepository
 import com.devhouse.financial_plan.domain.repository.UserRepository
 import spock.lang.Specification
@@ -21,24 +21,24 @@ class GetMenuStructureServiceSpec extends Specification {
 
     UserRepository userRepository = Mock()
     SpaceMemberRepository spaceMemberRepository = Mock()
-    EndpointPermissionRepository endpointPermissionRepository = Mock()
+    RoleEndpointPermissionRepository roleEndpointPermissionRepository = Mock()
     GroupMenuRepository groupMenuRepository = Mock()
-    GetMenuStructureService service = new GetMenuStructureService(userRepository, spaceMemberRepository, endpointPermissionRepository, groupMenuRepository)
+    GetMenuStructureService service = new GetMenuStructureService(userRepository, spaceMemberRepository, roleEndpointPermissionRepository, groupMenuRepository)
 
     private User buildUser() {
         new User(1L, 0, "auth0|abc", "John", null, null, null,
                 null, "john@test.com", null, true, null, null, Instant.now(), null)
     }
 
-    private SpaceMember buildMemberWithRole(String roleName) {
+    private SpaceMember buildMemberWithRole(Long roleId, String roleName) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        Role role = new Role(1L, 0, space, roleName, "desc", Instant.now(), null)
+        Role role = new Role(roleId, 0, space, roleName, "desc", Instant.now(), null)
         new SpaceMember(1L, space, buildUser(), role, Instant.now())
     }
 
-    private EndpointPermission buildFrontPagePermission(String endpointRegex, String permittedRoles) {
+    private EndpointPermission buildFrontPagePermission(String endpointRegex) {
         new EndpointPermission(1L, 0, endpointRegex, "Page", null, 1,
-                EndpointPermissionType.FRONT_PAGE, "GET", permittedRoles, Instant.now(), null)
+                EndpointPermissionType.FRONT_PAGE, "GET", Instant.now(), null)
     }
 
     private GroupMenu buildGroupMenu(List<String> childEndpoints) {
@@ -60,7 +60,7 @@ class GetMenuStructureServiceSpec extends Specification {
         then:
         result.isEmpty()
         0 * spaceMemberRepository._
-        0 * endpointPermissionRepository._
+        0 * roleEndpointPermissionRepository._
         0 * groupMenuRepository._
     }
 
@@ -74,16 +74,17 @@ class GetMenuStructureServiceSpec extends Specification {
 
         then:
         result.isEmpty()
-        0 * endpointPermissionRepository._
+        0 * roleEndpointPermissionRepository._
         0 * groupMenuRepository._
     }
 
     def "returns full menu when all children are permitted"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole("ADMIN")]
-        endpointPermissionRepository.findByType(EndpointPermissionType.FRONT_PAGE) >> [
-                buildFrontPagePermission("/finance/transactions", "ADMIN,USER")
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
+                buildFrontPagePermission("/finance/transactions")
         ]
         groupMenuRepository.findAllWithChildren() >> [buildGroupMenu(["/finance/transactions"])]
 
@@ -100,9 +101,10 @@ class GetMenuStructureServiceSpec extends Specification {
     def "filters out children not matching any permitted permission"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole("ADMIN")]
-        endpointPermissionRepository.findByType(EndpointPermissionType.FRONT_PAGE) >> [
-                buildFrontPagePermission("/finance/transactions", "ADMIN")
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
+                buildFrontPagePermission("/finance/transactions")
         ]
         groupMenuRepository.findAllWithChildren() >> [
                 buildGroupMenu(["/finance/transactions", "/finance/reports"])
@@ -120,10 +122,9 @@ class GetMenuStructureServiceSpec extends Specification {
     def "excludes groups where no children are accessible"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole("USER")]
-        endpointPermissionRepository.findByType(EndpointPermissionType.FRONT_PAGE) >> [
-                buildFrontPagePermission("/admin/.*", "ADMIN")
-        ]
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "MEMBER")]
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> []
         groupMenuRepository.findAllWithChildren() >> [
                 buildGroupMenu(["/finance/transactions"])
         ]
@@ -138,9 +139,10 @@ class GetMenuStructureServiceSpec extends Specification {
     def "uses regex pattern matching for endpoints"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole("ADMIN")]
-        endpointPermissionRepository.findByType(EndpointPermissionType.FRONT_PAGE) >> [
-                buildFrontPagePermission("/finance/.*", "ADMIN")
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
+                buildFrontPagePermission("/finance/.*")
         ]
         groupMenuRepository.findAllWithChildren() >> [
                 buildGroupMenu(["/finance/transactions", "/finance/reports", "/admin/roles"])

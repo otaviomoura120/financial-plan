@@ -7,14 +7,14 @@ import java.time.Instant
 
 class EndpointPermissionSpec extends Specification {
 
-    private EndpointPermission buildPermission(String endpoint, String permittedMethods, String permittedRoles) {
+    private EndpointPermission buildPermission(String endpoint, String permittedMethods) {
         new EndpointPermission(1L, 0, endpoint, "Test", null, 1, EndpointPermissionType.API,
-                permittedMethods, permittedRoles, Instant.now(), null)
+                permittedMethods, Instant.now(), null)
     }
 
     def "matchesRequest returns true when path matches regex and method is allowed"() {
         given:
-        EndpointPermission permission = buildPermission("/roles.*", "GET,POST", "ADMIN")
+        EndpointPermission permission = buildPermission("/roles.*", "GET,POST")
 
         expect:
         permission.matchesRequest("GET", "/roles") == true
@@ -23,7 +23,7 @@ class EndpointPermissionSpec extends Specification {
 
     def "matchesRequest returns false when path does not match regex"() {
         given:
-        EndpointPermission permission = buildPermission("/roles.*", "GET,POST", "ADMIN")
+        EndpointPermission permission = buildPermission("/roles.*", "GET,POST")
 
         expect:
         permission.matchesRequest("GET", "/users") == false
@@ -32,7 +32,7 @@ class EndpointPermissionSpec extends Specification {
 
     def "matchesRequest returns false when HTTP method is not permitted"() {
         given:
-        EndpointPermission permission = buildPermission("/roles.*", "GET", "ADMIN")
+        EndpointPermission permission = buildPermission("/roles.*", "GET")
 
         expect:
         permission.matchesRequest("DELETE", "/roles/1") == false
@@ -41,43 +41,16 @@ class EndpointPermissionSpec extends Specification {
 
     def "matchesRequest is case-insensitive for method"() {
         given:
-        EndpointPermission permission = buildPermission("/users.*", "get,post", "ADMIN")
+        EndpointPermission permission = buildPermission("/users.*", "get,post")
 
         expect:
         permission.matchesRequest("GET", "/users") == true
         permission.matchesRequest("POST", "/users") == true
     }
 
-    def "isPermitted returns true when role is in permittedRoles CSV"() {
-        given:
-        EndpointPermission permission = buildPermission("/roles.*", "GET", "ADMIN,MANAGER")
-
-        expect:
-        permission.isPermitted("ADMIN") == true
-        permission.isPermitted("MANAGER") == true
-    }
-
-    def "isPermitted returns false when role is not in permittedRoles CSV"() {
-        given:
-        EndpointPermission permission = buildPermission("/roles.*", "GET", "ADMIN,MANAGER")
-
-        expect:
-        permission.isPermitted("USER") == false
-        permission.isPermitted("GUEST") == false
-    }
-
-    def "isPermitted trims whitespace around role names"() {
-        given:
-        EndpointPermission permission = buildPermission("/roles.*", "GET", "ADMIN , MANAGER")
-
-        expect:
-        permission.isPermitted("ADMIN") == true
-        permission.isPermitted("MANAGER") == true
-    }
-
     def "validate throws DomainException when endpoint is blank"() {
         given:
-        EndpointPermission permission = buildPermission("", "GET", "ADMIN")
+        EndpointPermission permission = buildPermission("", "GET")
 
         when:
         permission.validate()
@@ -89,7 +62,7 @@ class EndpointPermissionSpec extends Specification {
     def "validate throws DomainException when name is blank"() {
         given:
         EndpointPermission permission = new EndpointPermission(null, 0, "/roles.*", "", null, 1,
-                EndpointPermissionType.API, "GET", "ADMIN", Instant.now(), null)
+                EndpointPermissionType.API, "GET", Instant.now(), null)
 
         when:
         permission.validate()
@@ -101,7 +74,7 @@ class EndpointPermissionSpec extends Specification {
     def "validate throws DomainException when type is null"() {
         given:
         EndpointPermission permission = new EndpointPermission(null, 0, "/roles.*", "Test", null, 1,
-                null, "GET", "ADMIN", Instant.now(), null)
+                null, "GET", Instant.now(), null)
 
         when:
         permission.validate()
@@ -112,7 +85,7 @@ class EndpointPermissionSpec extends Specification {
 
     def "validate passes for a valid permission"() {
         given:
-        EndpointPermission permission = buildPermission("/roles.*", "GET,POST", "ADMIN")
+        EndpointPermission permission = buildPermission("/roles.*", "GET,POST")
 
         when:
         permission.validate()

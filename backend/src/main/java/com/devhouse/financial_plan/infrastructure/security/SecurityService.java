@@ -4,7 +4,7 @@ import com.devhouse.financial_plan.domain.EndpointPermission;
 import com.devhouse.financial_plan.domain.SpaceMember;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionType;
-import com.devhouse.financial_plan.domain.repository.EndpointPermissionRepository;
+import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository;
 import com.devhouse.financial_plan.domain.repository.SpaceMemberRepository;
 import com.devhouse.financial_plan.domain.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,19 +12,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service("securityService")
 public class SecurityService {
 
     private final UserRepository userRepository;
     private final SpaceMemberRepository spaceMemberRepository;
-    private final EndpointPermissionRepository endpointPermissionRepository;
+    private final RoleEndpointPermissionRepository roleEndpointPermissionRepository;
 
     public SecurityService(UserRepository userRepository, SpaceMemberRepository spaceMemberRepository,
-                           EndpointPermissionRepository endpointPermissionRepository) {
+                           RoleEndpointPermissionRepository roleEndpointPermissionRepository) {
         this.userRepository = userRepository;
         this.spaceMemberRepository = spaceMemberRepository;
-        this.endpointPermissionRepository = endpointPermissionRepository;
+        this.roleEndpointPermissionRepository = roleEndpointPermissionRepository;
     }
 
     public boolean userHasPermissionForURL(Authentication authentication, HttpServletRequest request) {
@@ -38,14 +40,19 @@ public class SecurityService {
             return false;
         }
 
+        Set<Long> roleIds = extractRoleIds(memberships);
+        List<EndpointPermission> allowedPermissions = roleEndpointPermissionRepository
+                .findAllowedEndpointPermissionsByRoleIdsAndType(roleIds, EndpointPermissionType.API);
+
         String method = request.getMethod();
         String path = request.getRequestURI();
 
-        List<EndpointPermission> permissions = endpointPermissionRepository.findByType(EndpointPermissionType.API);
-        return permissions.stream()
-                .filter(p -> p.matchesRequest(method, path))
-                .findFirst()
-                .map(p -> memberships.stream().anyMatch(m -> p.isPermitted(m.getRole().getName())))
-                .orElse(false);
+        return allowedPermissions.stream().anyMatch(p -> p.matchesRequest(method, path));
+    }
+
+    private Set<Long> extractRoleIds(List<SpaceMember> memberships) {
+        return memberships.stream()
+                .map(m -> m.getRole().getId())
+                .collect(Collectors.toSet());
     }
 }
