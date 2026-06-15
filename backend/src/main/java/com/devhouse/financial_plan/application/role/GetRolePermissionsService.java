@@ -2,7 +2,9 @@ package com.devhouse.financial_plan.application.role;
 
 import com.devhouse.financial_plan.application.role.dto.RoleEndpointPermissionResponse;
 import com.devhouse.financial_plan.domain.RoleEndpointPermission;
+import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository;
+import com.devhouse.financial_plan.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,13 +13,19 @@ import java.util.List;
 public class GetRolePermissionsService {
 
     private final RoleEndpointPermissionRepository roleEndpointPermissionRepository;
+    private final UserRepository userRepository;
 
-    public GetRolePermissionsService(RoleEndpointPermissionRepository roleEndpointPermissionRepository) {
+    public GetRolePermissionsService(RoleEndpointPermissionRepository roleEndpointPermissionRepository,
+                                     UserRepository userRepository) {
         this.roleEndpointPermissionRepository = roleEndpointPermissionRepository;
+        this.userRepository = userRepository;
     }
 
-    public List<RoleEndpointPermissionResponse> execute(Long roleId) {
+    public List<RoleEndpointPermissionResponse> execute(Long roleId, String callerAuth0Sub) {
+        User caller = userRepository.findByAuth0Sub(callerAuth0Sub);
+        boolean isMasterAdmin = caller != null && caller.isMasterAdmin();
         return roleEndpointPermissionRepository.findByRoleId(roleId).stream()
+                .filter(rep -> isMasterAdmin || !rep.getEndpointPermission().isInternalManagement())
                 .map(this::toResponse)
                 .toList();
     }
@@ -30,6 +38,7 @@ public class GetRolePermissionsService {
                 rep.getEndpointPermission().getName(),
                 rep.getEndpointPermission().getEndpoint(),
                 rep.getEndpointPermission().getType(),
+                rep.getEndpointPermission().getGroup(),
                 rep.getPermission()
         );
     }

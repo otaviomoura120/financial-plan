@@ -25,9 +25,9 @@ class GetMenuStructureServiceSpec extends Specification {
     GroupMenuRepository groupMenuRepository = Mock()
     GetMenuStructureService service = new GetMenuStructureService(userRepository, spaceMemberRepository, roleEndpointPermissionRepository, groupMenuRepository)
 
-    private User buildUser() {
+    private User buildUser(boolean masterAdmin = false) {
         new User(1L, 0, "auth0|abc", "John", null, null, null,
-                null, "john@test.com", null, true, null, null, Instant.now(), null)
+                null, "john@test.com", null, true, null, null, Instant.now(), null, masterAdmin)
     }
 
     private SpaceMember buildMemberWithRole(Long roleId, String roleName) {
@@ -36,9 +36,9 @@ class GetMenuStructureServiceSpec extends Specification {
         new SpaceMember(1L, space, buildUser(), role, Instant.now())
     }
 
-    private EndpointPermission buildFrontPagePermission(String endpointRegex) {
+    private EndpointPermission buildFrontPagePermission(String endpointRegex, String group = "Menu") {
         new EndpointPermission(1L, 0, endpointRegex, "Page", null, 1,
-                EndpointPermissionType.FRONT_PAGE, "GET", "Menu", Instant.now(), null)
+                EndpointPermissionType.FRONT_PAGE, "GET", group, Instant.now(), null)
     }
 
     private GroupMenu buildGroupMenu(List<String> childEndpoints) {
@@ -134,6 +134,49 @@ class GetMenuStructureServiceSpec extends Specification {
 
         then:
         result.isEmpty()
+    }
+
+    def "hides internal_management menu items for non-MASTER_ADMIN users"() {
+        given:
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser(false)
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
+                buildFrontPagePermission("/finance/transactions"),
+                buildFrontPagePermission("/endpoint-permissions", EndpointPermission.INTERNAL_MANAGEMENT_GROUP)
+        ]
+        groupMenuRepository.findAllWithChildren() >> [
+                buildGroupMenu(["/finance/transactions", "/endpoint-permissions"])
+        ]
+
+        when:
+        List<GroupMenuStructureDto> result = service.execute("auth0|abc")
+
+        then:
+        result.size() == 1
+        result[0].children().size() == 1
+        result[0].children()[0].endpoint() == "/finance/transactions"
+    }
+
+    def "shows internal_management menu items for MASTER_ADMIN users"() {
+        given:
+        userRepository.findByAuth0Sub("auth0|master") >> buildUser(true)
+        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
+                buildFrontPagePermission("/finance/transactions"),
+                buildFrontPagePermission("/endpoint-permissions", EndpointPermission.INTERNAL_MANAGEMENT_GROUP)
+        ]
+        groupMenuRepository.findAllWithChildren() >> [
+                buildGroupMenu(["/finance/transactions", "/endpoint-permissions"])
+        ]
+
+        when:
+        List<GroupMenuStructureDto> result = service.execute("auth0|master")
+
+        then:
+        result.size() == 1
+        result[0].children().size() == 2
     }
 
     def "uses regex pattern matching for endpoints"() {

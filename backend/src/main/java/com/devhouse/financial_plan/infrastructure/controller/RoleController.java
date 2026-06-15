@@ -84,7 +84,7 @@ public class RoleController {
     public List<RoleEndpointPermissionResponse> getPermissions(@PathVariable Long id,
                                                                 Authentication authentication,
                                                                 HttpServletRequest request) {
-        return getRolePermissionsService.execute(id);
+        return getRolePermissionsService.execute(id, authentication.getName());
     }
 
     @PatchMapping("/{id}/permissions/{permissionId}")

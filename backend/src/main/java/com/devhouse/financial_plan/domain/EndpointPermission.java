@@ -10,6 +10,8 @@ import java.util.Objects;
 
 public class EndpointPermission {
 
+    public static final String INTERNAL_MANAGEMENT_GROUP = "internal_management";
+
     private Long id;
     private Integer version;
     private String endpoint;
@@ -51,6 +53,10 @@ public class EndpointPermission {
         if (group == null || group.isBlank()) {
             throw new DomainException("EndpointPermission group cannot be empty");
         }
+    }
+
+    public boolean isInternalManagement() {
+        return INTERNAL_MANAGEMENT_GROUP.equals(this.group);
     }
 
     public boolean matchesRequest(String method, String path) {

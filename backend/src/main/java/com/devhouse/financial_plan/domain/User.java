@@ -23,10 +23,11 @@ public class User {
     private String maritalStatus;
     private final Instant createdDate;
     private Instant updatedDate;
+    private final boolean masterAdmin;
 
     public User(Long id, Integer version, String auth0Sub, String name, String nickname, String profilePhoto,
                 String observation, Instant birthdate, String email, String phoneNumber, boolean active,
-                String genre, String maritalStatus, Instant createdDate, Instant updatedDate) {
+                String genre, String maritalStatus, Instant createdDate, Instant updatedDate, boolean masterAdmin) {
         this.id = id;
         this.version = version;
         this.auth0Sub = auth0Sub;
@@ -42,6 +43,7 @@ public class User {
         this.maritalStatus = maritalStatus;
         this.createdDate = createdDate;
         this.updatedDate = updatedDate;
+        this.masterAdmin = masterAdmin;
     }
 
     public void validate() {
@@ -111,4 +113,5 @@ public class User {
     public Instant getCreatedDate() { return createdDate; }
     public Instant getUpdatedDate() { return updatedDate; }
     public void setUpdatedDate(Instant updatedDate) { this.updatedDate = updatedDate; }
+    public boolean isMasterAdmin() { return masterAdmin; }
 }

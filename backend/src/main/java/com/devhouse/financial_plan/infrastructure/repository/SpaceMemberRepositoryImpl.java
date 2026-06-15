@@ -102,7 +102,8 @@ public class SpaceMemberRepositoryImpl implements SpaceMemberRepository {
         return new User(entity.getId(), entity.getVersion(), entity.getAuth0Sub(), entity.getName(),
                 entity.getNickname(), entity.getProfilePhoto(), entity.getObservation(), entity.getBirthdate(),
                 entity.getEmail(), entity.getPhoneNumber(), entity.isActive(), entity.getGenre(),
-                entity.getMaritalStatus(), entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getMaritalStatus(), entity.getCreatedAt(), entity.getUpdatedAt(),
+                entity.isMasterAdmin());
     }
 
     private Role buildRole(RoleEntityJpa entity) {

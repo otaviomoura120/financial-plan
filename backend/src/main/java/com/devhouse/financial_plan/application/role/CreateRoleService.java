@@ -46,6 +46,7 @@ public class CreateRoleService {
         Instant now = Instant.now();
         List<EndpointPermission> allPermissions = endpointPermissionRepository.findAll();
         List<RoleEndpointPermission> relations = allPermissions.stream()
+                .filter(ep -> !ep.isInternalManagement())
                 .map(ep -> new RoleEndpointPermission(null, 0, role, ep, EndpointPermissionAccess.DENY, now, null))
                 .toList();
         roleEndpointPermissionRepository.saveAll(relations);

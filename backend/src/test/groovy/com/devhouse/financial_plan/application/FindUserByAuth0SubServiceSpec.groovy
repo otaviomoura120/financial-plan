@@ -17,7 +17,7 @@ class FindUserByAuth0SubServiceSpec extends Specification {
         given:
         String auth0Sub = "auth0|abc123"
         User user = new User(1L, 0, auth0Sub, "John Smith", null, null, null,
-                null, "john@example.com", null, true, null, null, Instant.now(), null)
+                null, "john@example.com", null, true, null, null, Instant.now(), null, false)
         userRepository.findByAuth0Sub(auth0Sub) >> user
 
         when:

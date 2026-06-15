@@ -57,6 +57,6 @@ public class EndpointPermissionController {
     @GetMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
     public List<EndpointPermissionResponse> getAll(@RequestParam(required = false) String group, Authentication authentication, HttpServletRequest request) {
-        return getEndpointPermissionsService.execute(group);
+        return getEndpointPermissionsService.execute(group, authentication.getName());
     }
 }

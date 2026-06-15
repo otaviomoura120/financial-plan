@@ -33,6 +33,11 @@ class CreateRoleServiceSpec extends Specification {
         new EndpointPermission(id, 0, "/path.*", "Name", null, 1, EndpointPermissionType.API, "GET", "General", Instant.now(), null)
     }
 
+    private EndpointPermission buildInternalManagementPermission(Long id) {
+        new EndpointPermission(id, 0, "/endpoint-permissions", "Listar Permissões", null, 1,
+                EndpointPermissionType.API, "GET", EndpointPermission.INTERNAL_MANAGEMENT_GROUP, Instant.now(), null)
+    }
+
     def "creates role and saves DENY relations for all existing endpoint permissions"() {
         given:
         Space space = buildSpace()
@@ -91,5 +96,28 @@ class CreateRoleServiceSpec extends Specification {
         then:
         thrown(DomainException)
         0 * roleRepository.save(_)
+    }
+
+    def "skips internal_management permissions when creating default role permissions"() {
+        given:
+        Space space = buildSpace()
+        Role savedRole = new Role(10L, 0, space, "MANAGER", "Gerente", Instant.now(), null)
+        endpointPermissionRepository.findAll() >> [
+                buildEndpointPermission(1L),
+                buildEndpointPermission(2L),
+                buildInternalManagementPermission(99L)
+        ]
+        spaceRepository.findById(1L) >> space
+        roleRepository.save(_) >> savedRole
+
+        when:
+        service.execute(new CreateRoleRequest(1L, "MANAGER", "Gerente"))
+
+        then:
+        1 * roleEndpointPermissionRepository.saveAll({ List<RoleEndpointPermission> relations ->
+            relations.size() == 2 &&
+            relations.every { it.getPermission() == EndpointPermissionAccess.DENY } &&
+            relations.every { it.getEndpointPermission().getGroup() != EndpointPermission.INTERNAL_MANAGEMENT_GROUP }
+        })
     }
 }

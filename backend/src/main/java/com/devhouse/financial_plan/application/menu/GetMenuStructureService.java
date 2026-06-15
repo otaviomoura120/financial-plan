@@ -48,8 +48,9 @@ public class GetMenuStructureService {
         }
 
         Set<Long> roleIds = extractRoleIds(memberships);
-        List<EndpointPermission> permittedPageRules = roleEndpointPermissionRepository
+        List<EndpointPermission> allPermittedRules = roleEndpointPermissionRepository
                 .findAllowedEndpointPermissionsByRoleIdsAndType(roleIds, EndpointPermissionType.FRONT_PAGE);
+        List<EndpointPermission> permittedPageRules = filterByMasterAdmin(user, allPermittedRules);
 
         List<GroupMenu> menus = groupMenuRepository.findAllWithChildren();
 
@@ -57,6 +58,13 @@ public class GetMenuStructureService {
                 .map(menu -> buildStructure(menu, permittedPageRules))
                 .filter(dto -> !dto.children().isEmpty())
                 .toList();
+    }
+
+    private List<EndpointPermission> filterByMasterAdmin(User user, List<EndpointPermission> rules) {
+        if (user.isMasterAdmin()) {
+            return rules;
+        }
+        return rules.stream().filter(p -> !p.isInternalManagement()).toList();
     }
 
     private Set<Long> extractRoleIds(List<SpaceMember> memberships) {

@@ -29,7 +29,7 @@ class CreateSpaceServiceSpec extends Specification {
         given:
         CreateSpaceRequest request = new CreateSpaceRequest("Smith Family", null, 1L)
         User creator = new User(1L, 0, "auth0|abc", "John", null, null, null,
-                null, "john@test.com", null, true, null, null, Instant.now(), null)
+                null, "john@test.com", null, true, null, null, Instant.now(), null, false)
         Space savedSpace = new Space(10L, 0, "Smith Family", null, Instant.now(), null)
         RoleResponse ownerRoleResponse = new RoleResponse(20L, 0, 10L, Role.OWNER_ROLE_NAME, "Space owner", Instant.now(), null)
         SpaceMember savedMember = new SpaceMember(30L, savedSpace, creator,
@@ -57,7 +57,7 @@ class CreateSpaceServiceSpec extends Specification {
         given:
         CreateSpaceRequest request = new CreateSpaceRequest("", null, 1L)
         User creator = new User(1L, 0, "auth0|abc", "John", null, null, null,
-                null, "john@test.com", null, true, null, null, Instant.now(), null)
+                null, "john@test.com", null, true, null, null, Instant.now(), null, false)
         userRepository.findById(1L) >> creator
 
         when:

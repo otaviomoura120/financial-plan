@@ -37,16 +37,16 @@ VALUES
 (1, '/roles/[0-9]+/permissions/[0-9]+',       'Alterar Acesso da Função',   15, 'API', 'PATCH',      'Role',      NOW(), NOW()),
 
 -- EndpointPermissionController — /endpoint-permissions
-(1, '/endpoint-permissions',                  'Listar Permissões',          20, 'API', 'GET',        'Permissão', NOW(), NOW()),
-(1, '/endpoint-permissions',                  'Criar Permissão',            21, 'API', 'POST',       'Permissão', NOW(), NOW()),
-(1, '/endpoint-permissions/[0-9]+',           'Gerenciar Permissão',        22, 'API', 'PUT,DELETE', 'Permissão', NOW(), NOW()),
+(1, '/endpoint-permissions',                  'Listar Permissões',          20, 'API', 'GET',        'internal_management', NOW(), NOW()),
+(1, '/endpoint-permissions',                  'Criar Permissão',            21, 'API', 'POST',       'internal_management', NOW(), NOW()),
+(1, '/endpoint-permissions/[0-9]+',           'Gerenciar Permissão',        22, 'API', 'PUT,DELETE', 'internal_management', NOW(), NOW()),
 
 -- GroupMenuController — /group-menus
-(1, '/group-menus',                           'Listar Grupos de Menu',      30, 'API', 'GET',        'Menu',      NOW(), NOW()),
-(1, '/group-menus',                           'Criar Grupo de Menu',        31, 'API', 'POST',       'Menu',      NOW(), NOW()),
-(1, '/group-menus/[0-9]+',                    'Gerenciar Grupo de Menu',    32, 'API', 'PUT,DELETE', 'Menu',      NOW(), NOW()),
-(1, '/group-menus/[0-9]+/children',           'Adicionar Item ao Menu',     33, 'API', 'POST',       'Menu',      NOW(), NOW()),
-(1, '/group-menus/children/[0-9]+',           'Gerenciar Item do Menu',     34, 'API', 'PUT,DELETE', 'Menu',      NOW(), NOW());
+(1, '/group-menus',                           'Listar Grupos de Menu',      30, 'API', 'GET',        'internal_management', NOW(), NOW()),
+(1, '/group-menus',                           'Criar Grupo de Menu',        31, 'API', 'POST',       'internal_management', NOW(), NOW()),
+(1, '/group-menus/[0-9]+',                    'Gerenciar Grupo de Menu',    32, 'API', 'PUT,DELETE', 'internal_management', NOW(), NOW()),
+(1, '/group-menus/[0-9]+/children',           'Adicionar Item ao Menu',     33, 'API', 'POST',       'internal_management', NOW(), NOW()),
+(1, '/group-menus/children/[0-9]+',           'Gerenciar Item do Menu',     34, 'API', 'PUT,DELETE', 'internal_management', NOW(), NOW());
 
 
 -- =============================================================================
@@ -70,8 +70,8 @@ VALUES
 (1, '/users',               'Usuários',              7,  'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
 (1, '/spaces',              'Espaços',               8,  'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
 (1, '/roles',               'Funções',               9,  'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
-(1, '/endpoint-permissions','Permissões de Acesso',  10, 'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
-(1, '/group-menus',         'Estrutura de Menu',     11, 'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW());
+(1, '/endpoint-permissions','Permissões de Acesso',  10, 'FRONT_PAGE', 'GET', 'internal_management',NOW(), NOW()),
+(1, '/group-menus',         'Estrutura de Menu',     11, 'FRONT_PAGE', 'GET', 'internal_management',NOW(), NOW());
 
 
 -- =============================================================================

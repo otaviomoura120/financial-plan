@@ -4,6 +4,7 @@ import com.devhouse.financial_plan.domain.EndpointPermission;
 import com.devhouse.financial_plan.domain.SpaceMember;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionType;
+import com.devhouse.financial_plan.domain.repository.EndpointPermissionRepository;
 import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository;
 import com.devhouse.financial_plan.domain.repository.SpaceMemberRepository;
 import com.devhouse.financial_plan.domain.repository.UserRepository;
@@ -21,18 +22,28 @@ public class SecurityService {
     private final UserRepository userRepository;
     private final SpaceMemberRepository spaceMemberRepository;
     private final RoleEndpointPermissionRepository roleEndpointPermissionRepository;
+    private final EndpointPermissionRepository endpointPermissionRepository;
 
     public SecurityService(UserRepository userRepository, SpaceMemberRepository spaceMemberRepository,
-                           RoleEndpointPermissionRepository roleEndpointPermissionRepository) {
+                           RoleEndpointPermissionRepository roleEndpointPermissionRepository,
+                           EndpointPermissionRepository endpointPermissionRepository) {
         this.userRepository = userRepository;
         this.spaceMemberRepository = spaceMemberRepository;
         this.roleEndpointPermissionRepository = roleEndpointPermissionRepository;
+        this.endpointPermissionRepository = endpointPermissionRepository;
     }
 
     public boolean userHasPermissionForURL(Authentication authentication, HttpServletRequest request) {
         User user = userRepository.findByAuth0Sub(authentication.getName());
         if (user == null) {
             return false;
+        }
+
+        String method = request.getMethod();
+        String path = request.getRequestURI();
+
+        if (isInternalManagementRequest(method, path)) {
+            return user.isMasterAdmin();
         }
 
         List<SpaceMember> memberships = spaceMemberRepository.findByUserId(user.getId());
@@ -44,10 +55,13 @@ public class SecurityService {
         List<EndpointPermission> allowedPermissions = roleEndpointPermissionRepository
                 .findAllowedEndpointPermissionsByRoleIdsAndType(roleIds, EndpointPermissionType.API);
 
-        String method = request.getMethod();
-        String path = request.getRequestURI();
-
         return allowedPermissions.stream().anyMatch(p -> p.matchesRequest(method, path));
+    }
+
+    private boolean isInternalManagementRequest(String method, String path) {
+        List<EndpointPermission> internalPermissions = endpointPermissionRepository
+                .findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP);
+        return internalPermissions.stream().anyMatch(p -> p.matchesRequest(method, path));
     }
 
     private Set<Long> extractRoleIds(List<SpaceMember> memberships) {

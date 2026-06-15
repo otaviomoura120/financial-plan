@@ -10,5 +10,6 @@ public record RoleEndpointPermissionResponse(
         String name,
         String endpoint,
         EndpointPermissionType type,
+        String group,
         EndpointPermissionAccess permission
 ) {}

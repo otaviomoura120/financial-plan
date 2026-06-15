@@ -67,4 +67,22 @@ class UpdateRolePermissionAccessServiceSpec extends Specification {
         thrown(DomainException)
         0 * roleEndpointPermissionRepository.update(_)
     }
+
+    def "throws DomainException when trying to update permission in internal_management group"() {
+        given:
+        Space space = new Space(1L, 0, "Space", null, Instant.now(), null)
+        Role role = new Role(1L, 0, space, "ADMIN", null, Instant.now(), null)
+        EndpointPermission ep = new EndpointPermission(5L, 0, "/endpoint-permissions", "Listar Permissões", null, 1,
+                EndpointPermissionType.API, "GET", EndpointPermission.INTERNAL_MANAGEMENT_GROUP, Instant.now(), null)
+        RoleEndpointPermission relation = new RoleEndpointPermission(20L, 0, role, ep,
+                EndpointPermissionAccess.DENY, Instant.now(), null)
+        roleEndpointPermissionRepository.findByRoleIdAndEndpointPermissionId(1L, 5L) >> relation
+
+        when:
+        service.execute(1L, 5L, new UpdateRolePermissionAccessRequest(0, EndpointPermissionAccess.ALLOW))
+
+        then:
+        thrown(DomainException)
+        0 * roleEndpointPermissionRepository.update(_)
+    }
 }

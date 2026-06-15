@@ -34,6 +34,8 @@ public class UserEntityJpa {
     private Instant createdAt;
     @Column(name = "updated_at")
     private Instant updatedAt;
+    @Column(name = "master_admin")
+    private Boolean masterAdmin;
 
     public void setVersion(Integer version) {
         if (!Objects.equals(version, this.version)) {
@@ -69,4 +71,5 @@ public class UserEntityJpa {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public boolean isMasterAdmin() { return Boolean.TRUE.equals(masterAdmin); }
 }

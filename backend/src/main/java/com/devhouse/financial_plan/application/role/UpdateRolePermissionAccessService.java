@@ -24,6 +24,10 @@ public class UpdateRolePermissionAccessService {
             throw new DomainException("Permission relation not found for role " + roleId + " and endpoint permission " + endpointPermissionId);
         }
 
+        if (relation.getEndpointPermission().isInternalManagement()) {
+            throw new DomainException("Permissions in the internal_management group cannot be modified");
+        }
+
         relation.setVersion(request.version());
         applyAccess(relation, request.access());
         roleEndpointPermissionRepository.update(relation);
