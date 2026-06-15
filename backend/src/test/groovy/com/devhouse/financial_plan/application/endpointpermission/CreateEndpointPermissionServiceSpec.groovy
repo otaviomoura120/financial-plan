@@ -29,14 +29,17 @@ class CreateEndpointPermissionServiceSpec extends Specification {
         new Role(id, 0, space, "ADMIN", null, Instant.now(), null)
     }
 
+    private EndpointPermission buildSavedPermission() {
+        new EndpointPermission(5L, 0, "/roles.*", "Roles Endpoint", null,
+                1, EndpointPermissionType.API, "GET,POST", "Role", Instant.now(), null)
+    }
+
     def "creates endpoint permission and saves DENY relations for all existing roles"() {
         given:
         CreateEndpointPermissionRequest request = new CreateEndpointPermissionRequest(
-                "/roles.*", "Roles Endpoint", null, 1, EndpointPermissionType.API, "GET,POST"
+                "/roles.*", "Roles Endpoint", null, 1, EndpointPermissionType.API, "GET,POST", "Role"
         )
-        EndpointPermission saved = new EndpointPermission(5L, 0, "/roles.*", "Roles Endpoint", null,
-                1, EndpointPermissionType.API, "GET,POST", Instant.now(), null)
-        endpointPermissionRepository.save(_) >> saved
+        endpointPermissionRepository.save(_) >> buildSavedPermission()
         roleRepository.findAll() >> [buildRole(1L), buildRole(2L)]
 
         when:
@@ -47,6 +50,7 @@ class CreateEndpointPermissionServiceSpec extends Specification {
         response.endpoint() == "/roles.*"
         response.permittedMethods() == "GET,POST"
         response.type() == EndpointPermissionType.API
+        response.group() == "Role"
         1 * roleEndpointPermissionRepository.saveAll({ List<RoleEndpointPermission> relations ->
             relations.size() == 2 &&
             relations.every { it.getPermission() == EndpointPermissionAccess.DENY } &&
@@ -57,11 +61,9 @@ class CreateEndpointPermissionServiceSpec extends Specification {
     def "creates endpoint permission with no role relations when no roles exist"() {
         given:
         CreateEndpointPermissionRequest request = new CreateEndpointPermissionRequest(
-                "/roles.*", "Roles Endpoint", null, 1, EndpointPermissionType.API, "GET"
+                "/roles.*", "Roles Endpoint", null, 1, EndpointPermissionType.API, "GET", "Role"
         )
-        EndpointPermission saved = new EndpointPermission(5L, 0, "/roles.*", "Roles Endpoint", null,
-                1, EndpointPermissionType.API, "GET", Instant.now(), null)
-        endpointPermissionRepository.save(_) >> saved
+        endpointPermissionRepository.save(_) >> buildSavedPermission()
         roleRepository.findAll() >> []
 
         when:
@@ -74,7 +76,7 @@ class CreateEndpointPermissionServiceSpec extends Specification {
     def "throws DomainException when endpoint is blank"() {
         given:
         CreateEndpointPermissionRequest request = new CreateEndpointPermissionRequest(
-                "", "Name", null, 1, EndpointPermissionType.API, "GET"
+                "", "Name", null, 1, EndpointPermissionType.API, "GET", "Role"
         )
 
         when:
@@ -88,7 +90,7 @@ class CreateEndpointPermissionServiceSpec extends Specification {
     def "throws DomainException when name is blank"() {
         given:
         CreateEndpointPermissionRequest request = new CreateEndpointPermissionRequest(
-                "/roles.*", "", null, 1, EndpointPermissionType.API, "GET"
+                "/roles.*", "", null, 1, EndpointPermissionType.API, "GET", "Role"
         )
 
         when:
@@ -102,7 +104,21 @@ class CreateEndpointPermissionServiceSpec extends Specification {
     def "throws DomainException when type is null"() {
         given:
         CreateEndpointPermissionRequest request = new CreateEndpointPermissionRequest(
-                "/roles.*", "Name", null, 1, null, "GET"
+                "/roles.*", "Name", null, 1, null, "GET", "Role"
+        )
+
+        when:
+        service.execute(request)
+
+        then:
+        thrown(DomainException)
+        0 * endpointPermissionRepository.save(_)
+    }
+
+    def "throws DomainException when group is blank"() {
+        given:
+        CreateEndpointPermissionRequest request = new CreateEndpointPermissionRequest(
+                "/roles.*", "Name", null, 1, EndpointPermissionType.API, "GET", ""
         )
 
         when:

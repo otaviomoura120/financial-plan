@@ -16,15 +16,22 @@ public class GetEndpointPermissionsService {
         this.endpointPermissionRepository = endpointPermissionRepository;
     }
 
-    public List<EndpointPermissionResponse> execute() {
-        List<EndpointPermission> permissions = endpointPermissionRepository.findAllOrderedBySequence();
+    public List<EndpointPermissionResponse> execute(String group) {
+        List<EndpointPermission> permissions = resolvePermissions(group);
         return permissions.stream().map(this::toResponse).toList();
+    }
+
+    private List<EndpointPermission> resolvePermissions(String group) {
+        if (group != null && !group.isBlank()) {
+            return endpointPermissionRepository.findByGroup(group);
+        }
+        return endpointPermissionRepository.findAllOrderedBySequence();
     }
 
     private EndpointPermissionResponse toResponse(EndpointPermission p) {
         return new EndpointPermissionResponse(
                 p.getId(), p.getVersion(), p.getEndpoint(), p.getName(), p.getIcon(),
-                p.getSequence(), p.getType(), p.getPermittedMethods(),
+                p.getSequence(), p.getType(), p.getPermittedMethods(), p.getGroup(),
                 p.getCreatedAt(), p.getUpdatedAt()
         );
     }

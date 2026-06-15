@@ -22,7 +22,7 @@ class UpdateRolePermissionAccessServiceSpec extends Specification {
         Space space = new Space(1L, 0, "Space", null, Instant.now(), null)
         Role role = new Role(1L, 0, space, "ADMIN", null, Instant.now(), null)
         EndpointPermission ep = new EndpointPermission(1L, 0, "/roles.*", "Roles", null, 1,
-                EndpointPermissionType.API, "GET", Instant.now(), null)
+                EndpointPermissionType.API, "GET", "Role", Instant.now(), null)
         new RoleEndpointPermission(10L, 0, role, ep, access, Instant.now(), null)
     }
 

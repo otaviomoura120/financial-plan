@@ -21,6 +21,8 @@ public class EndpointPermissionEntityJpa {
     private String type;
     @Column(name = "permitted_methods")
     private String permittedMethods;
+    @Column(name = "ep_group")
+    private String epGroup;
     @Column(name = "created_at")
     private Instant createdAt;
     @Column(name = "updated_at")
@@ -41,6 +43,8 @@ public class EndpointPermissionEntityJpa {
     public void setType(String type) { this.type = type; }
     public String getPermittedMethods() { return permittedMethods; }
     public void setPermittedMethods(String permittedMethods) { this.permittedMethods = permittedMethods; }
+    public String getEpGroup() { return epGroup; }
+    public void setEpGroup(String epGroup) { this.epGroup = epGroup; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }

@@ -19,7 +19,7 @@ public class UpdateEndpointPermissionService {
         EndpointPermission permission = endpointPermissionRepository.findById(id);
         permission.setVersion(request.version());
         permission.update(request.endpoint(), request.name(), request.icon(), request.sequence(),
-                request.type(), request.permittedMethods());
+                request.type(), request.permittedMethods(), request.group());
         permission.validate();
         EndpointPermission updated = endpointPermissionRepository.update(permission);
         return toResponse(updated);
@@ -28,7 +28,7 @@ public class UpdateEndpointPermissionService {
     private EndpointPermissionResponse toResponse(EndpointPermission p) {
         return new EndpointPermissionResponse(
                 p.getId(), p.getVersion(), p.getEndpoint(), p.getName(), p.getIcon(),
-                p.getSequence(), p.getType(), p.getPermittedMethods(),
+                p.getSequence(), p.getType(), p.getPermittedMethods(), p.getGroup(),
                 p.getCreatedAt(), p.getUpdatedAt()
         );
     }

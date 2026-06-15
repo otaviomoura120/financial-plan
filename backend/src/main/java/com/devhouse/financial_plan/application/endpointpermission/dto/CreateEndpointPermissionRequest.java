@@ -8,5 +8,6 @@ public record CreateEndpointPermissionRequest(
         String icon,
         Integer sequence,
         EndpointPermissionType type,
-        String permittedMethods
+        String permittedMethods,
+        String group
 ) {}

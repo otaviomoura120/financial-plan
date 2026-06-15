@@ -15,7 +15,7 @@ class RoleEndpointPermissionSpec extends Specification {
 
     private EndpointPermission buildEndpointPermission() {
         new EndpointPermission(1L, 0, "/roles.*", "Roles", null, 1,
-                EndpointPermissionType.API, "GET", Instant.now(), null)
+                EndpointPermissionType.API, "GET", "Role", Instant.now(), null)
     }
 
     private RoleEndpointPermission buildRelation(EndpointPermissionAccess access) {

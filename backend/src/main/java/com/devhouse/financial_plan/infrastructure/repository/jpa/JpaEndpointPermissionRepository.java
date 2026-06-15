@@ -9,4 +9,6 @@ public interface JpaEndpointPermissionRepository extends JpaRepository<EndpointP
     List<EndpointPermissionEntityJpa> findByTypeOrderBySequenceAsc(String type);
 
     List<EndpointPermissionEntityJpa> findAllByOrderBySequenceAsc();
+
+    List<EndpointPermissionEntityJpa> findByEpGroupOrderBySequenceAsc(String epGroup);
 }

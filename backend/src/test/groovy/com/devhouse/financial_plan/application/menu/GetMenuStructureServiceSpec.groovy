@@ -38,7 +38,7 @@ class GetMenuStructureServiceSpec extends Specification {
 
     private EndpointPermission buildFrontPagePermission(String endpointRegex) {
         new EndpointPermission(1L, 0, endpointRegex, "Page", null, 1,
-                EndpointPermissionType.FRONT_PAGE, "GET", Instant.now(), null)
+                EndpointPermissionType.FRONT_PAGE, "GET", "Menu", Instant.now(), null)
     }
 
     private GroupMenu buildGroupMenu(List<String> childEndpoints) {

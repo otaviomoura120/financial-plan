@@ -30,7 +30,7 @@ class CreateRoleServiceSpec extends Specification {
     }
 
     private EndpointPermission buildEndpointPermission(Long id) {
-        new EndpointPermission(id, 0, "/path.*", "Name", null, 1, EndpointPermissionType.API, "GET", Instant.now(), null)
+        new EndpointPermission(id, 0, "/path.*", "Name", null, 1, EndpointPermissionType.API, "GET", "General", Instant.now(), null)
     }
 
     def "creates role and saves DENY relations for all existing endpoint permissions"() {

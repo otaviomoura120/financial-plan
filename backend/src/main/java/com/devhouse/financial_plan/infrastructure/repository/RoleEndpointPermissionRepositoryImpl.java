@@ -120,6 +120,6 @@ public class RoleEndpointPermissionRepositoryImpl implements RoleEndpointPermiss
     private EndpointPermission toEndpointPermissionDomain(EndpointPermissionEntityJpa entity) {
         return new EndpointPermission(entity.getId(), entity.getVersion(), entity.getEndpoint(), entity.getName(),
                 entity.getIcon(), entity.getSequence(), EndpointPermissionType.valueOf(entity.getType()),
-                entity.getPermittedMethods(), entity.getCreatedAt(), entity.getUpdatedAt());
+                entity.getPermittedMethods(), entity.getEpGroup(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 }

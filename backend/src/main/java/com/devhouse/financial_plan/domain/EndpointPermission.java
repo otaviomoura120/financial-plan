@@ -18,12 +18,13 @@ public class EndpointPermission {
     private Integer sequence;
     private EndpointPermissionType type;
     private String permittedMethods;
+    private String group;
     private final Instant createdAt;
     private Instant updatedAt;
 
     public EndpointPermission(Long id, Integer version, String endpoint, String name, String icon,
                               Integer sequence, EndpointPermissionType type,
-                              String permittedMethods, Instant createdAt, Instant updatedAt) {
+                              String permittedMethods, String group, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.version = version;
         this.endpoint = endpoint;
@@ -32,6 +33,7 @@ public class EndpointPermission {
         this.sequence = sequence;
         this.type = type;
         this.permittedMethods = permittedMethods;
+        this.group = group;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -46,6 +48,9 @@ public class EndpointPermission {
         if (type == null) {
             throw new DomainException("EndpointPermission type cannot be null");
         }
+        if (group == null || group.isBlank()) {
+            throw new DomainException("EndpointPermission group cannot be empty");
+        }
     }
 
     public boolean matchesRequest(String method, String path) {
@@ -59,13 +64,14 @@ public class EndpointPermission {
     }
 
     public void update(String endpoint, String name, String icon, Integer sequence,
-                       EndpointPermissionType type, String permittedMethods) {
+                       EndpointPermissionType type, String permittedMethods, String group) {
         this.endpoint = endpoint;
         this.name = name;
         this.icon = icon;
         this.sequence = sequence;
         this.type = type;
         this.permittedMethods = permittedMethods;
+        this.group = group;
         this.updatedAt = Instant.now();
     }
 
@@ -91,6 +97,8 @@ public class EndpointPermission {
     public void setType(EndpointPermissionType type) { this.type = type; }
     public String getPermittedMethods() { return permittedMethods; }
     public void setPermittedMethods(String permittedMethods) { this.permittedMethods = permittedMethods; }
+    public String getGroup() { return group; }
+    public void setGroup(String group) { this.group = group; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

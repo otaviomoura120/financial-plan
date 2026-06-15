@@ -39,7 +39,7 @@ class SecurityServiceSpec extends Specification {
 
     private EndpointPermission buildPermission(String endpoint, String methods) {
         new EndpointPermission(1L, 0, endpoint, "Test", null, 1, EndpointPermissionType.API,
-                methods, Instant.now(), null)
+                methods, "Test", Instant.now(), null)
     }
 
     def "returns false when user is not found in database"() {

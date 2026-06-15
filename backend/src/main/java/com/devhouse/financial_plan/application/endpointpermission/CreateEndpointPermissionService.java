@@ -31,7 +31,7 @@ public class CreateEndpointPermissionService {
 
     public EndpointPermissionResponse execute(CreateEndpointPermissionRequest request) {
         EndpointPermission permission = new EndpointPermission(null, 0, request.endpoint(), request.name(),
-                request.icon(), request.sequence(), request.type(), request.permittedMethods(), Instant.now(), null);
+                request.icon(), request.sequence(), request.type(), request.permittedMethods(), request.group(), Instant.now(), null);
         permission.validate();
         EndpointPermission saved = endpointPermissionRepository.save(permission);
         createDefaultPermissions(saved);
@@ -50,7 +50,7 @@ public class CreateEndpointPermissionService {
     private EndpointPermissionResponse toResponse(EndpointPermission p) {
         return new EndpointPermissionResponse(
                 p.getId(), p.getVersion(), p.getEndpoint(), p.getName(), p.getIcon(),
-                p.getSequence(), p.getType(), p.getPermittedMethods(),
+                p.getSequence(), p.getType(), p.getPermittedMethods(), p.getGroup(),
                 p.getCreatedAt(), p.getUpdatedAt()
         );
     }

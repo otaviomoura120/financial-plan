@@ -22,31 +22,31 @@
 -- =============================================================================
 
 INSERT INTO endpoint_permissions
-    (version, endpoint, name, sequence, type, permitted_methods, created_at, updated_at)
+    (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
 VALUES
 
 -- IndexController — GET /
-(1, '/',                                      'Página Inicial',             1,  'API', 'GET',        NOW(), NOW()),
+(1, '/',                                      'Página Inicial',             1,  'API', 'GET',        'Geral',     NOW(), NOW()),
 
 -- RoleController — /roles
-(1, '/roles',                                 'Listar Funções',             10, 'API', 'GET',        NOW(), NOW()),
-(1, '/roles',                                 'Criar Função',               11, 'API', 'POST',       NOW(), NOW()),
-(1, '/roles/[0-9]+',                          'Gerenciar Função',           12, 'API', 'PUT,DELETE', NOW(), NOW()),
-(1, '/roles/[0-9]+/assign-user/[0-9]+',       'Atribuir Função a Usuário',  13, 'API', 'PUT',        NOW(), NOW()),
-(1, '/roles/[0-9]+/permissions',              'Listar Permissões da Função',14, 'API', 'GET',        NOW(), NOW()),
-(1, '/roles/[0-9]+/permissions/[0-9]+',       'Alterar Acesso da Função',   15, 'API', 'PATCH',      NOW(), NOW()),
+(1, '/roles',                                 'Listar Funções',             10, 'API', 'GET',        'Role',      NOW(), NOW()),
+(1, '/roles',                                 'Criar Função',               11, 'API', 'POST',       'Role',      NOW(), NOW()),
+(1, '/roles/[0-9]+',                          'Gerenciar Função',           12, 'API', 'PUT,DELETE', 'Role',      NOW(), NOW()),
+(1, '/roles/[0-9]+/assign-user/[0-9]+',       'Atribuir Função a Usuário',  13, 'API', 'PUT',        'Role',      NOW(), NOW()),
+(1, '/roles/[0-9]+/permissions',              'Listar Permissões da Função',14, 'API', 'GET',        'Role',      NOW(), NOW()),
+(1, '/roles/[0-9]+/permissions/[0-9]+',       'Alterar Acesso da Função',   15, 'API', 'PATCH',      'Role',      NOW(), NOW()),
 
 -- EndpointPermissionController — /endpoint-permissions
-(1, '/endpoint-permissions',                  'Listar Permissões',          20, 'API', 'GET',        NOW(), NOW()),
-(1, '/endpoint-permissions',                  'Criar Permissão',            21, 'API', 'POST',       NOW(), NOW()),
-(1, '/endpoint-permissions/[0-9]+',           'Gerenciar Permissão',        22, 'API', 'PUT,DELETE', NOW(), NOW()),
+(1, '/endpoint-permissions',                  'Listar Permissões',          20, 'API', 'GET',        'Permissão', NOW(), NOW()),
+(1, '/endpoint-permissions',                  'Criar Permissão',            21, 'API', 'POST',       'Permissão', NOW(), NOW()),
+(1, '/endpoint-permissions/[0-9]+',           'Gerenciar Permissão',        22, 'API', 'PUT,DELETE', 'Permissão', NOW(), NOW()),
 
 -- GroupMenuController — /group-menus
-(1, '/group-menus',                           'Listar Grupos de Menu',      30, 'API', 'GET',        NOW(), NOW()),
-(1, '/group-menus',                           'Criar Grupo de Menu',        31, 'API', 'POST',       NOW(), NOW()),
-(1, '/group-menus/[0-9]+',                    'Gerenciar Grupo de Menu',    32, 'API', 'PUT,DELETE', NOW(), NOW()),
-(1, '/group-menus/[0-9]+/children',           'Adicionar Item ao Menu',     33, 'API', 'POST',       NOW(), NOW()),
-(1, '/group-menus/children/[0-9]+',           'Gerenciar Item do Menu',     34, 'API', 'PUT,DELETE', NOW(), NOW());
+(1, '/group-menus',                           'Listar Grupos de Menu',      30, 'API', 'GET',        'Menu',      NOW(), NOW()),
+(1, '/group-menus',                           'Criar Grupo de Menu',        31, 'API', 'POST',       'Menu',      NOW(), NOW()),
+(1, '/group-menus/[0-9]+',                    'Gerenciar Grupo de Menu',    32, 'API', 'PUT,DELETE', 'Menu',      NOW(), NOW()),
+(1, '/group-menus/[0-9]+/children',           'Adicionar Item ao Menu',     33, 'API', 'POST',       'Menu',      NOW(), NOW()),
+(1, '/group-menus/children/[0-9]+',           'Gerenciar Item do Menu',     34, 'API', 'PUT,DELETE', 'Menu',      NOW(), NOW());
 
 
 -- =============================================================================
@@ -58,20 +58,20 @@ VALUES
 -- =============================================================================
 
 INSERT INTO endpoint_permissions
-    (version, endpoint, name, sequence, type, permitted_methods, created_at, updated_at)
+    (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
 VALUES
 
-(1, '/',                    'Início',                1,  'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/transactions',        'Transações',            2,  'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/reports',             'Relatórios',            3,  'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/bank-accounts',       'Contas Bancárias',      4,  'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/payment-methods',     'Formas de Pagamento',   5,  'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/categories',          'Categorias',            6,  'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/users',               'Usuários',              7,  'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/spaces',              'Espaços',               8,  'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/roles',               'Funções',               9,  'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/endpoint-permissions','Permissões de Acesso',  10, 'FRONT_PAGE', 'GET', NOW(), NOW()),
-(1, '/group-menus',         'Estrutura de Menu',     11, 'FRONT_PAGE', 'GET', NOW(), NOW());
+(1, '/',                    'Início',                1,  'FRONT_PAGE', 'GET', 'Dashboard',    NOW(), NOW()),
+(1, '/transactions',        'Transações',            2,  'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
+(1, '/reports',             'Relatórios',            3,  'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
+(1, '/bank-accounts',       'Contas Bancárias',      4,  'FRONT_PAGE', 'GET', 'Conta',        NOW(), NOW()),
+(1, '/payment-methods',     'Formas de Pagamento',   5,  'FRONT_PAGE', 'GET', 'Conta',        NOW(), NOW()),
+(1, '/categories',          'Categorias',            6,  'FRONT_PAGE', 'GET', 'Configuração', NOW(), NOW()),
+(1, '/users',               'Usuários',              7,  'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
+(1, '/spaces',              'Espaços',               8,  'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
+(1, '/roles',               'Funções',               9,  'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
+(1, '/endpoint-permissions','Permissões de Acesso',  10, 'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
+(1, '/group-menus',         'Estrutura de Menu',     11, 'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW());
 
 
 -- =============================================================================

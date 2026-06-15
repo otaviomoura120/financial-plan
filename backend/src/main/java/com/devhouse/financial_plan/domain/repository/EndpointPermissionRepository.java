@@ -13,5 +13,6 @@ public interface EndpointPermissionRepository {
     List<EndpointPermission> findAll();
     List<EndpointPermission> findByType(EndpointPermissionType type);
     List<EndpointPermission> findAllOrderedBySequence();
+    List<EndpointPermission> findByGroup(String group);
     void delete(Long id);
 }
