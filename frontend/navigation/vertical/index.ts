@@ -10,6 +10,11 @@ export default [
     icon: { icon: 'tabler-file' },
   },
   {
+    title: 'Espaços',
+    to: { name: 'spaces' },
+    icon: { icon: 'tabler-building' },
+  },
+  {
     title: 'Roles',
     to: { name: 'roles' },
     icon: { icon: 'tabler-shield-lock' },

@@ -17,7 +17,10 @@ import com.devhouse.financial_plan.application.space.dto.SpaceMemberResponse;
 import com.devhouse.financial_plan.application.space.dto.SpaceResponse;
 import com.devhouse.financial_plan.application.space.dto.UpdateSpaceMemberRequest;
 import com.devhouse.financial_plan.application.space.dto.UpdateSpaceRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -64,52 +67,68 @@ public class SpaceController {
     }
 
     @PutMapping("/{id}")
-    public SpaceResponse update(@PathVariable Long id, @RequestBody UpdateSpaceRequest request) {
-        return updateSpaceService.execute(id, request);
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #id)")
+    public SpaceResponse update(@PathVariable Long id, @RequestBody UpdateSpaceRequest body,
+                                Authentication authentication, HttpServletRequest request) {
+        return updateSpaceService.execute(id, body);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #id)")
+    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
         deleteSpaceService.execute(id);
     }
 
     @GetMapping("/user/{userId}")
-    public List<SpaceResponse> listByUser(@PathVariable Long userId) {
+    @PreAuthorize("@securityService.isSelf(authentication, #userId)")
+    public List<SpaceResponse> listByUser(@PathVariable Long userId, Authentication authentication) {
         return listUserSpacesService.execute(userId);
     }
 
     @DeleteMapping("/{id}/members/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeMember(@PathVariable Long id, @PathVariable Long userId) {
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #id)")
+    public void removeMember(@PathVariable Long id, @PathVariable Long userId,
+                             Authentication authentication, HttpServletRequest request) {
         removeSpaceMemberService.execute(id, userId);
     }
 
     @GetMapping("/{id}/members")
-    public List<SpaceMemberResponse> listMembers(@PathVariable Long id) {
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #id)")
+    public List<SpaceMemberResponse> listMembers(@PathVariable Long id,
+                                                 Authentication authentication, HttpServletRequest request) {
         return listSpaceMembersService.execute(id);
     }
 
     @PutMapping("/{id}/members/{userId}")
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #id)")
     public SpaceMemberResponse updateMemberRole(@PathVariable Long id, @PathVariable Long userId,
-                                                @RequestBody UpdateSpaceMemberRequest request) {
-        return updateSpaceMemberRoleService.execute(id, userId, request);
+                                                @RequestBody UpdateSpaceMemberRequest body,
+                                                Authentication authentication, HttpServletRequest request) {
+        return updateSpaceMemberRoleService.execute(id, userId, body);
     }
 
     @PostMapping("/{id}/invites")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void inviteMember(@PathVariable Long id, @RequestBody InviteRequest request) {
-        inviteSpaceMemberService.execute(id, request);
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #id)")
+    public void inviteMember(@PathVariable Long id, @RequestBody InviteRequest body,
+                             Authentication authentication, HttpServletRequest request) {
+        inviteSpaceMemberService.execute(id, body);
     }
 
     @GetMapping("/{id}/invites")
-    public List<SpaceInviteResponse> listInvites(@PathVariable Long id) {
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #id)")
+    public List<SpaceInviteResponse> listInvites(@PathVariable Long id,
+                                                 Authentication authentication, HttpServletRequest request) {
         return listSpaceInvitesService.execute(id);
     }
 
     @DeleteMapping("/{id}/invites/{inviteId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void cancelInvite(@PathVariable Long id, @PathVariable Long inviteId) {
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #id)")
+    public void cancelInvite(@PathVariable Long id, @PathVariable Long inviteId,
+                             Authentication authentication, HttpServletRequest request) {
         cancelSpaceInviteService.execute(id, inviteId);
     }
 }

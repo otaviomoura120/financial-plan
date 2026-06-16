@@ -46,7 +46,16 @@ VALUES
 (1, '/group-menus',                           'Criar Grupo de Menu',        31, 'API', 'POST',       'internal_management', NOW(), NOW()),
 (1, '/group-menus/[0-9]+',                    'Gerenciar Grupo de Menu',    32, 'API', 'PUT,DELETE', 'internal_management', NOW(), NOW()),
 (1, '/group-menus/[0-9]+/children',           'Adicionar Item ao Menu',     33, 'API', 'POST',       'internal_management', NOW(), NOW()),
-(1, '/group-menus/children/[0-9]+',           'Gerenciar Item do Menu',     34, 'API', 'PUT,DELETE', 'internal_management', NOW(), NOW());
+(1, '/group-menus/children/[0-9]+',           'Gerenciar Item do Menu',     34, 'API', 'PUT,DELETE', 'internal_management', NOW(), NOW()),
+
+-- SpaceController — /spaces
+(1, '/spaces/[0-9]+',                         'Gerenciar Espaço',           40, 'API', 'PUT,DELETE',     'Espaço', NOW(), NOW()),
+(1, '/spaces/user/[0-9]+',                    'Listar Espaços do Usuário',  41, 'API', 'GET',            'Espaço', NOW(), NOW()),
+(1, '/spaces/[0-9]+/members',                 'Listar Membros do Espaço',   42, 'API', 'GET',            'Espaço', NOW(), NOW()),
+(1, '/spaces/[0-9]+/members/[0-9]+',          'Gerenciar Membros do Espaço',43, 'API', 'PUT,DELETE',     'Espaço', NOW(), NOW()),
+(1, '/spaces/[0-9]+/invites',                 'Listar Convites do Espaço',  44, 'API', 'GET',            'Espaço', NOW(), NOW()),
+(1, '/spaces/[0-9]+/invites',                 'Convidar para Espaço',       45, 'API', 'POST',           'Espaço', NOW(), NOW()),
+(1, '/spaces/[0-9]+/invites/[0-9]+',          'Cancelar Convite do Espaço', 46, 'API', 'DELETE',         'Espaço', NOW(), NOW());
 
 
 -- =============================================================================
@@ -150,7 +159,8 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name IN ('Página Inicial', 'Listar Funções', 'Transações', 'Relatórios',
-                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias')
+                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias',
+                   'Listar Espaços do Usuário', 'Listar Membros do Espaço', 'Listar Convites do Espaço')
 WHERE r.name = 'ADMIN';
 
 -- ADMIN: DENY para o restante
@@ -158,7 +168,8 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'DENY', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name NOT IN ('Página Inicial', 'Listar Funções', 'Transações', 'Relatórios',
-                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias')
+                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias',
+                       'Listar Espaços do Usuário', 'Listar Membros do Espaço', 'Listar Convites do Espaço')
 WHERE r.name = 'ADMIN';
 
 -- MEMBER: acesso às permissões básicas (API)
@@ -166,7 +177,8 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name IN ('Página Inicial', 'Transações', 'Relatórios',
-                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias')
+                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias',
+                   'Listar Espaços do Usuário', 'Listar Membros do Espaço')
 WHERE r.name = 'MEMBER';
 
 -- MEMBER: DENY para o restante
@@ -174,7 +186,8 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'DENY', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name NOT IN ('Página Inicial', 'Transações', 'Relatórios',
-                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias')
+                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias',
+                       'Listar Espaços do Usuário', 'Listar Membros do Espaço')
 WHERE r.name = 'MEMBER';
 
 -- =============================================================================
