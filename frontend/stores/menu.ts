@@ -29,10 +29,10 @@ export const useMenuStore = defineStore('menu', () => {
     })),
   )
 
-  async function fetchMenuStructure() {
+  async function fetchMenuStructure(spaceId: number) {
     loading.value = true
     try {
-      items.value = await $fetch<GroupMenu[]>('/api/menu-structure')
+      items.value = await $fetch<GroupMenu[]>('/api/menu-structure', { query: { spaceId } })
     }
     finally {
       loading.value = false

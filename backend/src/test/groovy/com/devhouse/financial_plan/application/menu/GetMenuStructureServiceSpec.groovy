@@ -30,8 +30,8 @@ class GetMenuStructureServiceSpec extends Specification {
                 null, "john@test.com", null, true, null, null, Instant.now(), null, masterAdmin)
     }
 
-    private SpaceMember buildMemberWithRole(Long roleId, String roleName) {
-        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+    private SpaceMember buildMemberWithRole(Long roleId, String roleName, Long spaceId = 1L) {
+        Space space = new Space(spaceId, 0, "My Space", null, Instant.now(), null)
         Role role = new Role(roleId, 0, space, roleName, "desc", Instant.now(), null)
         new SpaceMember(1L, space, buildUser(), role, Instant.now())
     }
@@ -55,7 +55,7 @@ class GetMenuStructureServiceSpec extends Specification {
         userRepository.findByAuth0Sub("auth0|unknown") >> null
 
         when:
-        List<GroupMenuStructureDto> result = service.execute("auth0|unknown")
+        List<GroupMenuStructureDto> result = service.execute("auth0|unknown", 1L)
 
         then:
         result.isEmpty()
@@ -64,13 +64,27 @@ class GetMenuStructureServiceSpec extends Specification {
         0 * groupMenuRepository._
     }
 
-    def "returns empty list when user has no space memberships"() {
+    def "returns empty list when spaceId is null"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> []
 
         when:
-        List<GroupMenuStructureDto> result = service.execute("auth0|abc")
+        List<GroupMenuStructureDto> result = service.execute("auth0|abc", null)
+
+        then:
+        result.isEmpty()
+        0 * spaceMemberRepository._
+        0 * roleEndpointPermissionRepository._
+        0 * groupMenuRepository._
+    }
+
+    def "returns empty list when user is not a member of the requested space"() {
+        given:
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> null
+
+        when:
+        List<GroupMenuStructureDto> result = service.execute("auth0|abc", 1L)
 
         then:
         result.isEmpty()
@@ -81,7 +95,7 @@ class GetMenuStructureServiceSpec extends Specification {
     def "returns full menu when all children are permitted"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
                 buildFrontPagePermission("/finance/transactions")
@@ -89,7 +103,7 @@ class GetMenuStructureServiceSpec extends Specification {
         groupMenuRepository.findAllWithChildren() >> [buildGroupMenu(["/finance/transactions"])]
 
         when:
-        List<GroupMenuStructureDto> result = service.execute("auth0|abc")
+        List<GroupMenuStructureDto> result = service.execute("auth0|abc", 1L)
 
         then:
         result.size() == 1
@@ -101,7 +115,7 @@ class GetMenuStructureServiceSpec extends Specification {
     def "filters out children not matching any permitted permission"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
                 buildFrontPagePermission("/finance/transactions")
@@ -111,7 +125,7 @@ class GetMenuStructureServiceSpec extends Specification {
         ]
 
         when:
-        List<GroupMenuStructureDto> result = service.execute("auth0|abc")
+        List<GroupMenuStructureDto> result = service.execute("auth0|abc", 1L)
 
         then:
         result.size() == 1
@@ -122,7 +136,7 @@ class GetMenuStructureServiceSpec extends Specification {
     def "excludes groups where no children are accessible"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "MEMBER")]
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "MEMBER")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> []
         groupMenuRepository.findAllWithChildren() >> [
@@ -130,7 +144,7 @@ class GetMenuStructureServiceSpec extends Specification {
         ]
 
         when:
-        List<GroupMenuStructureDto> result = service.execute("auth0|abc")
+        List<GroupMenuStructureDto> result = service.execute("auth0|abc", 1L)
 
         then:
         result.isEmpty()
@@ -139,7 +153,7 @@ class GetMenuStructureServiceSpec extends Specification {
     def "hides internal_management menu items for non-MASTER_ADMIN users"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser(false)
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
                 buildFrontPagePermission("/finance/transactions"),
@@ -150,7 +164,7 @@ class GetMenuStructureServiceSpec extends Specification {
         ]
 
         when:
-        List<GroupMenuStructureDto> result = service.execute("auth0|abc")
+        List<GroupMenuStructureDto> result = service.execute("auth0|abc", 1L)
 
         then:
         result.size() == 1
@@ -161,7 +175,7 @@ class GetMenuStructureServiceSpec extends Specification {
     def "shows internal_management menu items for MASTER_ADMIN users"() {
         given:
         userRepository.findByAuth0Sub("auth0|master") >> buildUser(true)
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
                 buildFrontPagePermission("/finance/transactions"),
@@ -172,7 +186,7 @@ class GetMenuStructureServiceSpec extends Specification {
         ]
 
         when:
-        List<GroupMenuStructureDto> result = service.execute("auth0|master")
+        List<GroupMenuStructureDto> result = service.execute("auth0|master", 1L)
 
         then:
         result.size() == 1
@@ -182,7 +196,7 @@ class GetMenuStructureServiceSpec extends Specification {
     def "uses regex pattern matching for endpoints"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
                 buildFrontPagePermission("/finance/.*")
@@ -192,11 +206,29 @@ class GetMenuStructureServiceSpec extends Specification {
         ]
 
         when:
-        List<GroupMenuStructureDto> result = service.execute("auth0|abc")
+        List<GroupMenuStructureDto> result = service.execute("auth0|abc", 1L)
 
         then:
         result.size() == 1
         result[0].children().size() == 2
         result[0].children()*.endpoint().containsAll(["/finance/transactions", "/finance/reports"])
+    }
+
+    def "uses the role from the requested space, not other spaces the user belongs to"() {
+        given:
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findBySpaceIdAndUserId(2L, 1L) >> buildMemberWithRole(20L, "MEMBER", 2L)
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [20L] as Set, EndpointPermissionType.FRONT_PAGE) >> []
+        groupMenuRepository.findAllWithChildren() >> [
+                buildGroupMenu(["/finance/transactions"])
+        ]
+
+        when:
+        List<GroupMenuStructureDto> result = service.execute("auth0|abc", 2L)
+
+        then:
+        result.isEmpty()
+        0 * spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L)
     }
 }

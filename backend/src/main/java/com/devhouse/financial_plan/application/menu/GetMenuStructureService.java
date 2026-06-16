@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class GetMenuStructureService {
@@ -36,20 +35,21 @@ public class GetMenuStructureService {
         this.groupMenuRepository = groupMenuRepository;
     }
 
-    public List<GroupMenuStructureDto> execute(String auth0Sub) {
+    public List<GroupMenuStructureDto> execute(String auth0Sub, Long spaceId) {
         User user = userRepository.findByAuth0Sub(auth0Sub);
         if (user == null) {
             return List.of();
         }
 
-        List<SpaceMember> memberships = spaceMemberRepository.findByUserId(user.getId());
-        if (memberships.isEmpty()) {
+        SpaceMember membership = spaceId != null
+                ? spaceMemberRepository.findBySpaceIdAndUserId(spaceId, user.getId())
+                : null;
+        if (membership == null) {
             return List.of();
         }
 
-        Set<Long> roleIds = extractRoleIds(memberships);
         List<EndpointPermission> allPermittedRules = roleEndpointPermissionRepository
-                .findAllowedEndpointPermissionsByRoleIdsAndType(roleIds, EndpointPermissionType.FRONT_PAGE);
+                .findAllowedEndpointPermissionsByRoleIdsAndType(Set.of(membership.getRole().getId()), EndpointPermissionType.FRONT_PAGE);
         List<EndpointPermission> permittedPageRules = filterByMasterAdmin(user, allPermittedRules);
 
         List<GroupMenu> menus = groupMenuRepository.findAllWithChildren();
@@ -65,12 +65,6 @@ public class GetMenuStructureService {
             return rules;
         }
         return rules.stream().filter(p -> !p.isInternalManagement()).toList();
-    }
-
-    private Set<Long> extractRoleIds(List<SpaceMember> memberships) {
-        return memberships.stream()
-                .map(m -> m.getRole().getId())
-                .collect(Collectors.toSet());
     }
 
     private GroupMenuStructureDto buildStructure(GroupMenu menu, List<EndpointPermission> permittedRules) {

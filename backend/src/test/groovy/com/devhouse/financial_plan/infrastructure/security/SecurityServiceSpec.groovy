@@ -8,6 +8,7 @@ import com.devhouse.financial_plan.domain.User
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionType
 import com.devhouse.financial_plan.domain.repository.EndpointPermissionRepository
 import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository
+import com.devhouse.financial_plan.domain.repository.RoleRepository
 import com.devhouse.financial_plan.domain.repository.SpaceMemberRepository
 import com.devhouse.financial_plan.domain.repository.UserRepository
 import jakarta.servlet.http.HttpServletRequest
@@ -22,8 +23,9 @@ class SecurityServiceSpec extends Specification {
     SpaceMemberRepository spaceMemberRepository = Mock()
     RoleEndpointPermissionRepository roleEndpointPermissionRepository = Mock()
     EndpointPermissionRepository endpointPermissionRepository = Mock()
+    RoleRepository roleRepository = Mock()
     SecurityService securityService = new SecurityService(userRepository, spaceMemberRepository,
-            roleEndpointPermissionRepository, endpointPermissionRepository)
+            roleEndpointPermissionRepository, endpointPermissionRepository, roleRepository)
 
     Authentication authentication = Mock()
     HttpServletRequest request = Mock()
@@ -191,6 +193,82 @@ class SecurityServiceSpec extends Specification {
         result == false
         0 * spaceMemberRepository._
         0 * roleEndpointPermissionRepository._
+    }
+
+    def "userHasPermissionInSpace returns false when spaceId is null"() {
+        when:
+        boolean result = securityService.userHasPermissionInSpace(authentication, request, null)
+
+        then:
+        result == false
+        0 * userRepository._
+    }
+
+    def "userHasPermissionInSpace returns false when user is not a member of that space"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> null
+
+        when:
+        boolean result = securityService.userHasPermissionInSpace(authentication, request, 1L)
+
+        then:
+        result == false
+        0 * roleEndpointPermissionRepository._
+    }
+
+    def "userHasPermissionInSpace only considers the role held in that specific space"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "MEMBER")
+        request.getMethod() >> "GET"
+        request.getRequestURI() >> "/roles"
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.API) >> [
+                buildPermission("/roles.*", "GET,POST")
+        ]
+
+        when:
+        boolean result = securityService.userHasPermissionInSpace(authentication, request, 1L)
+
+        then:
+        result == true
+    }
+
+    def "userHasPermissionForRole resolves the space from the role and delegates to userHasPermissionInSpace"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        Role role = new Role(99L, 0, space, "ADMIN", "desc", Instant.now(), null)
+        roleRepository.findById(99L) >> role
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
+        request.getMethod() >> "DELETE"
+        request.getRequestURI() >> "/roles/99"
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.API) >> [
+                buildPermission("/roles/[0-9]+", "DELETE")
+        ]
+
+        when:
+        boolean result = securityService.userHasPermissionForRole(authentication, request, 99L)
+
+        then:
+        result == true
+    }
+
+    def "userHasPermissionForRole returns false when the role does not exist"() {
+        given:
+        roleRepository.findById(404L) >> null
+
+        when:
+        boolean result = securityService.userHasPermissionForRole(authentication, request, 404L)
+
+        then:
+        result == false
+        0 * userRepository._
     }
 
     def "isSelf returns true when authenticated user id matches the given id"() {

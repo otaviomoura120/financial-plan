@@ -24,7 +24,7 @@ const { checkAndRedirect, error: onboardingError, clearError: clearOnboardingErr
 
 watch(
   user,
-  async (u) => {
+  async u => {
     if (u) {
       if (!spaceStore.activeSpace)
         await checkAndRedirect()
@@ -37,9 +37,11 @@ watch(
 
 watch(
   () => spaceStore.activeSpace,
-  (space) => {
+  space => {
     if (space)
-      menuStore.fetchMenuStructure()
+      menuStore.fetchMenuStructure(space.id)
+    else
+      menuStore.reset()
   },
   { immediate: true },
 )
@@ -50,7 +52,11 @@ watch(
     v-bind="layoutAttrs"
     :is="configStore.appContentLayoutNav === AppContentLayoutNav.Vertical ? DefaultLayoutWithVerticalNav : DefaultLayoutWithHorizontalNav"
   >
-    <ApiErrorAlert :error="onboardingError" closable @dismiss="clearOnboardingError" />
+    <ApiErrorAlert
+      :error="onboardingError"
+      closable
+      @dismiss="clearOnboardingError"
+    />
     <slot />
   </Component>
 </template>

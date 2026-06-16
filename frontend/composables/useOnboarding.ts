@@ -17,23 +17,30 @@ export function useOnboarding() {
     try {
       const result = await $fetch<OnboardingCheckResult>('/api/onboarding/check')
 
-      switch (result.status) {
-        case 'new_user':
-          await navigateTo('/onboarding/profile')
-          break
-        case 'no_spaces':
-          spaceStore.setDbUser(result.user)
-          await navigateTo('/onboarding/space')
-          break
-        case 'one_space':
-          spaceStore.setDbUser(result.user)
-          spaceStore.setActiveSpace(result.spaces[0])
-          break
-        case 'multiple_spaces':
-          spaceStore.setDbUser(result.user)
+      if (result.status === 'new_user') {
+        await navigateTo('/onboarding/profile')
+      }
+      else if (result.status === 'no_spaces') {
+        spaceStore.setDbUser(result.user)
+        await navigateTo('/onboarding/space')
+      }
+      else if (result.status === 'one_space') {
+        spaceStore.setDbUser(result.user)
+        spaceStore.setActiveSpace(result.spaces[0])
+      }
+      else if (result.status === 'multiple_spaces') {
+        spaceStore.setDbUser(result.user)
+
+        const savedSpaceId = useCookie<number | null>('activeSpaceId').value
+        const savedSpace = result.spaces.find(s => s.id === savedSpaceId)
+
+        if (savedSpace) {
+          spaceStore.setActiveSpace(savedSpace)
+        }
+        else {
           spaceStore.setAvailableSpaces(result.spaces)
           await navigateTo('/onboarding/select-space')
-          break
+        }
       }
     }
     catch (e) {

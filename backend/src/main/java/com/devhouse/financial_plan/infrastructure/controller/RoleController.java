@@ -48,39 +48,39 @@ public class RoleController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #body.spaceId())")
     public RoleResponse create(@RequestBody CreateRoleRequest body, Authentication authentication, HttpServletRequest request) {
         return createRoleService.execute(body);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    @PreAuthorize("@securityService.userHasPermissionForRole(authentication, #request, #id)")
     public RoleResponse update(@PathVariable Long id, @RequestBody UpdateRoleRequest body, Authentication authentication, HttpServletRequest request) {
         return updateRoleService.execute(id, body);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    @PreAuthorize("@securityService.userHasPermissionForRole(authentication, #request, #id)")
     public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
         deleteRoleService.execute(id);
     }
 
     @GetMapping
-    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #spaceId)")
     public List<RoleResponse> getBySpace(@RequestParam Long spaceId, Authentication authentication, HttpServletRequest request) {
         return getRolesBySpaceService.execute(spaceId);
     }
 
     @PutMapping("/{id}/assign-user/{userId}")
-    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    @PreAuthorize("@securityService.userHasPermissionInSpace(authentication, #request, #spaceId)")
     public void assignRole(@PathVariable Long id, @PathVariable Long userId, @RequestParam Long spaceId,
                            Authentication authentication, HttpServletRequest request) {
         assignRoleToUserService.execute(userId, id, spaceId);
     }
 
     @GetMapping("/{id}/permissions")
-    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    @PreAuthorize("@securityService.userHasPermissionForRole(authentication, #request, #id)")
     public List<RoleEndpointPermissionResponse> getPermissions(@PathVariable Long id,
                                                                 Authentication authentication,
                                                                 HttpServletRequest request) {
@@ -88,7 +88,7 @@ public class RoleController {
     }
 
     @PatchMapping("/{id}/permissions/{permissionId}")
-    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    @PreAuthorize("@securityService.userHasPermissionForRole(authentication, #request, #id)")
     public void updatePermissionAccess(@PathVariable Long id, @PathVariable Long permissionId,
                                        @RequestBody UpdateRolePermissionAccessRequest body,
                                        Authentication authentication, HttpServletRequest request) {

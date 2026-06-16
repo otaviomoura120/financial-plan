@@ -34,6 +34,7 @@ export const useSpaceStore = defineStore('space', () => {
 
   function setActiveSpace(s: Space) {
     activeSpace.value = s
+    useCookie<number | null>('activeSpaceId').value = s.id
   }
 
   function setAvailableSpaces(list: Space[]) {
@@ -44,6 +45,7 @@ export const useSpaceStore = defineStore('space', () => {
     dbUser.value = null
     activeSpace.value = null
     availableSpaces.value = []
+    useCookie<number | null>('activeSpaceId').value = null
   }
 
   return { dbUser, activeSpace, availableSpaces, setDbUser, updateDbUser, setActiveSpace, setAvailableSpaces, reset }
