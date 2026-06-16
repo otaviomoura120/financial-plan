@@ -192,4 +192,40 @@ class SecurityServiceSpec extends Specification {
         0 * spaceMemberRepository._
         0 * roleEndpointPermissionRepository._
     }
+
+    def "isSelf returns true when authenticated user id matches the given id"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+
+        when:
+        boolean result = securityService.isSelf(authentication, 1L)
+
+        then:
+        result == true
+    }
+
+    def "isSelf returns false when authenticated user id does not match the given id"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+
+        when:
+        boolean result = securityService.isSelf(authentication, 2L)
+
+        then:
+        result == false
+    }
+
+    def "isSelf returns false when authenticated user is not found"() {
+        given:
+        authentication.getName() >> "auth0|unknown"
+        userRepository.findByAuth0Sub("auth0|unknown") >> null
+
+        when:
+        boolean result = securityService.isSelf(authentication, 1L)
+
+        then:
+        result == false
+    }
 }

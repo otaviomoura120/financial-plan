@@ -21,6 +21,17 @@ interface SpaceInviteResponse {
   expiresAt: string
 }
 
+interface OwnProfileResponse {
+  id: number
+  name: string
+  email: string
+  nickname: string | null
+  phoneNumber: string | null
+  birthdate: string | null
+  genre: string | null
+  maritalStatus: string | null
+}
+
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 const { error: inviteError, setError: setInviteError, clearError: clearInviteError } = useApiError()
@@ -39,6 +50,7 @@ const isCancellingInvite = shallowRef<number | null>(null)
 const isAddDialogVisible = shallowRef(false)
 const isEditDialogVisible = shallowRef(false)
 const isRemoveDialogVisible = shallowRef(false)
+const isEditProfileDialogVisible = shallowRef(false)
 const selectedMember = shallowRef<SpaceMemberResponse | null>(null)
 
 const filteredMembers = computed(() =>
@@ -105,6 +117,10 @@ function openRemove(member: SpaceMemberResponse) {
   isRemoveDialogVisible.value = true
 }
 
+function isCurrentUser(member: SpaceMemberResponse) {
+  return spaceStore.dbUser?.id === member.userId
+}
+
 async function onRemoveConfirm(confirmed: boolean) {
   if (!confirmed || !selectedMember.value || !spaceStore.activeSpace)
     return
@@ -133,6 +149,23 @@ function onMemberSaved(updated: SpaceMemberResponse) {
 
   if (idx >= 0)
     members.value[idx] = updated
+}
+
+function onProfileSaved(profile: OwnProfileResponse) {
+  spaceStore.updateDbUser({
+    id: profile.id,
+    name: profile.name,
+    nickname: profile.nickname,
+    phoneNumber: profile.phoneNumber,
+    birthdate: profile.birthdate,
+    genre: profile.genre,
+    maritalStatus: profile.maritalStatus,
+  })
+
+  const idx = members.value.findIndex(m => m.userId === profile.id)
+
+  if (idx >= 0)
+    members.value[idx] = { ...members.value[idx], userName: profile.name }
 }
 
 async function fetchInvites() {
@@ -289,6 +322,20 @@ function formatDate(iso: string) {
                   {{ member.roleName === 'OWNER' ? 'OWNER não pode ser removido' : 'Remover do espaço' }}
                 </VTooltip>
               </VBtn>
+
+              <VBtn
+                v-if="isCurrentUser(member)"
+                icon
+                variant="text"
+                size="small"
+                color="default"
+                @click="isEditProfileDialogVisible = true"
+              >
+                <VIcon icon="tabler-user-edit" />
+                <VTooltip activator="parent">
+                  Editar meus dados
+                </VTooltip>
+              </VBtn>
             </td>
           </tr>
 
@@ -422,6 +469,11 @@ function formatDate(iso: string) {
       v-model:is-dialog-visible="isEditDialogVisible"
       :member="selectedMember"
       @saved="onMemberSaved"
+    />
+
+    <EditOwnProfileDialog
+      v-model:is-dialog-visible="isEditProfileDialogVisible"
+      @saved="onProfileSaved"
     />
 
     <ConfirmDialog

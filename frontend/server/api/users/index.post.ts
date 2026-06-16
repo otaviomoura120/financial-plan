@@ -1,4 +1,4 @@
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async event => {
   const { accessToken } = await useAuth0(event).getAccessToken()
   const session = await useAuth0(event).getSession()
   const config = useRuntimeConfig(event)
@@ -11,6 +11,7 @@ export default defineEventHandler(async (event) => {
     headers: { Authorization: `Bearer ${accessToken}` },
     body: {
       ...body,
+
       // Override any client-provided value with the verified identity from the session
       auth0Sub: session?.user?.sub,
     },

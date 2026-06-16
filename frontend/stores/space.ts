@@ -5,6 +5,11 @@ export interface DbUser {
   id: number
   name: string
   email?: string
+  nickname?: string | null
+  phoneNumber?: string | null
+  birthdate?: string | null
+  genre?: string | null
+  maritalStatus?: string | null
 }
 
 export interface Space {
@@ -22,6 +27,11 @@ export const useSpaceStore = defineStore('space', () => {
     dbUser.value = u
   }
 
+  function updateDbUser(patch: Partial<DbUser>) {
+    if (dbUser.value)
+      dbUser.value = { ...dbUser.value, ...patch }
+  }
+
   function setActiveSpace(s: Space) {
     activeSpace.value = s
   }
@@ -36,5 +46,5 @@ export const useSpaceStore = defineStore('space', () => {
     availableSpaces.value = []
   }
 
-  return { dbUser, activeSpace, availableSpaces, setDbUser, setActiveSpace, setAvailableSpaces, reset }
+  return { dbUser, activeSpace, availableSpaces, setDbUser, updateDbUser, setActiveSpace, setAvailableSpaces, reset }
 })

@@ -58,6 +58,12 @@ public class SecurityService {
         return allowedPermissions.stream().anyMatch(p -> p.matchesRequest(method, path));
     }
 
+    public boolean isSelf(Authentication authentication, Long userId) {
+        User user = userRepository.findByAuth0Sub(authentication.getName());
+
+        return user != null && user.getId().equals(userId);
+    }
+
     private boolean isInternalManagementRequest(String method, String path) {
         List<EndpointPermission> internalPermissions = endpointPermissionRepository
                 .findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP);

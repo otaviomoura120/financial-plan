@@ -12,6 +12,7 @@ import com.devhouse.financial_plan.application.user.dto.UserResponse;
 import com.devhouse.financial_plan.application.user.dto.UserSearchResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,12 +52,14 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("@securityService.isSelf(authentication, #id)")
     public UserResponse update(@PathVariable Long id, @RequestBody UpdateUserRequest request) {
         return updateUserService.execute(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("@securityService.isSelf(authentication, #id)")
     public void delete(@PathVariable Long id) {
         deleteUserService.execute(id);
     }

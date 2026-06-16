@@ -19,6 +19,8 @@ public class FindUserByAuth0SubService {
         if (user == null) {
             return null;
         }
-        return new UserMeResponse(user.getId(), user.getName(), user.getEmail());
+        return new UserMeResponse(user.getId(), user.getName(), user.getEmail(),
+                user.getNickname(), user.getPhoneNumber(), user.getBirthdate(),
+                user.getGenre(), user.getMaritalStatus());
     }
 }

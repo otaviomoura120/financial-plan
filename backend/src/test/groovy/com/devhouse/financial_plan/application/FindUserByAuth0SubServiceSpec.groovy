@@ -16,8 +16,10 @@ class FindUserByAuth0SubServiceSpec extends Specification {
     def "execute returns UserMeResponse when user is found"() {
         given:
         String auth0Sub = "auth0|abc123"
-        User user = new User(1L, 0, auth0Sub, "John Smith", null, null, null,
-                null, "john@example.com", null, true, null, null, Instant.now(), null, false)
+        Instant birthdate = Instant.parse("1990-01-01T00:00:00Z")
+        User user = new User(1L, 0, auth0Sub, "John Smith", "Johnny", null, null,
+                birthdate, "john@example.com", "+5511999999999", true, "Masculino", "Solteiro(a)",
+                Instant.now(), null, false)
         userRepository.findByAuth0Sub(auth0Sub) >> user
 
         when:
@@ -28,6 +30,11 @@ class FindUserByAuth0SubServiceSpec extends Specification {
         response.id() == 1L
         response.name() == "John Smith"
         response.email() == "john@example.com"
+        response.nickname() == "Johnny"
+        response.phoneNumber() == "+5511999999999"
+        response.birthdate() == birthdate
+        response.genre() == "Masculino"
+        response.maritalStatus() == "Solteiro(a)"
     }
 
     def "execute returns null when user is not found"() {

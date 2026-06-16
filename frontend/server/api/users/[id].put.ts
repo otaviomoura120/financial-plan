@@ -1,11 +1,13 @@
 export default defineEventHandler(async event => {
   const { accessToken } = await useAuth0(event).getAccessToken()
   const config = useRuntimeConfig(event)
-  const query = getQuery(event)
+  const id = getRouterParam(event, 'id')
+  const body = await readBody(event)
 
-  return $fetch('/users/search', {
+  return $fetch(`/users/${id}`, {
     baseURL: config.public.apiBaseUrl,
+    method: 'PUT',
     headers: { Authorization: `Bearer ${accessToken}` },
-    query,
+    body,
   })
 })

@@ -61,14 +61,14 @@ public class User {
     public void update(String name, String nickname, String profilePhoto,
                        String observation, Instant birthdate, String phoneNumber,
                        String genre, String maritalStatus) {
-        this.name = name;
-        this.nickname = nickname;
-        this.profilePhoto = profilePhoto;
-        this.observation = observation;
-        this.birthdate = birthdate;
-        this.phoneNumber = phoneNumber;
-        this.genre = genre;
-        this.maritalStatus = maritalStatus;
+        if (name != null) this.name = name;
+        if (nickname != null) this.nickname = nickname;
+        if (profilePhoto != null) this.profilePhoto = profilePhoto;
+        if (observation != null) this.observation = observation;
+        if (birthdate != null) this.birthdate = birthdate;
+        if (phoneNumber != null) this.phoneNumber = phoneNumber;
+        if (genre != null) this.genre = genre;
+        if (maritalStatus != null) this.maritalStatus = maritalStatus;
         this.updatedDate = Instant.now();
     }
 
