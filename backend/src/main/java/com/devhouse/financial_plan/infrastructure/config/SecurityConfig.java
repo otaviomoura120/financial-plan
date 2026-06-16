@@ -25,7 +25,6 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-//                        .requestMatchers("/api/public").permitAll()
                         .requestMatchers("/**").authenticated()
                         .anyRequest().permitAll())
                 .cors((cors) -> cors

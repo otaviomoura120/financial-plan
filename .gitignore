@@ -19,4 +19,5 @@
 /.gradle/
 /.idea/
 /.pnpm-store/
+/frontend/.pnpm-store/
 

@@ -7,6 +7,8 @@ import com.devhouse.financial_plan.infrastructure.repository.jpa.UserEntityJpa;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Component
 @Transactional
 public class UserRepositoryImpl implements UserRepository {
@@ -45,6 +47,12 @@ public class UserRepositoryImpl implements UserRepository {
         return jpaUserRepository.findByAuth0Sub(auth0Sub)
                 .map(this::toDomain)
                 .orElse(null);
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return jpaUserRepository.findByEmail(email)
+                .map(this::toDomain);
     }
 
     @Override

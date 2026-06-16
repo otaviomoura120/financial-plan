@@ -46,7 +46,19 @@ async function submit() {
     })
 
     spaceStore.setDbUser({ id: response.id, name: response.name, email: form.value.email })
-    await navigateTo('/onboarding/space')
+
+    let hasPendingInvites = false
+
+    try {
+      hasPendingInvites = (await $fetch<unknown[]>('/api/invites')).length > 0
+    }
+    catch {
+      // profile was created successfully; a failure checking invites should not block onboarding
+    }
+
+    await navigateTo(hasPendingInvites ? '/invites' : '/onboarding/space')
+
+    return
   }
   catch {
     setError('Falha ao salvar seu perfil. Por favor, tente novamente.')

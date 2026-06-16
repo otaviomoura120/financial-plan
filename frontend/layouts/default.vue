@@ -19,13 +19,18 @@ injectSkinClasses()
 const user = useUser()
 const spaceStore = useSpaceStore()
 const menuStore = useMenuStore()
+const inviteStore = useInviteStore()
 const { checkAndRedirect, error: onboardingError, clearError: clearOnboardingError } = useOnboarding()
 
 watch(
   user,
   async (u) => {
-    if (u && !spaceStore.activeSpace)
-      await checkAndRedirect()
+    if (u) {
+      if (!spaceStore.activeSpace)
+        await checkAndRedirect()
+
+      await inviteStore.fetchPendingInvites()
+    }
   },
   { immediate: true },
 )

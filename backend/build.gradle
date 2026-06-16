@@ -28,6 +28,7 @@ dependencies {
 	implementation 'com.fasterxml.jackson.core:jackson-core:2.22.0'
 	implementation 'org.apache.groovy:groovy:4.0.28'
 	implementation 'com.auth0:auth0-springboot-api:1.0.0-beta.1'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 	testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")

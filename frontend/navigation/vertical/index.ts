@@ -14,4 +14,9 @@ export default [
     to: { name: 'roles' },
     icon: { icon: 'tabler-shield-lock' },
   },
+  {
+    title: 'Usuários',
+    to: { name: 'users' },
+    icon: { icon: 'tabler-users' },
+  },
 ]

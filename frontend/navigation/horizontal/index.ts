@@ -9,4 +9,14 @@ export default [
     to: { name: 'second-page' },
     icon: { icon: 'tabler-file' },
   },
+  {
+    title: 'Roles',
+    to: { name: 'roles' },
+    icon: { icon: 'tabler-shield-lock' },
+  },
+  {
+    title: 'Usuários',
+    to: { name: 'users' },
+    icon: { icon: 'tabler-users' },
+  },
 ]
