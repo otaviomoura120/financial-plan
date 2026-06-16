@@ -30,17 +30,15 @@ export function useOnboarding() {
       }
       else if (result.status === 'multiple_spaces') {
         spaceStore.setDbUser(result.user)
+        spaceStore.setAvailableSpaces(result.spaces)
 
         const savedSpaceId = useCookie<number | null>('activeSpaceId').value
         const savedSpace = result.spaces.find(s => s.id === savedSpaceId)
 
-        if (savedSpace) {
+        if (savedSpace)
           spaceStore.setActiveSpace(savedSpace)
-        }
-        else {
-          spaceStore.setAvailableSpaces(result.spaces)
+        else
           await navigateTo('/onboarding/select-space')
-        }
       }
     }
     catch (e) {

@@ -9008,7 +9008,7 @@ snapshots:
       '@typescript-eslint/types': 6.21.0
       '@typescript-eslint/typescript-estree': 6.21.0(typescript@5.9.3)
       eslint: 8.57.1
-      semver: 7.7.3
+      semver: 7.8.4
     transitivePeerDependencies:
       - supports-color
       - typescript
