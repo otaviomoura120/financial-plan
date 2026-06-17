@@ -1,6 +1,7 @@
 <script setup lang="ts">
 interface SpaceMemberResponse {
   memberId: number
+  version: number
   userId: number
   userName: string
   userEmail: string
@@ -82,7 +83,7 @@ async function onSave() {
       `/api/spaces/${spaceStore.activeSpace.id}/members/${props.member.userId}`,
       {
         method: 'PUT',
-        body: { roleId: selectedRoleId.value },
+        body: { version: props.member.version, roleId: selectedRoleId.value },
       },
     )
 

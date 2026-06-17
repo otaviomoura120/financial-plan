@@ -17,11 +17,12 @@ public class UpdateUserService {
 
     public UserResponse execute(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id);
+        user.setVersion(request.version());
         user.update(request.name(), request.nickname(), request.profilePhoto(),
                 request.observation(), request.birthdate(), request.phoneNumber(),
                 request.genre(), request.maritalStatus());
         user.validate();
         User updated = userRepository.update(user);
-        return new UserResponse(updated.getId(), updated.getName());
+        return new UserResponse(updated.getId(), updated.getVersion(), updated.getName());
     }
 }

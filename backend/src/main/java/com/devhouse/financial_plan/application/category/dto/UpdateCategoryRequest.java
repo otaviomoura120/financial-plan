@@ -1,3 +1,3 @@
 package com.devhouse.financial_plan.application.category.dto;
 
-public record UpdateCategoryRequest(String name) {}
+public record UpdateCategoryRequest(Integer version, String name) {}

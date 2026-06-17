@@ -1,3 +1,3 @@
 package com.devhouse.financial_plan.application.bankaccount.dto;
 
-public record UpdateBankAccountRequest(String name, String bankName) {}
+public record UpdateBankAccountRequest(Integer version, String name, String bankName) {}

@@ -19,9 +19,10 @@ public class UpdateCategoryService {
 
     public CategoryResponse execute(Long id, UpdateCategoryRequest request) {
         Category category = categoryRepository.findById(id);
+        category.setVersion(request.version());
         category.rename(request.name());
         category.validate();
         Category updated = categoryRepository.update(category);
-        return new CategoryResponse(updated.getId(), updated.getName(), updated.isActive(), List.of());
+        return new CategoryResponse(updated.getId(), updated.getVersion(), updated.getName(), updated.isActive(), List.of());
     }
 }

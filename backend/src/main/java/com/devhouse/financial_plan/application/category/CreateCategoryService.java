@@ -31,6 +31,6 @@ public class CreateCategoryService {
         Category category = new Category(null, 0, space, request.name(), true, Instant.now(), null);
         category.validate();
         Category saved = categoryRepository.save(category);
-        return new CategoryResponse(saved.getId(), saved.getName(), saved.isActive(), List.of());
+        return new CategoryResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.isActive(), List.of());
     }
 }

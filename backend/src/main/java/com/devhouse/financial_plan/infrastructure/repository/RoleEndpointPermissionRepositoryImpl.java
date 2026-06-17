@@ -84,7 +84,7 @@ public class RoleEndpointPermissionRepositoryImpl implements RoleEndpointPermiss
         entity.setVersion(relation.getVersion());
         entity.setPermission(relation.getPermission().name());
         entity.setUpdatedAt(relation.getUpdatedAt());
-        return toDomain(jpaRepository.save(entity));
+        return toDomain(jpaRepository.saveAndFlush(entity));
     }
 
     private RoleEndpointPermissionEntityJpa toEntity(RoleEndpointPermission relation) {

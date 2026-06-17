@@ -17,6 +17,7 @@ public class UpdateGroupMenuChildrenService {
 
     public GroupMenuChildrenResponse execute(Long id, UpdateGroupMenuChildrenRequest request) {
         GroupMenuChildren child = groupMenuChildrenRepository.findById(id);
+        child.setVersion(request.version());
         child.update(request.name(), request.endpoint(), request.icon());
         child.validate();
         GroupMenuChildren updated = groupMenuChildrenRepository.update(child);
@@ -26,6 +27,7 @@ public class UpdateGroupMenuChildrenService {
     private GroupMenuChildrenResponse toResponse(GroupMenuChildren child) {
         return new GroupMenuChildrenResponse(
                 child.getId(),
+                child.getVersion(),
                 child.getGroupMenu().getId(),
                 child.getName(),
                 child.getEndpoint(),

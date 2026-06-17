@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.role;
 
+import com.devhouse.financial_plan.application.role.dto.RoleEndpointPermissionResponse;
 import com.devhouse.financial_plan.application.role.dto.UpdateRolePermissionAccessRequest;
 import com.devhouse.financial_plan.domain.RoleEndpointPermission;
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionAccess;
@@ -16,7 +17,7 @@ public class UpdateRolePermissionAccessService {
         this.roleEndpointPermissionRepository = roleEndpointPermissionRepository;
     }
 
-    public void execute(Long roleId, Long endpointPermissionId, UpdateRolePermissionAccessRequest request) {
+    public RoleEndpointPermissionResponse execute(Long roleId, Long endpointPermissionId, UpdateRolePermissionAccessRequest request) {
         RoleEndpointPermission relation = roleEndpointPermissionRepository
                 .findByRoleIdAndEndpointPermissionId(roleId, endpointPermissionId);
 
@@ -30,7 +31,21 @@ public class UpdateRolePermissionAccessService {
 
         relation.setVersion(request.version());
         applyAccess(relation, request.access());
-        roleEndpointPermissionRepository.update(relation);
+        RoleEndpointPermission updated = roleEndpointPermissionRepository.update(relation);
+        return toResponse(updated);
+    }
+
+    private RoleEndpointPermissionResponse toResponse(RoleEndpointPermission rep) {
+        return new RoleEndpointPermissionResponse(
+                rep.getId(),
+                rep.getVersion(),
+                rep.getEndpointPermission().getId(),
+                rep.getEndpointPermission().getName(),
+                rep.getEndpointPermission().getEndpoint(),
+                rep.getEndpointPermission().getType(),
+                rep.getEndpointPermission().getGroup(),
+                rep.getPermission()
+        );
     }
 
     private void applyAccess(RoleEndpointPermission relation, EndpointPermissionAccess access) {

@@ -78,7 +78,7 @@ async function togglePermission(perm: RoleEndpointPermissionResponse) {
   updatingId.value = perm.id
 
   try {
-    await $fetch(`/api/roles/${props.roleId}/permissions/${perm.endpointPermissionId}`, {
+    const updated = await $fetch<RoleEndpointPermissionResponse>(`/api/roles/${props.roleId}/permissions/${perm.endpointPermissionId}`, {
       method: 'PATCH',
       body: { version: perm.version, access: newAccess },
     })
@@ -86,8 +86,8 @@ async function togglePermission(perm: RoleEndpointPermissionResponse) {
     const target = permissions.value.find(p => p.id === perm.id)
 
     if (target) {
-      target.permission = newAccess
-      target.version += 1
+      target.permission = updated.permission
+      target.version = updated.version
     }
   }
   catch (e) {

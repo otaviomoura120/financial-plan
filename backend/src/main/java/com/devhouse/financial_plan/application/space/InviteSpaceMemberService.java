@@ -59,7 +59,7 @@ public class InviteSpaceMemberService {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(7, ChronoUnit.DAYS);
 
-        SpaceInvite invite = new SpaceInvite(null, space, role, request.email(),
+        SpaceInvite invite = new SpaceInvite(null, null, space, role, request.email(),
                 token, InviteStatus.PENDING, now, expiresAt);
         invite.validate();
         spaceInviteRepository.save(invite);

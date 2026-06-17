@@ -34,7 +34,7 @@ public class SpaceRepositoryImpl implements SpaceRepository {
     public Space update(Space space) {
         SpaceEntityJpa entity = jpaSpaceRepository.findById(space.getId()).orElseThrow();
         applyFields(space, entity);
-        SpaceEntityJpa updated = jpaSpaceRepository.save(entity);
+        SpaceEntityJpa updated = jpaSpaceRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 

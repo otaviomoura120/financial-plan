@@ -33,11 +33,13 @@ public class UpdateSpaceMemberRoleService {
         if (!role.getSpace().getId().equals(spaceId)) {
             throw new DomainException("Role must belong to the same space");
         }
+        member.setVersion(request.version());
         member.assignRole(role);
         SpaceMember updated = spaceMemberRepository.update(member);
 
         return new SpaceMemberResponse(
                 updated.getId(),
+                updated.getVersion(),
                 updated.getUser().getId(),
                 updated.getUser().getName(),
                 updated.getUser().getEmail(),

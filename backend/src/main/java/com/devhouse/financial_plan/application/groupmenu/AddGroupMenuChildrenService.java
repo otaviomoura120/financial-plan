@@ -23,7 +23,7 @@ public class AddGroupMenuChildrenService {
 
     public GroupMenuChildrenResponse execute(CreateGroupMenuChildrenRequest request) {
         GroupMenu groupMenu = groupMenuRepository.findById(request.groupMenuId());
-        GroupMenuChildren child = new GroupMenuChildren(null, request.name(), request.endpoint(), request.icon(), groupMenu, Instant.now(), null);
+        GroupMenuChildren child = new GroupMenuChildren(null, null, request.name(), request.endpoint(), request.icon(), groupMenu, Instant.now(), null);
         child.validate();
         GroupMenuChildren saved = groupMenuChildrenRepository.save(child);
         return toResponse(saved);
@@ -32,6 +32,7 @@ public class AddGroupMenuChildrenService {
     private GroupMenuChildrenResponse toResponse(GroupMenuChildren child) {
         return new GroupMenuChildrenResponse(
                 child.getId(),
+                child.getVersion(),
                 child.getGroupMenu().getId(),
                 child.getName(),
                 child.getEndpoint(),

@@ -26,6 +26,7 @@ public class ListSpaceInvitesService {
     private SpaceInviteResponse toResponse(SpaceInvite invite) {
         return new SpaceInviteResponse(
                 invite.getId(),
+                invite.getVersion(),
                 invite.getEmail(),
                 invite.getRole().getId(),
                 invite.getRole().getName(),

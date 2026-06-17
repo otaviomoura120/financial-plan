@@ -4,6 +4,7 @@ import java.time.Instant;
 
 public record GroupMenuChildrenResponse(
         Long id,
+        Integer version,
         Long groupMenuId,
         String name,
         String endpoint,

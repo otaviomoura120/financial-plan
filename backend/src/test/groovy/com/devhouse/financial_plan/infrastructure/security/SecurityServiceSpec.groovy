@@ -38,7 +38,7 @@ class SecurityServiceSpec extends Specification {
     private SpaceMember buildMemberWithRole(Long roleId, String roleName) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
         Role role = new Role(roleId, 0, space, roleName, "desc", Instant.now(), null)
-        new SpaceMember(1L, space, buildUser(), role, Instant.now())
+        new SpaceMember(1L, 0, space, buildUser(), role, Instant.now())
     }
 
     private EndpointPermission buildPermission(String endpoint, String methods, String group = "Test") {

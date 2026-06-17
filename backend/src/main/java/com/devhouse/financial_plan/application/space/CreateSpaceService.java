@@ -48,7 +48,7 @@ public class CreateSpaceService {
         space.validate();
         Space saved = spaceRepository.save(space);
         createOwnerMembership(creator, saved);
-        return new SpaceResponse(saved.getId(), saved.getName(), saved.getDescription(), saved.getCreatedDate(), null);
+        return new SpaceResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.getDescription(), saved.getCreatedDate(), null);
     }
 
     private void createOwnerMembership(User creator, Space space) {
@@ -67,7 +67,7 @@ public class CreateSpaceService {
                 .toList();
         roleEndpointPermissionRepository.saveAll(rolePermissions);
 
-        SpaceMember membership = new SpaceMember(null, space, creator, savedOwnerRole, Instant.now());
+        SpaceMember membership = new SpaceMember(null, null, space, creator, savedOwnerRole, Instant.now());
         membership.validate();
         spaceMemberRepository.save(membership);
     }

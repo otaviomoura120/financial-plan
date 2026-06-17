@@ -13,6 +13,7 @@ public class EndpointPermissionEntityJpa {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
+    @Version
     private Integer version;
     private String endpoint;
     private String name;

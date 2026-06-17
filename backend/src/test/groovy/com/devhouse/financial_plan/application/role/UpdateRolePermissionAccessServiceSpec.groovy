@@ -38,7 +38,7 @@ class UpdateRolePermissionAccessServiceSpec extends Specification {
         then:
         1 * roleEndpointPermissionRepository.update({ RoleEndpointPermission r ->
             r.isAllowed() == true
-        })
+        }) >> relation
     }
 
     def "changes permission from ALLOW to DENY"() {
@@ -53,7 +53,7 @@ class UpdateRolePermissionAccessServiceSpec extends Specification {
         then:
         1 * roleEndpointPermissionRepository.update({ RoleEndpointPermission r ->
             r.isAllowed() == false
-        })
+        }) >> relation
     }
 
     def "throws DomainException when relation not found"() {

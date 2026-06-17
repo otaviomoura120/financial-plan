@@ -12,6 +12,8 @@ public class BankAccountEntityJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Version
+    private Integer version;
     @Column(name = "space_id")
     private Long spaceId;
     private String name;
@@ -23,6 +25,8 @@ public class BankAccountEntityJpa {
     private Instant createdAt;
 
     public Long getId() { return id; }
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public Long getSpaceId() { return spaceId; }
     public void setSpaceId(Long spaceId) { this.spaceId = spaceId; }
     public String getName() { return name; }

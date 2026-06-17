@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record UpdateTransactionRequest(
+        Integer version,
         TransactionType type,
         Long bankAccountId,
         Long categoryId,

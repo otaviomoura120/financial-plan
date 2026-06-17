@@ -11,6 +11,8 @@ public class PaymentMethodEntityJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Version
+    private Integer version;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "space_id")
     private SpaceEntityJpa space;
@@ -22,6 +24,8 @@ public class PaymentMethodEntityJpa {
     private Instant updatedAt;
 
     public Long getId() { return id; }
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public SpaceEntityJpa getSpace() { return space; }
     public void setSpace(SpaceEntityJpa space) { this.space = space; }
     public String getName() { return name; }

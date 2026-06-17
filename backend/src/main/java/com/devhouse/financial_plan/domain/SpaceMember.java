@@ -1,19 +1,23 @@
 package com.devhouse.financial_plan.domain;
 
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.time.Instant;
+import java.util.Objects;
 
 public class SpaceMember {
 
     private Long id;
+    private Integer version;
     private Space space;
     private User user;
     private Role role;
     private final Instant joinedAt;
 
-    public SpaceMember(Long id, Space space, User user, Role role, Instant joinedAt) {
+    public SpaceMember(Long id, Integer version, Space space, User user, Role role, Instant joinedAt) {
         this.id = id;
+        this.version = version;
         this.space = space;
         this.user = user;
         this.role = role;
@@ -42,6 +46,15 @@ public class SpaceMember {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) {
+        if (!Objects.equals(version, this.version)) {
+            throw new ObjectOptimisticLockingFailureException("Error optimistic locking space member", new Exception());
+        }
+        this.version = version;
+    }
+
     public Space getSpace() { return space; }
     public void setSpace(Space space) { this.space = space; }
     public User getUser() { return user; }

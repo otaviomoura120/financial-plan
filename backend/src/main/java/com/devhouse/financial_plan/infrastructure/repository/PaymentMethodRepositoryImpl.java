@@ -38,7 +38,7 @@ public class PaymentMethodRepositoryImpl implements PaymentMethodRepository {
         entity.setName(paymentMethod.getName());
         entity.setActive(paymentMethod.isActive());
         entity.setUpdatedAt(paymentMethod.getUpdatedDate());
-        PaymentMethodEntityJpa updated = jpaPaymentMethodRepository.save(entity);
+        PaymentMethodEntityJpa updated = jpaPaymentMethodRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 
@@ -71,7 +71,7 @@ public class PaymentMethodRepositoryImpl implements PaymentMethodRepository {
 
     private PaymentMethod toDomain(PaymentMethodEntityJpa entity) {
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new PaymentMethod(entity.getId(), null, space, entity.getName(), entity.isActive(),
+        return new PaymentMethod(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
 

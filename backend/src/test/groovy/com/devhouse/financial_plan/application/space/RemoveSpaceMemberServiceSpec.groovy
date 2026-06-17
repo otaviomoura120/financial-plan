@@ -21,7 +21,7 @@ class RemoveSpaceMemberServiceSpec extends Specification {
         User user = new User(5L, 0, "auth0|abc", "Jane", null, null, null,
                 null, "jane@test.com", null, true, null, null, Instant.now(), null, false)
         Role memberRole = new Role(2L, 0, space, "MEMBER", "Regular member", Instant.now(), null)
-        SpaceMember member = new SpaceMember(10L, space, user, memberRole, Instant.now())
+        SpaceMember member = new SpaceMember(10L, 0, space, user, memberRole, Instant.now())
         spaceMemberRepository.findBySpaceIdAndUserId(1L, 5L) >> member
 
         when:
@@ -37,7 +37,7 @@ class RemoveSpaceMemberServiceSpec extends Specification {
         User owner = new User(2L, 0, "auth0|abc", "John", null, null, null,
                 null, "john@test.com", null, true, null, null, Instant.now(), null, false)
         Role ownerRole = new Role(1L, 0, space, Role.OWNER_ROLE_NAME, "Space owner", Instant.now(), null)
-        SpaceMember ownerMember = new SpaceMember(9L, space, owner, ownerRole, Instant.now())
+        SpaceMember ownerMember = new SpaceMember(9L, 0, space, owner, ownerRole, Instant.now())
         spaceMemberRepository.findBySpaceIdAndUserId(1L, 2L) >> ownerMember
 
         when:

@@ -8,6 +8,7 @@ import java.time.Instant;
 
 public record TransactionResponse(
         Long id,
+        Integer version,
         TransactionType type,
         Long userId,
         Long bankAccountId,

@@ -31,7 +31,7 @@ public class CreateBankAccountService {
                 request.bankName(), request.initialBalance(), true, Instant.now(), null);
         account.validate();
         BankAccount saved = bankAccountRepository.save(account);
-        return new BankAccountResponse(saved.getId(), saved.getSpace().getId(), saved.getName(),
+        return new BankAccountResponse(saved.getId(), saved.getVersion(), saved.getSpace().getId(), saved.getName(),
                 saved.getBankName(), saved.getBalance(), saved.isActive(), saved.getCreatedDate());
     }
 }

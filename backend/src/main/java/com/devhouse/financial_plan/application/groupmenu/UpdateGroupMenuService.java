@@ -17,6 +17,7 @@ public class UpdateGroupMenuService {
 
     public GroupMenuResponse execute(Long id, UpdateGroupMenuRequest request) {
         GroupMenu groupMenu = groupMenuRepository.findById(id);
+        groupMenu.setVersion(request.version());
         groupMenu.update(request.name(), request.icon());
         groupMenu.validate();
         GroupMenu updated = groupMenuRepository.update(groupMenu);
@@ -26,6 +27,7 @@ public class UpdateGroupMenuService {
     private GroupMenuResponse toResponse(GroupMenu groupMenu) {
         return new GroupMenuResponse(
                 groupMenu.getId(),
+                groupMenu.getVersion(),
                 groupMenu.getName(),
                 groupMenu.getIcon(),
                 groupMenu.getCreatedAt(),

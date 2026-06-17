@@ -89,9 +89,9 @@ public class RoleController {
 
     @PatchMapping("/{id}/permissions/{permissionId}")
     @PreAuthorize("@securityService.userHasPermissionForRole(authentication, #request, #id)")
-    public void updatePermissionAccess(@PathVariable Long id, @PathVariable Long permissionId,
-                                       @RequestBody UpdateRolePermissionAccessRequest body,
-                                       Authentication authentication, HttpServletRequest request) {
-        updateRolePermissionAccessService.execute(id, permissionId, body);
+    public RoleEndpointPermissionResponse updatePermissionAccess(@PathVariable Long id, @PathVariable Long permissionId,
+                                                                  @RequestBody UpdateRolePermissionAccessRequest body,
+                                                                  Authentication authentication, HttpServletRequest request) {
+        return updateRolePermissionAccessService.execute(id, permissionId, body);
     }
 }

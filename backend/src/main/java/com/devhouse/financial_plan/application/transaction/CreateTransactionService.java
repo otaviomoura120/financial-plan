@@ -28,7 +28,7 @@ public class CreateTransactionService {
     }
 
     private TransactionResponse toResponse(Transaction t) {
-        return new TransactionResponse(t.getId(), t.getType(), t.getUserId(), t.getBankAccountId(),
+        return new TransactionResponse(t.getId(), t.getVersion(), t.getType(), t.getUserId(), t.getBankAccountId(),
                 t.getCategoryId(), t.getSubCategoryId(), t.getPaymentMethodId(), t.getAmount(),
                 t.getTransactionDate(), t.getDescription(), t.getCreatedDate());
     }

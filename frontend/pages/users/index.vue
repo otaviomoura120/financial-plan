@@ -3,6 +3,7 @@ definePageMeta({ middleware: 'auth' })
 
 interface SpaceMemberResponse {
   memberId: number
+  version: number
   userId: number
   userName: string
   userEmail: string
@@ -149,6 +150,9 @@ function onMemberSaved(updated: SpaceMemberResponse) {
 
   if (idx >= 0)
     members.value[idx] = updated
+
+  if (selectedMember.value?.memberId === updated.memberId)
+    selectedMember.value = updated
 }
 
 function onProfileSaved(profile: OwnProfileResponse) {

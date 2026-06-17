@@ -6,6 +6,7 @@ import java.time.Instant;
 
 public record SpaceInviteResponse(
         Long inviteId,
+        Integer version,
         String email,
         Long roleId,
         String roleName,

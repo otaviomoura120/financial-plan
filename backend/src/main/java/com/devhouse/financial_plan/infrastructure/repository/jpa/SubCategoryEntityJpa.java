@@ -9,12 +9,16 @@ public class SubCategoryEntityJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Version
+    private Integer version;
     @Column(name = "category_id")
     private Long categoryId;
     private String name;
     private boolean active;
 
     public Long getId() { return id; }
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public Long getCategoryId() { return categoryId; }
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     public String getName() { return name; }

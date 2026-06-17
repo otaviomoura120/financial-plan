@@ -1,6 +1,7 @@
 <script setup lang="ts">
 interface OwnProfileResponse {
   id: number
+  version: number
   name: string
   email: string
   nickname: string | null
@@ -28,6 +29,7 @@ const { error, setError, clearError } = useApiError()
 const isLoadingProfile = shallowRef(false)
 const isSaving = shallowRef(false)
 const profileId = shallowRef<number | null>(null)
+const profileVersion = shallowRef<number | null>(null)
 
 const form = ref({
   name: '',
@@ -60,6 +62,7 @@ async function loadProfile() {
     const profile = await $fetch<OwnProfileResponse>('/api/users/me')
 
     profileId.value = profile.id
+    profileVersion.value = profile.version
     form.value = {
       name: profile.name,
       email: profile.email,
@@ -86,9 +89,10 @@ async function onSave() {
   clearError()
 
   try {
-    const updated = await $fetch<{ id: number; name: string }>(`/api/users/${profileId.value}`, {
+    const updated = await $fetch<{ id: number; version: number; name: string }>(`/api/users/${profileId.value}`, {
       method: 'PUT',
       body: {
+        version: profileVersion.value,
         name: form.value.name,
         nickname: form.value.nickname || null,
         phoneNumber: form.value.phoneNumber || null,
@@ -100,8 +104,11 @@ async function onSave() {
       },
     })
 
+    profileVersion.value = updated.version
+
     emit('saved', {
       id: updated.id,
+      version: updated.version,
       name: updated.name,
       email: form.value.email,
       nickname: form.value.nickname || null,

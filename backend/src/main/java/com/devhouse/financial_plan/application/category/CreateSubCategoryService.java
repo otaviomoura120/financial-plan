@@ -26,6 +26,6 @@ public class CreateSubCategoryService {
                 true, Instant.now(), null);
         subCategory.validate();
         SubCategory saved = subCategoryRepository.save(subCategory);
-        return new SubCategoryResponse(saved.getId(), saved.getCategoryId(), saved.getName(), saved.isActive());
+        return new SubCategoryResponse(saved.getId(), saved.getVersion(), saved.getCategoryId(), saved.getName(), saved.isActive());
     }
 }

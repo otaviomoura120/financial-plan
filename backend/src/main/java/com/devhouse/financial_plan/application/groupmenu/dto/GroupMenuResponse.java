@@ -4,6 +4,7 @@ import java.time.Instant;
 
 public record GroupMenuResponse(
         Long id,
+        Integer version,
         String name,
         String icon,
         Instant createdAt,

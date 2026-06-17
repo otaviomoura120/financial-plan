@@ -28,7 +28,7 @@ public class ListUserSpacesService {
         Map<Long, String> roleBySpaceId = memberships.stream()
                 .collect(Collectors.toMap(m -> m.getSpace().getId(), m -> m.getRole().getName()));
         return spaces.stream()
-                .map(s -> new SpaceResponse(s.getId(), s.getName(), s.getDescription(),
+                .map(s -> new SpaceResponse(s.getId(), s.getVersion(), s.getName(), s.getDescription(),
                         s.getCreatedDate(), roleBySpaceId.get(s.getId())))
                 .toList();
     }

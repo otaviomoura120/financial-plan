@@ -24,6 +24,7 @@ public class GetGroupMenuService {
     private GroupMenuResponse toResponse(GroupMenu groupMenu) {
         return new GroupMenuResponse(
                 groupMenu.getId(),
+                groupMenu.getVersion(),
                 groupMenu.getName(),
                 groupMenu.getIcon(),
                 groupMenu.getCreatedAt(),

@@ -19,7 +19,7 @@ public class CreateGroupMenuService {
     }
 
     public GroupMenuResponse execute(CreateGroupMenuRequest request) {
-        GroupMenu groupMenu = new GroupMenu(null, request.name(), request.icon(), List.of(), Instant.now(), null);
+        GroupMenu groupMenu = new GroupMenu(null, null, request.name(), request.icon(), List.of(), Instant.now(), null);
         groupMenu.validate();
         GroupMenu saved = groupMenuRepository.save(groupMenu);
         return toResponse(saved);
@@ -28,6 +28,7 @@ public class CreateGroupMenuService {
     private GroupMenuResponse toResponse(GroupMenu groupMenu) {
         return new GroupMenuResponse(
                 groupMenu.getId(),
+                groupMenu.getVersion(),
                 groupMenu.getName(),
                 groupMenu.getIcon(),
                 groupMenu.getCreatedAt(),

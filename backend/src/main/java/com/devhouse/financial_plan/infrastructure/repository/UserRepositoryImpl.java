@@ -31,7 +31,7 @@ public class UserRepositoryImpl implements UserRepository {
     public User update(User user) {
         UserEntityJpa entity = jpaUserRepository.findById(user.getId()).orElseThrow();
         applyFields(user, entity);
-        UserEntityJpa updated = jpaUserRepository.save(entity);
+        UserEntityJpa updated = jpaUserRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 

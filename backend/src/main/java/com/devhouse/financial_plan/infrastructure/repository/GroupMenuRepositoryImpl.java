@@ -37,7 +37,7 @@ public class GroupMenuRepositoryImpl implements GroupMenuRepository {
         entity.setName(groupMenu.getName());
         entity.setIcon(groupMenu.getIcon());
         entity.setUpdatedAt(groupMenu.getUpdatedAt());
-        GroupMenuEntityJpa updated = jpaGroupMenuRepository.save(entity);
+        GroupMenuEntityJpa updated = jpaGroupMenuRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 
@@ -61,14 +61,14 @@ public class GroupMenuRepositoryImpl implements GroupMenuRepository {
     }
 
     private GroupMenu toDomain(GroupMenuEntityJpa entity) {
-        return new GroupMenu(entity.getId(), entity.getName(), entity.getIcon(), List.of(), entity.getCreatedAt(), entity.getUpdatedAt());
+        return new GroupMenu(entity.getId(), entity.getVersion(), entity.getName(), entity.getIcon(), List.of(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     private GroupMenu toDomainWithChildren(GroupMenuEntityJpa entity) {
-        GroupMenu groupMenu = new GroupMenu(entity.getId(), entity.getName(), entity.getIcon(), List.of(), entity.getCreatedAt(), entity.getUpdatedAt());
+        GroupMenu groupMenu = new GroupMenu(entity.getId(), entity.getVersion(), entity.getName(), entity.getIcon(), List.of(), entity.getCreatedAt(), entity.getUpdatedAt());
         if (entity.getChildren() != null) {
             List<GroupMenuChildren> children = entity.getChildren().stream()
-                    .map(child -> new GroupMenuChildren(child.getId(), child.getName(), child.getEndpoint(), child.getIcon(), groupMenu, child.getCreatedAt(), child.getUpdatedAt()))
+                    .map(child -> new GroupMenuChildren(child.getId(), child.getVersion(), child.getName(), child.getEndpoint(), child.getIcon(), groupMenu, child.getCreatedAt(), child.getUpdatedAt()))
                     .toList();
             groupMenu.setChildren(children);
         }

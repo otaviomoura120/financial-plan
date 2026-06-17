@@ -44,7 +44,7 @@ public class RoleRepositoryImpl implements RoleRepository {
         entity.setName(role.getName());
         entity.setDescription(role.getDescription());
         entity.setUpdatedAt(role.getUpdatedAt());
-        RoleEntityJpa updated = jpaRoleRepository.save(entity);
+        RoleEntityJpa updated = jpaRoleRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 

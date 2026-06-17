@@ -38,7 +38,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         entity.setName(category.getName());
         entity.setActive(category.isActive());
         entity.setUpdatedAt(category.getUpdatedDate());
-        CategoryEntityJpa updated = jpaCategoryRepository.save(entity);
+        CategoryEntityJpa updated = jpaCategoryRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 
@@ -71,7 +71,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
     private Category toDomain(CategoryEntityJpa entity) {
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new Category(entity.getId(), null, space, entity.getName(), entity.isActive(),
+        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
 

@@ -16,6 +16,8 @@ public class SpaceInviteEntityJpa {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
+    @Version
+    private Integer version;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "space_id")
@@ -44,6 +46,8 @@ public class SpaceInviteEntityJpa {
     private Instant expiresAt;
 
     public Long getId() { return id; }
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public SpaceEntityJpa getSpace() { return space; }
     public void setSpace(SpaceEntityJpa space) { this.space = space; }
     public RoleEntityJpa getRole() { return role; }

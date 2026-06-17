@@ -17,9 +17,10 @@ public class UpdateSubCategoryService {
 
     public SubCategoryResponse execute(Long id, UpdateSubCategoryRequest request) {
         SubCategory subCategory = subCategoryRepository.findById(id);
+        subCategory.setVersion(request.version());
         subCategory.rename(request.name());
         subCategory.validate();
         SubCategory updated = subCategoryRepository.update(subCategory);
-        return new SubCategoryResponse(updated.getId(), updated.getCategoryId(), updated.getName(), updated.isActive());
+        return new SubCategoryResponse(updated.getId(), updated.getVersion(), updated.getCategoryId(), updated.getName(), updated.isActive());
     }
 }

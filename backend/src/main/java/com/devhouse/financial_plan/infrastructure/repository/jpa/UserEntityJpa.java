@@ -3,7 +3,6 @@ package com.devhouse.financial_plan.infrastructure.repository.jpa;
 import jakarta.persistence.*;
 
 import java.time.Instant;
-import java.util.Objects;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
 
@@ -14,6 +13,7 @@ public class UserEntityJpa {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
+    @Version
     private Integer version;
     @Column(name = "auth0_sub", unique = true)
     private String auth0Sub;
@@ -37,14 +37,9 @@ public class UserEntityJpa {
     @Column(name = "master_admin")
     private Boolean masterAdmin;
 
-    public void setVersion(Integer version) {
-        if (!Objects.equals(version, this.version)) {
-            throw new OptimisticLockException("Error optimistic locking member", new Exception());
-        }
-    }
-
     public Long getId() { return id; }
     public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public String getAuth0Sub() { return auth0Sub; }
     public void setAuth0Sub(String auth0Sub) { this.auth0Sub = auth0Sub; }
     public String getName() { return name; }

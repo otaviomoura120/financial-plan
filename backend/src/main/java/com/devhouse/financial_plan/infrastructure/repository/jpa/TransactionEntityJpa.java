@@ -14,6 +14,8 @@ public class TransactionEntityJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Version
+    private Integer version;
     @Enumerated(EnumType.STRING)
     private TransactionType type;
     @Column(name = "user_id")
@@ -34,6 +36,8 @@ public class TransactionEntityJpa {
     private Instant createdAt;
 
     public Long getId() { return id; }
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public TransactionType getType() { return type; }
     public void setType(TransactionType type) { this.type = type; }
     public Long getUserId() { return userId; }

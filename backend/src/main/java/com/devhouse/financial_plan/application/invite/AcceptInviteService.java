@@ -61,7 +61,7 @@ public class AcceptInviteService {
 
         Space space = invite.getSpace();
         Role role = invite.getRole();
-        SpaceMember member = new SpaceMember(null, space, user, role, Instant.now());
+        SpaceMember member = new SpaceMember(null, null, space, user, role, Instant.now());
         member.validate();
         spaceMemberRepository.save(member);
 

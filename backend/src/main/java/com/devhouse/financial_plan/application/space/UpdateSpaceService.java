@@ -17,8 +17,9 @@ public class UpdateSpaceService {
 
     public SpaceResponse execute(Long id, UpdateSpaceRequest request) {
         Space space = spaceRepository.findById(id);
+        space.setVersion(request.version());
         space.rename(request.name());
         Space updated = spaceRepository.update(space);
-        return new SpaceResponse(updated.getId(), updated.getName(), updated.getDescription(), updated.getCreatedDate(), null);
+        return new SpaceResponse(updated.getId(), updated.getVersion(), updated.getName(), updated.getDescription(), updated.getCreatedDate(), null);
     }
 }

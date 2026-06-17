@@ -39,7 +39,7 @@ public class BankAccountRepositoryImpl implements BankAccountRepository {
         entity.setBankName(bankAccount.getBankName());
         entity.setBalance(bankAccount.getBalance());
         entity.setActive(bankAccount.isActive());
-        BankAccountEntityJpa updated = jpaBankAccountRepository.save(entity);
+        BankAccountEntityJpa updated = jpaBankAccountRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 
@@ -73,7 +73,7 @@ public class BankAccountRepositoryImpl implements BankAccountRepository {
 
     private BankAccount toDomain(BankAccountEntityJpa entity) {
         Space space = resolveSpace(entity.getSpaceId());
-        return new BankAccount(entity.getId(), null, space, entity.getName(),
+        return new BankAccount(entity.getId(), entity.getVersion(), space, entity.getName(),
                 entity.getBankName(), entity.getBalance(), entity.isActive(), entity.getCreatedAt(), null);
     }
 

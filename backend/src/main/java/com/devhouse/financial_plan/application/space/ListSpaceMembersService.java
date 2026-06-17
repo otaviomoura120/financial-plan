@@ -26,6 +26,7 @@ public class ListSpaceMembersService {
     private SpaceMemberResponse toResponse(SpaceMember m) {
         return new SpaceMemberResponse(
                 m.getId(),
+                m.getVersion(),
                 m.getUser().getId(),
                 m.getUser().getName(),
                 m.getUser().getEmail(),

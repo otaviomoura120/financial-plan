@@ -3,6 +3,7 @@ import { VForm } from 'vuetify/components/VForm'
 
 interface SpaceResponse {
   id: number
+  version: number
   name: string
   description?: string
   createdDate: string
@@ -63,7 +64,7 @@ async function onSubmit() {
     if (isEditMode.value) {
       saved = await $fetch<SpaceResponse>(`/api/spaces/${props.space!.id}`, {
         method: 'PUT',
-        body: { name: name.value },
+        body: { version: props.space!.version, name: name.value },
       })
       saved = { ...saved, description: description.value || undefined, currentUserRoleName: props.space!.currentUserRoleName }
     }

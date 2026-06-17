@@ -17,10 +17,11 @@ public class UpdateBankAccountService {
 
     public BankAccountResponse execute(Long id, UpdateBankAccountRequest request) {
         BankAccount account = bankAccountRepository.findById(id);
+        account.setVersion(request.version());
         account.update(request.name(), request.bankName());
         account.validate();
         BankAccount updated = bankAccountRepository.update(account);
-        return new BankAccountResponse(updated.getId(), updated.getSpace().getId(), updated.getName(),
+        return new BankAccountResponse(updated.getId(), updated.getVersion(), updated.getSpace().getId(), updated.getName(),
                 updated.getBankName(), updated.getBalance(), updated.isActive(), updated.getCreatedDate());
     }
 }

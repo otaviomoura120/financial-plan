@@ -30,6 +30,6 @@ public class CreatePaymentMethodService {
         PaymentMethod paymentMethod = new PaymentMethod(null, 0, space, request.name(), true, Instant.now(), null);
         paymentMethod.validate();
         PaymentMethod saved = paymentMethodRepository.save(paymentMethod);
-        return new PaymentMethodResponse(saved.getId(), saved.getName(), saved.isActive());
+        return new PaymentMethodResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.isActive());
     }
 }

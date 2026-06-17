@@ -17,9 +17,10 @@ public class UpdatePaymentMethodService {
 
     public PaymentMethodResponse execute(Long id, UpdatePaymentMethodRequest request) {
         PaymentMethod paymentMethod = paymentMethodRepository.findById(id);
+        paymentMethod.setVersion(request.version());
         paymentMethod.rename(request.name());
         paymentMethod.validate();
         PaymentMethod updated = paymentMethodRepository.update(paymentMethod);
-        return new PaymentMethodResponse(updated.getId(), updated.getName(), updated.isActive());
+        return new PaymentMethodResponse(updated.getId(), updated.getVersion(), updated.getName(), updated.isActive());
     }
 }

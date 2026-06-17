@@ -33,7 +33,7 @@ class GetMenuStructureServiceSpec extends Specification {
     private SpaceMember buildMemberWithRole(Long roleId, String roleName, Long spaceId = 1L) {
         Space space = new Space(spaceId, 0, "My Space", null, Instant.now(), null)
         Role role = new Role(roleId, 0, space, roleName, "desc", Instant.now(), null)
-        new SpaceMember(1L, space, buildUser(), role, Instant.now())
+        new SpaceMember(1L, 0, space, buildUser(), role, Instant.now())
     }
 
     private EndpointPermission buildFrontPagePermission(String endpointRegex, String group = "Menu") {
@@ -42,9 +42,9 @@ class GetMenuStructureServiceSpec extends Specification {
     }
 
     private GroupMenu buildGroupMenu(List<String> childEndpoints) {
-        GroupMenu groupMenu = new GroupMenu(1L, "Finance", "icon", [], Instant.now(), null)
+        GroupMenu groupMenu = new GroupMenu(1L, 0, "Finance", "icon", [], Instant.now(), null)
         List<GroupMenuChildren> children = childEndpoints.collect { endpoint ->
-            new GroupMenuChildren(1L, "Page", endpoint, "icon", groupMenu, Instant.now(), null)
+            new GroupMenuChildren(1L, 0, "Page", endpoint, "icon", groupMenu, Instant.now(), null)
         }
         groupMenu.setChildren(children)
         return groupMenu

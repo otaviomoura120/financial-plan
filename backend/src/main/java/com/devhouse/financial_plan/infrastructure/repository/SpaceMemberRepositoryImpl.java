@@ -49,7 +49,7 @@ public class SpaceMemberRepositoryImpl implements SpaceMemberRepository {
     public SpaceMember update(SpaceMember member) {
         SpaceMemberEntityJpa entity = jpaSpaceMemberRepository.findById(member.getId()).orElseThrow();
         entity.setRole(jpaRoleRepository.getReferenceById(member.getRole().getId()));
-        SpaceMemberEntityJpa updated = jpaSpaceMemberRepository.save(entity);
+        SpaceMemberEntityJpa updated = jpaSpaceMemberRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 
@@ -90,7 +90,7 @@ public class SpaceMemberRepositoryImpl implements SpaceMemberRepository {
         Space space = buildSpace(entity.getSpace());
         User user = buildUser(entity.getUser());
         Role role = buildRole(entity.getRole());
-        return new SpaceMember(entity.getId(), space, user, role, entity.getJoinedAt());
+        return new SpaceMember(entity.getId(), entity.getVersion(), space, user, role, entity.getJoinedAt());
     }
 
     private Space buildSpace(SpaceEntityJpa entity) {

@@ -124,6 +124,9 @@ function onRoleSaved(saved: RoleResponse) {
     roles.value[idx] = saved
   else
     roles.value = [saved, ...roles.value]
+
+  if (selectedRole.value?.id === saved.id)
+    selectedRole.value = saved
 }
 
 function formatDate(iso: string) {

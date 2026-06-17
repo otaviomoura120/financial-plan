@@ -44,7 +44,7 @@ public class GroupMenuChildrenRepositoryImpl implements GroupMenuChildrenReposit
         entity.setEndpoint(child.getEndpoint());
         entity.setIcon(child.getIcon());
         entity.setUpdatedAt(child.getUpdatedAt());
-        GroupMenuChildrenEntityJpa updated = jpaGroupMenuChildrenRepository.save(entity);
+        GroupMenuChildrenEntityJpa updated = jpaGroupMenuChildrenRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 
@@ -68,9 +68,10 @@ public class GroupMenuChildrenRepositoryImpl implements GroupMenuChildrenReposit
     }
 
     private GroupMenuChildren toDomain(GroupMenuChildrenEntityJpa entity) {
-        GroupMenu groupMenu = new GroupMenu(entity.getGroupMenu().getId(), entity.getGroupMenu().getName(),
-                entity.getGroupMenu().getIcon(), List.of(), entity.getGroupMenu().getCreatedAt(), entity.getGroupMenu().getUpdatedAt());
-        return new GroupMenuChildren(entity.getId(), entity.getName(), entity.getEndpoint(), entity.getIcon(),
-                groupMenu, entity.getCreatedAt(), entity.getUpdatedAt());
+        GroupMenu groupMenu = new GroupMenu(entity.getGroupMenu().getId(), entity.getGroupMenu().getVersion(),
+                entity.getGroupMenu().getName(), entity.getGroupMenu().getIcon(), List.of(),
+                entity.getGroupMenu().getCreatedAt(), entity.getGroupMenu().getUpdatedAt());
+        return new GroupMenuChildren(entity.getId(), entity.getVersion(), entity.getName(), entity.getEndpoint(),
+                entity.getIcon(), groupMenu, entity.getCreatedAt(), entity.getUpdatedAt());
     }
 }

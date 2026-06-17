@@ -89,7 +89,7 @@ public class SpaceInviteRepositoryImpl implements SpaceInviteRepository {
     private SpaceInvite toDomain(SpaceInviteEntityJpa entity) {
         Space space = buildSpace(entity.getSpace());
         Role role = buildRole(entity.getRole());
-        return new SpaceInvite(entity.getId(), space, role, entity.getEmail(),
+        return new SpaceInvite(entity.getId(), entity.getVersion(), space, role, entity.getEmail(),
                 entity.getToken(), entity.getStatus(), entity.getCreatedAt(), entity.getExpiresAt());
     }
 

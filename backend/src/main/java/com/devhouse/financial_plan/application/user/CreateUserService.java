@@ -23,6 +23,6 @@ public class CreateUserService {
                 request.phoneNumber(), true, request.genre(), request.maritalStatus(), Instant.now(), null, false);
         user.validate();
         User saved = userRepository.save(user);
-        return new UserResponse(saved.getId(), saved.getName());
+        return new UserResponse(saved.getId(), saved.getVersion(), saved.getName());
     }
 }

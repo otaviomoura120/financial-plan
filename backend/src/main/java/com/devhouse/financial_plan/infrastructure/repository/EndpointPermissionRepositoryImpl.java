@@ -32,7 +32,7 @@ public class EndpointPermissionRepositoryImpl implements EndpointPermissionRepos
     public EndpointPermission update(EndpointPermission permission) {
         EndpointPermissionEntityJpa entity = jpaEndpointPermissionRepository.findById(permission.getId()).orElseThrow();
         applyFields(permission, entity);
-        EndpointPermissionEntityJpa updated = jpaEndpointPermissionRepository.save(entity);
+        EndpointPermissionEntityJpa updated = jpaEndpointPermissionRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
 

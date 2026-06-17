@@ -3,6 +3,7 @@ definePageMeta({ middleware: 'auth' })
 
 interface SpaceResponse {
   id: number
+  version: number
   name: string
   description?: string
   createdDate: string
@@ -119,6 +120,9 @@ function onSpaceSaved(saved: SpaceResponse) {
     spaces.value[idx] = saved
   else
     spaces.value = [saved, ...spaces.value]
+
+  if (selectedSpace.value?.id === saved.id)
+    selectedSpace.value = saved
 
   spaceStore.setAvailableSpaces(spaces.value.map(s => ({ id: s.id, name: s.name, description: s.description })))
 
