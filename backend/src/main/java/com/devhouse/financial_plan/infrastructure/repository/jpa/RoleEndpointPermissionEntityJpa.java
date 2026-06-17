@@ -1,6 +1,8 @@
 package com.devhouse.financial_plan.infrastructure.repository.jpa;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
@@ -13,12 +15,15 @@ public class RoleEndpointPermissionEntityJpa {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
+    @Version
     private Integer version;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private RoleEntityJpa role;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "endpoint_permission_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private EndpointPermissionEntityJpa endpointPermission;
     private String permission;
     @Column(name = "created_at")

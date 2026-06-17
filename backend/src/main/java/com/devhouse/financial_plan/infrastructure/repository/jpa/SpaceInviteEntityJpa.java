@@ -2,6 +2,8 @@ package com.devhouse.financial_plan.infrastructure.repository.jpa;
 
 import com.devhouse.financial_plan.domain.enums.InviteStatus;
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
@@ -17,10 +19,12 @@ public class SpaceInviteEntityJpa {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "space_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private SpaceEntityJpa space;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private RoleEntityJpa role;
 
     @Column(nullable = false)

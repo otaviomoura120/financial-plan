@@ -40,9 +40,12 @@ watch(search, () => {
   page.value = 1
 })
 
-onMounted(() => {
-  fetchSpaces()
-})
+watch(()=>spaceStore.dbUser,
+  async () => {
+  console.log('active space changed')
+  await fetchSpaces()
+}, { immediate: true }
+)
 
 async function fetchSpaces() {
   if (!spaceStore.dbUser)

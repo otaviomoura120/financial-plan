@@ -8,15 +8,15 @@ export function useOnboarding() {
   const { error, setError, clearError } = useApiError()
 
   async function checkAndRedirect(): Promise<void> {
-    if (isChecking.value || spaceStore.activeSpace)
+    if (isChecking.value || spaceStore.activeSpace) {
       return
+    }
 
     isChecking.value = true
     clearError()
 
     try {
       const result = await $fetch<OnboardingCheckResult>('/api/onboarding/check')
-
       if (result.status === 'new_user') {
         await navigateTo('/onboarding/profile')
       }
@@ -35,10 +35,11 @@ export function useOnboarding() {
         const savedSpaceId = useCookie<number | null>('activeSpaceId').value
         const savedSpace = result.spaces.find(s => s.id === savedSpaceId)
 
-        if (savedSpace)
+        if (savedSpace) {
           spaceStore.setActiveSpace(savedSpace)
-        else
+        } else {
           await navigateTo('/onboarding/select-space')
+        }
       }
     }
     catch (e) {

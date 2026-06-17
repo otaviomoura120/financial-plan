@@ -1,6 +1,8 @@
 package com.devhouse.financial_plan.infrastructure.repository.jpa;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.Instant;
 
@@ -13,9 +15,11 @@ public class RoleEntityJpa {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
+    @Version
     private Integer version;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "space_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private SpaceEntityJpa space;
     private String name;
     private String description;
