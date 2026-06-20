@@ -1,7 +1,9 @@
 package com.devhouse.financial_plan.application.groupmenu;
 
-import com.devhouse.financial_plan.application.groupmenu.dto.GroupMenuResponse;
+import com.devhouse.financial_plan.application.groupmenu.dto.GroupMenuChildrenResponse;
+import com.devhouse.financial_plan.application.groupmenu.dto.GroupMenuWithChildrenResponse;
 import com.devhouse.financial_plan.domain.GroupMenu;
+import com.devhouse.financial_plan.domain.GroupMenuChildren;
 import com.devhouse.financial_plan.domain.repository.GroupMenuRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,19 +18,37 @@ public class GetGroupMenuService {
         this.groupMenuRepository = groupMenuRepository;
     }
 
-    public List<GroupMenuResponse> execute() {
+    public List<GroupMenuWithChildrenResponse> execute() {
         List<GroupMenu> menus = groupMenuRepository.findAllWithChildren();
         return menus.stream().map(this::toResponse).toList();
     }
 
-    private GroupMenuResponse toResponse(GroupMenu groupMenu) {
-        return new GroupMenuResponse(
+    private GroupMenuWithChildrenResponse toResponse(GroupMenu groupMenu) {
+        List<GroupMenuChildrenResponse> children = groupMenu.getChildren().stream()
+                .map(this::toChildResponse)
+                .toList();
+
+        return new GroupMenuWithChildrenResponse(
                 groupMenu.getId(),
                 groupMenu.getVersion(),
                 groupMenu.getName(),
                 groupMenu.getIcon(),
+                children,
                 groupMenu.getCreatedAt(),
                 groupMenu.getUpdatedAt()
+        );
+    }
+
+    private GroupMenuChildrenResponse toChildResponse(GroupMenuChildren child) {
+        return new GroupMenuChildrenResponse(
+                child.getId(),
+                child.getVersion(),
+                child.getGroupMenu().getId(),
+                child.getName(),
+                child.getEndpoint(),
+                child.getIcon(),
+                child.getCreatedAt(),
+                child.getUpdatedAt()
         );
     }
 }

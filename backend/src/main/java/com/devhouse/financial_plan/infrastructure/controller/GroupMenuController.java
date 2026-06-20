@@ -11,6 +11,7 @@ import com.devhouse.financial_plan.application.groupmenu.dto.CreateGroupMenuChil
 import com.devhouse.financial_plan.application.groupmenu.dto.CreateGroupMenuRequest;
 import com.devhouse.financial_plan.application.groupmenu.dto.GroupMenuChildrenResponse;
 import com.devhouse.financial_plan.application.groupmenu.dto.GroupMenuResponse;
+import com.devhouse.financial_plan.application.groupmenu.dto.GroupMenuWithChildrenResponse;
 import com.devhouse.financial_plan.application.groupmenu.dto.UpdateGroupMenuChildrenRequest;
 import com.devhouse.financial_plan.application.groupmenu.dto.UpdateGroupMenuRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -71,7 +72,7 @@ public class GroupMenuController {
 
     @GetMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<GroupMenuResponse> getAll(Authentication authentication, HttpServletRequest request) {
+    public List<GroupMenuWithChildrenResponse> getAll(Authentication authentication, HttpServletRequest request) {
         return getGroupMenuService.execute();
     }
 
