@@ -195,3 +195,10 @@ WHERE r.name = 'MEMBER';
 -- execute manualmente:
 --   ALTER TABLE endpoint_permissions DROP COLUMN permitted_roles;
 -- =============================================================================
+
+-- =============================================================================
+-- NOTA: se o banco foi criado antes de DECLINED ser adicionado ao InviteStatus,
+-- execute manualmente para incluir o novo valor no ENUM:
+--   ALTER TABLE space_invites
+--     MODIFY COLUMN status ENUM('PENDING','ACCEPTED','CANCELLED','DECLINED') NOT NULL;
+-- =============================================================================
