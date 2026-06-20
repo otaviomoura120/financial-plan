@@ -36,6 +36,7 @@ public class GlobalHandlerException extends ResponseEntityExceptionHandler {
     @ExceptionHandler({Exception.class})
     public ResponseEntity<?> handleGenericException(Exception exception, WebRequest request) {
         logger.error(exception);
+        exception.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error. Consult logs");
     }
 }

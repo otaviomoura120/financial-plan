@@ -1,5 +1,41 @@
 <script setup lang="ts">
-import avatar1 from '@images/avatars/avatar-1.png'
+import avatar1 from '@images/avatars/generic-avatar-1.png'
+
+interface SpaceMemberResponse {
+  memberId: number
+  userId: number
+  roleName: string
+}
+
+const spaceStore = useSpaceStore()
+
+const isProfileDialogVisible = ref(false)
+const currentUserRole = shallowRef<string | null>(null)
+
+watch(
+  () => spaceStore.activeSpace,
+  async space => {
+    if (!space || !spaceStore.dbUser?.id) {
+      currentUserRole.value = null
+
+      return
+    }
+    try {
+      const members = await $fetch<SpaceMemberResponse[]>(`/api/spaces/${space.id}/members`)
+      const me = members.find(m => m.userId === spaceStore.dbUser!.id)
+
+      currentUserRole.value = me?.roleName ?? null
+    }
+    catch {
+      currentUserRole.value = null
+    }
+  },
+  { immediate: true },
+)
+
+function onProfileSaved(profile: { name: string }) {
+  spaceStore.updateDbUser({ name: profile.name })
+}
 </script>
 
 <template>
@@ -48,15 +84,15 @@ import avatar1 from '@images/avatars/avatar-1.png'
             </template>
 
             <VListItemTitle class="font-weight-semibold">
-              John Doe
+              {{ spaceStore.dbUser?.name ?? 'Usuário' }}
             </VListItemTitle>
-            <VListItemSubtitle>Admin</VListItemSubtitle>
+            <VListItemSubtitle>{{ currentUserRole ?? '' }}</VListItemSubtitle>
           </VListItem>
 
           <VDivider class="my-2" />
 
           <!-- 👉 Profile -->
-          <VListItem link>
+          <VListItem @click="isProfileDialogVisible = true">
             <template #prepend>
               <VIcon
                 class="me-2"
@@ -65,53 +101,14 @@ import avatar1 from '@images/avatars/avatar-1.png'
               />
             </template>
 
-            <VListItemTitle>Profile</VListItemTitle>
-          </VListItem>
-
-          <!-- 👉 Settings -->
-          <VListItem link>
-            <template #prepend>
-              <VIcon
-                class="me-2"
-                icon="tabler-settings"
-                size="22"
-              />
-            </template>
-
-            <VListItemTitle>Settings</VListItemTitle>
-          </VListItem>
-
-          <!-- 👉 Pricing -->
-          <VListItem link>
-            <template #prepend>
-              <VIcon
-                class="me-2"
-                icon="tabler-currency-dollar"
-                size="22"
-              />
-            </template>
-
-            <VListItemTitle>Pricing</VListItemTitle>
-          </VListItem>
-
-          <!-- 👉 FAQ -->
-          <VListItem link>
-            <template #prepend>
-              <VIcon
-                class="me-2"
-                icon="tabler-help"
-                size="22"
-              />
-            </template>
-
-            <VListItemTitle>FAQ</VListItemTitle>
+            <VListItemTitle>Perfil</VListItemTitle>
           </VListItem>
 
           <!-- Divider -->
           <VDivider class="my-2" />
 
           <!-- 👉 Logout -->
-          <VListItem to="/login">
+          <VListItem href="/auth/logout">
             <template #prepend>
               <VIcon
                 class="me-2"
@@ -120,11 +117,16 @@ import avatar1 from '@images/avatars/avatar-1.png'
               />
             </template>
 
-            <VListItemTitle>Logout</VListItemTitle>
+            <VListItemTitle>Sair</VListItemTitle>
           </VListItem>
         </VList>
       </VMenu>
       <!-- !SECTION -->
     </VAvatar>
   </VBadge>
+
+  <EditOwnProfileDialog
+    v-model:is-dialog-visible="isProfileDialogVisible"
+    @saved="onProfileSaved"
+  />
 </template>
