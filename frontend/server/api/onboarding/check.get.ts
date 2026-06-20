@@ -21,7 +21,7 @@ export default defineEventHandler(async (event): Promise<OnboardingCheckResult> 
   const { accessToken } = await useAuth0(event).getAccessToken()
   const config = useRuntimeConfig(event)
   const baseURL = config.public.apiBaseUrl
-  const headers = { Authorization: `Bearer ${accessToken}` }
+  const headers = buildBackendHeaders(event, accessToken)
 
   let user: UserResponse | null = null
 

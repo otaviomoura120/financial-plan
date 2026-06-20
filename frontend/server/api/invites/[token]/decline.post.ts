@@ -7,7 +7,7 @@ export default defineEventHandler(async event => {
     return await $fetch(`/invites/${token}/decline`, {
       baseURL: config.public.apiBaseUrl,
       method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}` },
+      headers: buildBackendHeaders(event, accessToken),
     })
   }
   catch (e) {

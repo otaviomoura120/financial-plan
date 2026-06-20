@@ -7,6 +7,6 @@ export default defineEventHandler(async (event) => {
   return $fetch(`/spaces/${id}/members/${userId}`, {
     baseURL: config.public.apiBaseUrl,
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: buildBackendHeaders(event, accessToken),
   })
 })

@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   return $fetch('/roles', {
     baseURL: config.public.apiBaseUrl,
     method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: buildBackendHeaders(event, accessToken),
     body,
   })
 })

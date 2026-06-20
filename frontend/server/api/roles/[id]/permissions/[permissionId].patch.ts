@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   return $fetch(`/roles/${id}/permissions/${permissionId}`, {
     baseURL: config.public.apiBaseUrl,
     method: 'PATCH',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: buildBackendHeaders(event, accessToken),
     body,
   })
 })

@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service("securityService")
 public class SecurityService {
@@ -51,14 +50,20 @@ public class SecurityService {
             return user.isMasterAdmin();
         }
 
-        List<SpaceMember> memberships = spaceMemberRepository.findByUserId(user.getId());
-        if (memberships.isEmpty()) {
+        String spaceIdHeader = request.getHeader("X-Space-Id");
+        if (spaceIdHeader == null) {
             return false;
         }
 
-        Set<Long> roleIds = extractRoleIds(memberships);
+        Long spaceId = Long.parseLong(spaceIdHeader);
+        SpaceMember membership = spaceMemberRepository.findBySpaceIdAndUserId(spaceId, user.getId());
+        if (membership == null) {
+            return false;
+        }
+
         List<EndpointPermission> allowedPermissions = roleEndpointPermissionRepository
-                .findAllowedEndpointPermissionsByRoleIdsAndType(roleIds, EndpointPermissionType.API);
+                .findAllowedEndpointPermissionsByRoleIdsAndType(
+                        Set.of(membership.getRole().getId()), EndpointPermissionType.API);
 
         return allowedPermissions.stream().anyMatch(p -> p.matchesRequest(method, path));
     }
@@ -114,9 +119,4 @@ public class SecurityService {
         return internalPermissions.stream().anyMatch(p -> p.matchesRequest(method, path));
     }
 
-    private Set<Long> extractRoleIds(List<SpaceMember> memberships) {
-        return memberships.stream()
-                .map(m -> m.getRole().getId())
-                .collect(Collectors.toSet());
-    }
 }

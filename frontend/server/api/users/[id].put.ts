@@ -7,7 +7,7 @@ export default defineEventHandler(async event => {
   return $fetch(`/users/${id}`, {
     baseURL: config.public.apiBaseUrl,
     method: 'PUT',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: buildBackendHeaders(event, accessToken),
     body,
   })
 })

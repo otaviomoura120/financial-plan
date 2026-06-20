@@ -59,14 +59,33 @@ class SecurityServiceSpec extends Specification {
         0 * roleEndpointPermissionRepository._
     }
 
-    def "returns false when user has no space memberships"() {
+    def "returns false when X-Space-Id header is missing"() {
         given:
         authentication.getName() >> "auth0|abc"
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
         request.getMethod() >> "GET"
-        request.getRequestURI() >> "/roles"
+        request.getRequestURI() >> "/group-menus"
         endpointPermissionRepository.findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP) >> []
-        spaceMemberRepository.findByUserId(1L) >> []
+        request.getHeader("X-Space-Id") >> null
+
+        when:
+        boolean result = securityService.userHasPermissionForURL(authentication, request)
+
+        then:
+        result == false
+        0 * spaceMemberRepository._
+        0 * roleEndpointPermissionRepository._
+    }
+
+    def "returns false when user is not a member of the space indicated by the header"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        request.getMethod() >> "GET"
+        request.getRequestURI() >> "/group-menus"
+        endpointPermissionRepository.findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP) >> []
+        request.getHeader("X-Space-Id") >> "99"
+        spaceMemberRepository.findBySpaceIdAndUserId(99L, 1L) >> null
 
         when:
         boolean result = securityService.userHasPermissionForURL(authentication, request)
@@ -76,17 +95,18 @@ class SecurityServiceSpec extends Specification {
         0 * roleEndpointPermissionRepository._
     }
 
-    def "returns false when no ALLOW permission matches the request"() {
+    def "returns false when no ALLOW permission matches the request method"() {
         given:
         authentication.getName() >> "auth0|abc"
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
         request.getMethod() >> "DELETE"
-        request.getRequestURI() >> "/roles/1"
+        request.getRequestURI() >> "/group-menus/1"
         endpointPermissionRepository.findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP) >> []
+        request.getHeader("X-Space-Id") >> "1"
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.API) >> [
-                buildPermission("/roles.*", "GET,POST")
+                buildPermission("/group-menus.*", "GET,POST")
         ]
 
         when:
@@ -100,13 +120,14 @@ class SecurityServiceSpec extends Specification {
         given:
         authentication.getName() >> "auth0|abc"
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "ADMIN")]
         request.getMethod() >> "GET"
-        request.getRequestURI() >> "/roles"
+        request.getRequestURI() >> "/group-menus"
         endpointPermissionRepository.findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP) >> []
+        request.getHeader("X-Space-Id") >> "1"
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.API) >> [
-                buildPermission("/roles.*", "GET,POST")
+                buildPermission("/group-menus.*", "GET,POST")
         ]
 
         when:
@@ -116,14 +137,15 @@ class SecurityServiceSpec extends Specification {
         result == true
     }
 
-    def "returns false when no ALLOW permissions exist for the user roles"() {
+    def "returns false when no ALLOW permissions exist for the user role in the active space"() {
         given:
         authentication.getName() >> "auth0|abc"
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [buildMemberWithRole(10L, "MEMBER")]
         request.getMethod() >> "GET"
-        request.getRequestURI() >> "/roles"
+        request.getRequestURI() >> "/group-menus"
         endpointPermissionRepository.findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP) >> []
+        request.getHeader("X-Space-Id") >> "1"
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "VIEWER")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.API) >> []
 
@@ -134,27 +156,23 @@ class SecurityServiceSpec extends Specification {
         result == false
     }
 
-    def "collects role IDs from all memberships when user belongs to multiple spaces"() {
-        given:
+    def "only the role in the active space is checked, not roles from other spaces"() {
+        given: "user has admin role in space 1 but is viewer in space 2 (the active space)"
         authentication.getName() >> "auth0|abc"
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
-        spaceMemberRepository.findByUserId(1L) >> [
-                buildMemberWithRole(10L, "ADMIN"),
-                buildMemberWithRole(20L, "MEMBER")
-        ]
         request.getMethod() >> "DELETE"
-        request.getRequestURI() >> "/roles/5"
+        request.getRequestURI() >> "/group-menus/1"
         endpointPermissionRepository.findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP) >> []
+        request.getHeader("X-Space-Id") >> "2"
+        spaceMemberRepository.findBySpaceIdAndUserId(2L, 1L) >> buildMemberWithRole(20L, "VIEWER")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
-                [10L, 20L] as Set, EndpointPermissionType.API) >> [
-                buildPermission("/roles/[0-9]+", "DELETE")
-        ]
+                [20L] as Set, EndpointPermissionType.API) >> []
 
         when:
         boolean result = securityService.userHasPermissionForURL(authentication, request)
 
-        then:
-        result == true
+        then: "access is denied because the viewer role in space 2 has no delete permission"
+        result == false
     }
 
     def "returns true for internal_management endpoint when user is MASTER_ADMIN"() {

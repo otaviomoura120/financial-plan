@@ -62,14 +62,14 @@ The **central entity** of the system. Represents a single financial event:
 - Links: `userId`, `bankAccountId`, `categoryId`, `subCategoryId`, `paymentMethodId`
 - `description`: optional notes
 
-### EndpointPermission
-Defines access control rules. Each record holds:
-- `endpoint`: regex pattern matched against the request URL
+### EndpointPermission & RoleEndpointPermission
+`EndpointPermission` defines one access rule for an HTTP endpoint or a frontend page:
+- `endpoint`: Java regex matched against the request URI
 - `permittedMethods`: comma-separated HTTP methods (`GET,POST,PUT`)
-- `permittedRoles`: comma-separated role names that may access it
 - `type`: `API` (backend route) or `FRONT_PAGE` (frontend route)
+- `group`: optional grouping; `INTERNAL_MANAGEMENT` restricts to master admins
 
-On every protected request, `SecurityService` checks the authenticated user's role in the target space against the matching `EndpointPermission`.
+`RoleEndpointPermission` is a join entity linking a `Role` to an `EndpointPermission` with an `ALLOW` or `DENY` decision. On every protected request, `SecurityService` resolves the user's role in the **active space** (identified by the `X-Space-Id` request header) and checks whether that role has an `ALLOW` entry for the matching rule.
 
 ### GroupMenu / GroupMenuChildren
 Hierarchical UI navigation menu. The menu structure is served to the frontend filtered by the authenticated user's permissions, so each user sees only the sections they can access.
@@ -105,12 +105,16 @@ POST /reports
 
 ### 4. Access Control Flow
 ```
-Incoming request
-  → Spring Security extracts Auth0 JWT
-  → SecurityService.userHasPermissionForURL(method, path, auth)
-      → finds SpaceMember for user
-      → finds matching EndpointPermission by regex
-      → checks role is in permittedRoles
+Incoming request  (must carry Authorization: Bearer <token> and X-Space-Id: <spaceId>)
+  → Spring Security extracts Auth0 JWT  →  401 if invalid
+  → @PreAuthorize calls SecurityService
+      → userHasPermissionForURL  (reads X-Space-Id header)
+          → resolves SpaceMember for (spaceId, userId)
+          → checks RoleEndpointPermission ALLOW for that role + matching endpoint regex
+      OR
+      → userHasPermissionInSpace  (space from URL path variable)
+      OR
+      → userHasPermissionForRole  (space derived from role ID)
   → allowed or 403
 ```
 

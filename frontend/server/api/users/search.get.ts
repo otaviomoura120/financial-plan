@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
 
   return $fetch('/users/search', {
     baseURL: config.public.apiBaseUrl,
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: buildBackendHeaders(event, accessToken),
     query,
   })
 })

@@ -44,19 +44,23 @@ All routes require authentication — configured in `SecurityConfig`:
 
 ## Step 2 — Authorization (@PreAuthorize + SecurityService)
 
-Passing JWT validation only proves *who* the caller is. It does not grant access to any endpoint. Each controller method carries this annotation:
+Passing JWT validation only proves *who* the caller is. It does not grant access to any endpoint. Each controller method carries a `@PreAuthorize` annotation that calls one of the three methods in `SecurityService`.
 
-```java
-@PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-```
+> If any method returns `false`, Spring throws `AuthorizationDeniedException`, which `GlobalHandlerException` maps to **403 Forbidden**.
 
-Spring evaluates this SpEL expression before executing the method. It calls `SecurityService.userHasPermissionForURL()`, which performs the permission check described below.
+### Three authorization strategies
 
-> If the method returns `false`, Spring throws `AuthorizationDeniedException`, which `GlobalHandlerException` maps to **403 Forbidden**.
+| Method | Used when | Space scope |
+|---|---|---|
+| `userHasPermissionForURL` | Space is sent via `X-Space-Id` header (e.g. GroupMenu, EndpointPermission controllers) | Single space from header |
+| `userHasPermissionInSpace` | Space ID is available in the URL path variable (e.g. `/spaces/{id}/...`) | Single space from path |
+| `userHasPermissionForRole` | Space must be derived from a role ID (e.g. `/roles/{id}`) | Single space derived from role |
 
 ---
 
-## How SecurityService Evaluates a Request
+## How `userHasPermissionForURL` Works
+
+Called on endpoints where the space context is provided via the `X-Space-Id` request header.
 
 ```
 authentication.getName()  →  auth0Sub (the JWT sub claim)
@@ -67,30 +71,69 @@ userRepository.findByAuth0Sub(auth0Sub)
         ├─ user not found  →  deny (false)
         │
         ▼
-spaceMemberRepository.findByUserId(userId)   ← all space memberships for the user
+isInternalManagementRequest(method, path)?
         │
-        ├─ no memberships  →  deny (false)
-        │
-        ▼
-endpointPermissionRepository.findByType(API)   ← ordered by sequence asc
+        ├─ yes  →  user.isMasterAdmin()  (no space check needed)
         │
         ▼
-Find first EndpointPermission where:
-  - HTTP method is in permittedMethods (CSV, case-insensitive)
-  - request path matches endpoint (treated as a Java regex)
+request.getHeader("X-Space-Id")
         │
-        ├─ no match found  →  deny (false)   ← secure by default
+        ├─ header missing  →  deny (false)
         │
         ▼
-Check if ANY of the user's role names (across all spaces) is in permittedRoles (CSV)
+spaceMemberRepository.findBySpaceIdAndUserId(spaceId, userId)
         │
-        ├─ no role listed  →  deny (false)
-        └─ at least one listed  →  allow (true)
+        ├─ user not a member of that space  →  deny (false)
+        │
+        ▼
+roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+    Set.of(membership.getRole().getId()), API)
+        │
+        ▼
+allowedPermissions.anyMatch(p -> p.matchesRequest(method, path))
+        │
+        ├─ no match  →  deny (false)
+        └─ match found  →  allow (true)
 ```
 
-The **sequence field controls priority**. When multiple `EndpointPermission` records match the same request, the one with the lowest sequence number wins. This allows you to create a restrictive rule with sequence=1 that overrides a broader rule with sequence=2.
+**Important:** only the role the user holds in the space indicated by `X-Space-Id` is considered. A role the user holds in a different space does not grant access here.
 
-A user who belongs to multiple spaces may carry different roles in each. Access is granted if the matched rule permits **any** of the user's roles across all their space memberships.
+---
+
+## How `userHasPermissionInSpace` Works
+
+Used on space-scoped endpoints where the space ID is available directly in the URL (e.g. `PUT /spaces/{id}`, `GET /spaces/{id}/members`).
+
+```
+spaceId  →  extracted from path variable by the controller
+        │
+        ▼
+spaceMemberRepository.findBySpaceIdAndUserId(spaceId, userId)
+        │
+        ├─ spaceId is null OR user is not a member  →  deny (false)
+        │
+        ▼
+roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+    Set.of(membership.getRole().getId()), API)
+        │
+        ▼
+allowedPermissions.anyMatch(p -> p.matchesRequest(method, path))
+```
+
+---
+
+## How `userHasPermissionForRole` Works
+
+Used on role management endpoints (e.g. `PUT /roles/{id}`, `DELETE /roles/{id}`) where the URL only carries a role ID but the space must be known to authorize the caller.
+
+```
+roleId  →  roleRepository.findById(roleId)
+        │
+        ├─ role not found  →  deny (false)
+        │
+        ▼
+role.getSpace().getId()  →  delegates to userHasPermissionInSpace(spaceId)
+```
 
 ---
 
@@ -119,7 +162,7 @@ User ──< SpaceMember >── Space
 When assigning a role to a user, the system enforces that the role belongs to the same space as the membership:
 
 ```
-POST /spaces/{spaceId}/members/{userId}   { "roleId": 3 }
+PUT /spaces/{id}/members/{userId}   { "roleId": 3 }
 ```
 
 ### Role (scoped to a Space)
@@ -128,24 +171,30 @@ A `Role` belongs to a specific `Space`. The system prevents a role from one spac
 
 When a `Space` is created, an `OWNER` role is automatically created for it and a `SpaceMember` record linking the creator to that role is saved. This ensures every space always has at least one owner.
 
-### EndpointPermission
+### EndpointPermission & RoleEndpointPermission
 
-Each `EndpointPermission` record defines one rule. It has two types:
-
-| Type | Purpose |
-|---|---|
-| `API` | Controls access to backend REST endpoints (evaluated by `SecurityService`) |
-| `FRONT_PAGE` | Controls which pages appear in the frontend navigation menu |
-
-Key fields:
+Each `EndpointPermission` record defines one rule applied to an HTTP endpoint:
 
 | Field | Example | Description |
 |---|---|---|
-| `endpoint` | `/roles.*` | Java regex matched against the request URI |
+| `endpoint` | `/group-menus.*` | Java regex matched against the request URI |
 | `permittedMethods` | `GET,POST` | CSV of allowed HTTP methods |
-| `permittedRoles` | `ADMIN,MANAGER` | CSV of role names that can access this rule |
 | `sequence` | `1` | Priority — lower number wins when multiple rules match |
-| `type` | `API` | Whether this rule guards a backend endpoint or a frontend page |
+| `type` | `API` | Whether this rule guards a backend endpoint (`API`) or a frontend page (`FRONT_PAGE`) |
+| `group` | `INTERNAL_MANAGEMENT` | Optional grouping; the `INTERNAL_MANAGEMENT` group restricts access to master admins only |
+
+Access is granted or denied via **`RoleEndpointPermission`** — a join entity between `Role` and `EndpointPermission` that carries an `ALLOW` or `DENY` type. The repository method `findAllowedEndpointPermissionsByRoleIdsAndType` returns only the `ALLOW` entries for the given role IDs.
+
+---
+
+## Frontend → Backend: X-Space-Id Header
+
+All frontend requests to the backend include the `X-Space-Id` header set to the ID of the space the user is currently working in. This is managed in two places:
+
+- **`utils/api.ts`** (`$api` fetch instance) — reads `activeSpaceId` from the cookie and adds the header for legacy client-side calls.
+- **`server/utils/backendHeaders.ts`** (`buildBackendHeaders`) — Nitro utility that reads `activeSpaceId` from the cookie server-side and returns the headers object used by all Nitro server routes.
+
+The active space ID is persisted in the `activeSpaceId` cookie by `useSpaceStore.setActiveSpace()` whenever the user switches spaces.
 
 ---
 
@@ -166,7 +215,7 @@ Collect all role names from all memberships (union across all spaces)
         │
         ▼
 Find all EndpointPermission where type = FRONT_PAGE
-  AND permittedRoles contains at least one of the user's role names
+  AND the role has an ALLOW RoleEndpointPermission for it
         │
         ▼
 Load all GroupMenus with their children
@@ -182,8 +231,6 @@ Discard groups with zero remaining children
 Return filtered GroupMenuStructureDto list
 ```
 
-This means the same `EndpointPermission` table drives both backend security and frontend navigation visibility, keeping the access model in a single place.
-
 ---
 
 ## Error Responses
@@ -191,7 +238,7 @@ This means the same `EndpointPermission` table drives both backend security and 
 | Situation | HTTP Status | Handled by |
 |---|---|---|
 | Missing or invalid JWT | 401 Unauthorized | Auth0AuthenticationFilter |
-| User has no space memberships / rule denies access | 403 Forbidden | GlobalHandlerException |
+| Missing `X-Space-Id` header / not a member / rule denies | 403 Forbidden | GlobalHandlerException |
 | Business rule violated | 422 Unprocessable Entity | GlobalHandlerException |
 | Concurrent edit conflict | 423 Locked | GlobalHandlerException |
 
@@ -204,6 +251,7 @@ To make a protected endpoint accessible, follow this order:
 1. **Create a User** with `auth0Sub` matching their Auth0 account
 2. **Create a Space** — this automatically creates an `OWNER` role and a `SpaceMember` linking the creator to it
 3. *(Optional)* **Create additional Roles** linked to the space (e.g. `ADMIN`, `MEMBER`)
-4. *(Optional)* **Add more members** via `POST /spaces/{id}/members/{userId}` with the desired `roleId`
-5. **Create EndpointPermission records** (type `API`) with the routes and roles that should have access
-6. *(Optional)* **Create GroupMenu / GroupMenuChildren** and **EndpointPermission records** (type `FRONT_PAGE`) to control which pages appear in the menu for each role
+4. *(Optional)* **Add more members** via `PUT /spaces/{id}/members/{userId}` with the desired `roleId`
+5. **Create EndpointPermission records** (type `API`) with the routes that should be controllable
+6. **Create RoleEndpointPermission records** linking those permissions to roles with `ALLOW` or `DENY`
+7. *(Optional)* **Create GroupMenu / GroupMenuChildren** and **EndpointPermission records** (type `FRONT_PAGE`) with matching `RoleEndpointPermission` entries to control which pages appear in the menu for each role

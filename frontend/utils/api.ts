@@ -12,5 +12,13 @@ export const $api = $fetch.create({
         Authorization: `Bearer ${accessToken}`,
       }
     }
+
+    const spaceId = useCookie('activeSpaceId').value
+    if (spaceId) {
+      options.headers = {
+        ...options.headers,
+        'X-Space-Id': String(spaceId),
+      }
+    }
   },
 })

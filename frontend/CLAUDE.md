@@ -83,3 +83,13 @@ Navigation items for the sidebar/topbar are defined in `navigation/vertical/inde
 - `@typescript-eslint/consistent-type-imports` is enforced — use `import type { Foo }` for type-only imports.
 - Blank lines required between `const` and `expression` statements (`padding-line-between-statements`).
 - New line required before `return` statements (`newline-before-return`).
+
+### Rules for development
+ - Create ID structure like this:
+   if (membership == null) {
+    return false;
+   }
+NEVER like this, without "{}":
+   if (membership == null) 
+    return false;
+   

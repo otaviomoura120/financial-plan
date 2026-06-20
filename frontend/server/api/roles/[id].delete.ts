@@ -6,6 +6,6 @@ export default defineEventHandler(async (event) => {
   return $fetch(`/roles/${id}`, {
     baseURL: config.public.apiBaseUrl,
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: buildBackendHeaders(event, accessToken),
   })
 })
