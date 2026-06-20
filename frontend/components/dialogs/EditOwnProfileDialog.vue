@@ -26,6 +26,28 @@ const emit = defineEmits<Emit>()
 
 const { error, setError, clearError } = useApiError()
 
+const auth0User = useUser()
+const isPasswordUser = computed(() => auth0User.value?.sub?.startsWith('auth0|') ?? false)
+
+const isRequestingReset = shallowRef(false)
+const resetEmailSent = shallowRef(false)
+
+async function requestPasswordReset() {
+  isRequestingReset.value = true
+  clearError()
+
+  try {
+    await $fetch('/api/auth/change-password', { method: 'POST' })
+    resetEmailSent.value = true
+  }
+  catch (e) {
+    setError(e)
+  }
+  finally {
+    isRequestingReset.value = false
+  }
+}
+
 const isLoadingProfile = shallowRef(false)
 const isSaving = shallowRef(false)
 const profileId = shallowRef<number | null>(null)
@@ -254,6 +276,37 @@ function onClose() {
               @click="onClose"
             >
               Cancelar
+            </VBtn>
+          </div>
+
+          <VDivider
+            v-if="isPasswordUser"
+            class="my-6"
+          />
+
+          <div
+            v-if="isPasswordUser"
+            class="d-flex flex-column align-center gap-2"
+          >
+            <VAlert
+              v-if="resetEmailSent"
+              type="success"
+              variant="tonal"
+              density="compact"
+              class="w-100 mb-2"
+            >
+              E-mail de redefinição de senha enviado. Verifique sua caixa de entrada.
+            </VAlert>
+
+            <VBtn
+              color="warning"
+              variant="tonal"
+              :loading="isRequestingReset"
+              :disabled="resetEmailSent"
+              prepend-icon="tabler-lock-password"
+              @click="requestPasswordReset"
+            >
+              Alterar senha
             </VBtn>
           </div>
         </VForm>
