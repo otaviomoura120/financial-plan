@@ -9,6 +9,7 @@ import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SpaceMember
 import com.devhouse.financial_plan.domain.User
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionType
+import com.devhouse.financial_plan.domain.repository.EndpointPermissionRepository
 import com.devhouse.financial_plan.domain.repository.GroupMenuRepository
 import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository
 import com.devhouse.financial_plan.domain.repository.SpaceMemberRepository
@@ -22,8 +23,9 @@ class GetMenuStructureServiceSpec extends Specification {
     UserRepository userRepository = Mock()
     SpaceMemberRepository spaceMemberRepository = Mock()
     RoleEndpointPermissionRepository roleEndpointPermissionRepository = Mock()
+    EndpointPermissionRepository endpointPermissionRepository = Mock()
     GroupMenuRepository groupMenuRepository = Mock()
-    GetMenuStructureService service = new GetMenuStructureService(userRepository, spaceMemberRepository, roleEndpointPermissionRepository, groupMenuRepository)
+    GetMenuStructureService service = new GetMenuStructureService(userRepository, spaceMemberRepository, roleEndpointPermissionRepository, endpointPermissionRepository, groupMenuRepository)
 
     private User buildUser(boolean masterAdmin = false) {
         new User(1L, 0, "auth0|abc", "John", null, null, null,
@@ -150,14 +152,13 @@ class GetMenuStructureServiceSpec extends Specification {
         result.isEmpty()
     }
 
-    def "hides internal_management menu items for non-MASTER_ADMIN users"() {
+    def "hides internal_management menu items for non-master_admin users"() {
         given:
         userRepository.findByAuth0Sub("auth0|abc") >> buildUser(false)
         spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
-                buildFrontPagePermission("/finance/transactions"),
-                buildFrontPagePermission("/endpoint-permissions", EndpointPermission.INTERNAL_MANAGEMENT_GROUP)
+                buildFrontPagePermission("/finance/transactions")
         ]
         groupMenuRepository.findAllWithChildren() >> [
                 buildGroupMenu(["/finance/transactions", "/endpoint-permissions"])
@@ -170,15 +171,18 @@ class GetMenuStructureServiceSpec extends Specification {
         result.size() == 1
         result[0].children().size() == 1
         result[0].children()[0].endpoint() == "/finance/transactions"
+        0 * endpointPermissionRepository.findByGroup(_)
     }
 
-    def "shows internal_management menu items for MASTER_ADMIN users"() {
+    def "shows internal_management menu items for master_admin users"() {
         given:
         userRepository.findByAuth0Sub("auth0|master") >> buildUser(true)
-        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "OWNER")
         roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
                 [10L] as Set, EndpointPermissionType.FRONT_PAGE) >> [
-                buildFrontPagePermission("/finance/transactions"),
+                buildFrontPagePermission("/finance/transactions")
+        ]
+        endpointPermissionRepository.findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP) >> [
                 buildFrontPagePermission("/endpoint-permissions", EndpointPermission.INTERNAL_MANAGEMENT_GROUP)
         ]
         groupMenuRepository.findAllWithChildren() >> [
@@ -191,6 +195,7 @@ class GetMenuStructureServiceSpec extends Specification {
         then:
         result.size() == 1
         result[0].children().size() == 2
+        result[0].children()*.endpoint().containsAll(["/finance/transactions", "/endpoint-permissions"])
     }
 
     def "uses regex pattern matching for endpoints"() {
