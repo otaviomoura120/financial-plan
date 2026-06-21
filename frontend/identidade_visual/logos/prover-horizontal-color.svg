@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 470 140" width="470" height="140">
+  <g transform="translate(8,10)">
+    <path d="M60 12 L104 27 V58 C104 84 85 103 60 112 C35 103 16 84 16 58 V27 Z" fill="#1F3D2F"></path>
+    <path d="M60 20 L97 33 V58 C97 80 81 96 60 104 C39 96 23 80 23 58 V33 Z" fill="none" stroke="#C9A24B" stroke-width="1.2" opacity="0.55"></path>
+    <path d="M60 92 C 57 80 63 70 60 56" stroke="#F5F1E8" stroke-width="3" stroke-linecap="round"></path>
+    <path d="M60 66 C 46 66 36 50 43 36 C 52 41 59 55 60 66 Z" fill="#9FB39A"></path>
+    <path d="M60 60 C 72 63 80 53 76 44 C 69 47 61 53 60 60 Z" fill="#9FB39A"></path>
+    <path d="M57 62 C 52 53 48 45 45 38" fill="none" stroke="#3E6B4F" stroke-width="1.1" stroke-linecap="round" opacity="0.5"></path>
+    <path d="M61 58 C 66 54 70 50 74 46" fill="none" stroke="#3E6B4F" stroke-width="1.1" stroke-linecap="round" opacity="0.55"></path>
+    <ellipse cx="60" cy="94" rx="13" ry="4.2" fill="#A86B43"></ellipse>
+  </g>
+  <text x="150" y="103" font-family="&#39;Cormorant Garamond&#39;, &#39;EB Garamond&#39;, Garamond, &#39;Times New Roman&#39;, serif" font-weight="600" font-size="98" letter-spacing="0.5" fill="#1F3D2F">Prover</text>
+</svg>
