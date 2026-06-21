@@ -129,6 +129,7 @@ function onItemSaved(saved: EndpointPermissionResponse) {
           placeholder="Buscar por nome ou grupo..."
           density="compact"
           prepend-inner-icon="tabler-search"
+          class="flex-grow-1"
           style="max-inline-size: 280px"
           hide-details
         />
@@ -167,14 +168,15 @@ function onItemSaved(saved: EndpointPermissionResponse) {
         <VProgressCircular indeterminate />
       </div>
 
-      <VTable v-else>
-        <thead>
+      <div v-else style="overflow-x: auto">
+        <VTable>
+        <thead style="white-space: nowrap">
           <tr>
-            <th>Nome</th>
-            <th>Endpoint</th>
-            <th>Tipo</th>
-            <th>Grupo</th>
-            <th>Métodos</th>
+            <th style="min-width: 200px">Nome</th>
+            <th style="min-width: 200px">Endpoint</th>
+            <th style="min-width: 200px">Tipo</th>
+            <th style="min-width: 200px">Grupo</th>
+            <th style="min-width: 200px">Métodos</th>
             <th>Sequência</th>
             <th class="text-center">
               Ações
@@ -208,7 +210,7 @@ function onItemSaved(saved: EndpointPermissionResponse) {
             <td class="text-disabled">
               {{ item.sequence ?? '—' }}
             </td>
-            <td class="text-center">
+            <td class="text-center" style="white-space: nowrap">
               <VBtn
                 icon
                 variant="text"
@@ -246,7 +248,8 @@ function onItemSaved(saved: EndpointPermissionResponse) {
             </td>
           </tr>
         </tbody>
-      </VTable>
+        </VTable>
+      </div>
 
       <TablePagination
         v-if="filteredItems.length > 0"

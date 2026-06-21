@@ -153,6 +153,7 @@ function formatDate(iso: string) {
           placeholder="Buscar por nome ou descrição..."
           density="compact"
           prepend-inner-icon="tabler-search"
+          class="flex-grow-1"
           style="max-inline-size: 280px"
           hide-details
         />
@@ -191,11 +192,12 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <VTable v-else>
-        <thead>
+      <div v-else style="overflow-x: auto">
+        <VTable>
+        <thead style="white-space: nowrap">
           <tr>
-            <th>Nome</th>
-            <th>Descrição</th>
+            <th style="min-width: 300px">Nome</th>
+            <th style="min-width: 200px">Descrição</th>
             <th>Sua role</th>
             <th>Criado em</th>
             <th class="text-center">
@@ -239,7 +241,7 @@ function formatDate(iso: string) {
               >—</span>
             </td>
             <td>{{ formatDate(space.createdDate) }}</td>
-            <td class="text-center">
+            <td class="text-center" style="white-space: nowrap">
               <VBtn
                 icon
                 variant="text"
@@ -293,7 +295,8 @@ function formatDate(iso: string) {
             </td>
           </tr>
         </tbody>
-      </VTable>
+        </VTable>
+      </div>
 
       <TablePagination
         v-if="filteredSpaces.length > 0"

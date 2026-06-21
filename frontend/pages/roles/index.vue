@@ -151,6 +151,7 @@ function formatDate(iso: string) {
           placeholder="Buscar por nome..."
           density="compact"
           prepend-inner-icon="tabler-search"
+          class="flex-grow-1"
           style="max-inline-size: 280px"
           hide-details
         />
@@ -189,11 +190,12 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <VTable v-else>
-        <thead>
+      <div v-else style="overflow-x: auto">
+        <VTable>
+        <thead style="white-space: nowrap">
           <tr>
             <th>Nome</th>
-            <th>Descrição</th>
+            <th style="min-width: 200px">Descrição</th>
             <th>Criado em</th>
             <th class="text-center">
               Ações
@@ -222,7 +224,7 @@ function formatDate(iso: string) {
               {{ role.description ?? '—' }}
             </td>
             <td>{{ formatDate(role.createdAt) }}</td>
-            <td class="text-center">
+            <td class="text-center" style="white-space: nowrap">
               <VBtn
                 icon
                 variant="text"
@@ -274,7 +276,8 @@ function formatDate(iso: string) {
             </td>
           </tr>
         </tbody>
-      </VTable>
+        </VTable>
+      </div>
 
       <TablePagination
         v-if="filteredRoles.length > 0"

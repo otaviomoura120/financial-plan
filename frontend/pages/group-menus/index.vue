@@ -156,6 +156,7 @@ function formatDate(iso: string) {
           placeholder="Buscar por nome..."
           density="compact"
           prepend-inner-icon="tabler-search"
+          class="flex-grow-1"
           style="max-inline-size: 280px"
           hide-details
         />
@@ -194,11 +195,12 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <VTable v-else>
-        <thead>
+      <div v-else style="overflow-x: auto">
+        <VTable>
+        <thead style="white-space: nowrap">
           <tr>
-            <th>Nome</th>
-            <th>Ícone</th>
+            <th style="min-width: 200px">Nome</th>
+            <th style="min-width: 200px">Ícone</th>
             <th>Itens</th>
             <th>Criado em</th>
             <th class="text-center">
@@ -233,7 +235,7 @@ function formatDate(iso: string) {
               </VChip>
             </td>
             <td>{{ formatDate(groupMenu.createdAt) }}</td>
-            <td class="text-center">
+            <td class="text-center" style="white-space: nowrap">
               <VBtn
                 icon
                 variant="text"
@@ -284,7 +286,8 @@ function formatDate(iso: string) {
             </td>
           </tr>
         </tbody>
-      </VTable>
+        </VTable>
+      </div>
 
       <TablePagination
         v-if="filteredGroupMenus.length > 0"

@@ -240,6 +240,7 @@ function formatDate(iso: string) {
           placeholder="Buscar por nome ou e-mail..."
           density="compact"
           prepend-inner-icon="tabler-search"
+          class="flex-grow-1"
           style="max-inline-size: 280px"
           hide-details
         />
@@ -278,10 +279,11 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <VTable v-else>
-        <thead>
+      <div v-else style="overflow-x: auto">
+        <VTable>
+        <thead style="white-space: nowrap">
           <tr>
-            <th>Nome</th>
+            <th style="min-width: 200px">Nome</th>
             <th>E-mail</th>
             <th>Role</th>
             <th>Membro desde</th>
@@ -311,7 +313,7 @@ function formatDate(iso: string) {
               </VChip>
             </td>
             <td>{{ formatDate(member.joinedAt) }}</td>
-            <td class="text-center">
+            <td class="text-center" style="white-space: nowrap">
               <VBtn
                 icon
                 variant="text"
@@ -365,7 +367,8 @@ function formatDate(iso: string) {
             </td>
           </tr>
         </tbody>
-      </VTable>
+        </VTable>
+      </div>
 
       <TablePagination
         v-if="filteredMembers.length > 0"
@@ -407,8 +410,9 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <VTable v-else>
-        <thead>
+      <div v-else style="overflow-x: auto">
+        <VTable>
+        <thead style="white-space: nowrap">
           <tr>
             <th>E-mail</th>
             <th>Role</th>
@@ -448,7 +452,7 @@ function formatDate(iso: string) {
                 {{ { PENDING: 'Pendente', ACCEPTED: 'Aceito', CANCELLED: 'Cancelado', DECLINED: 'Rejeitado' }[invite.status] }}
               </VChip>
             </td>
-            <td class="text-center">
+            <td class="text-center" style="white-space: nowrap">
               <VBtn
                 icon
                 variant="text"
@@ -474,7 +478,8 @@ function formatDate(iso: string) {
             </td>
           </tr>
         </tbody>
-      </VTable>
+        </VTable>
+      </div>
     </VCard>
 
     <AddMemberDialog
