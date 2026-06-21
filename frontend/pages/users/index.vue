@@ -36,6 +36,7 @@ interface OwnProfileResponse {
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 const { error: inviteError, setError: setInviteError, clearError: clearInviteError } = useApiError()
+const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
 const members = ref<SpaceMemberResponse[]>([])
 const search = shallowRef('')
@@ -135,9 +136,10 @@ async function onRemoveConfirm(confirmed: boolean) {
       { method: 'DELETE' },
     )
     members.value = members.value.filter(m => m.memberId !== selectedMember.value!.memberId)
+    showSuccess('Membro removido com sucesso.')
   }
   catch (e) {
-    setError(e)
+    showError(e)
   }
   finally {
     isRemoving.value = false
@@ -257,6 +259,17 @@ function formatDate(iso: string) {
         :error="error"
         class="ma-4"
       />
+
+      <VSnackbar
+        v-model="snackbarVisible"
+        :color="snackbarColor"
+        :timeout="3000"
+      >
+        <div class="d-flex align-center gap-2">
+          <VIcon :icon="snackbarIcon" />
+          {{ snackbarMessage }}
+        </div>
+      </VSnackbar>
 
       <div
         v-if="isLoading"
@@ -482,9 +495,8 @@ function formatDate(iso: string) {
 
     <ConfirmDialog
       v-model:is-dialog-visible="isRemoveDialogVisible"
+      :auto-result="false"
       confirmation-question="Tem certeza que deseja remover este membro do espaço? Ele perderá o acesso imediatamente."
-      confirm-title="Membro removido!"
-      confirm-msg="O membro foi removido do espaço com sucesso."
       cancel-title="Ação cancelada"
       cancel-msg="O membro não foi removido."
       @confirm="onRemoveConfirm"

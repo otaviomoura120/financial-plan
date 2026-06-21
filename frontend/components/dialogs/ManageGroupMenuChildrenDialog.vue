@@ -34,6 +34,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emit>()
 
 const { error, setError, clearError } = useApiError()
+const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
 const children = ref<GroupMenuChildrenResponse[]>([])
 const search = shallowRef('')
@@ -101,9 +102,10 @@ async function onDeleteConfirm(confirmed: boolean) {
     await $fetch(`/api/group-menus/children/${selectedChild.value.id}`, { method: 'DELETE' })
     children.value = children.value.filter(c => c.id !== selectedChild.value!.id)
     emitUpdated()
+    showSuccess('Item excluído com sucesso.')
   }
   catch (e) {
-    setError(e)
+    showError(e)
   }
   finally {
     isDeleting.value = false
@@ -183,6 +185,17 @@ function onClose() {
         :error="error"
         class="ma-4"
       />
+
+      <VSnackbar
+        v-model="snackbarVisible"
+        :color="snackbarColor"
+        :timeout="3000"
+      >
+        <div class="d-flex align-center gap-2">
+          <VIcon :icon="snackbarIcon" />
+          {{ snackbarMessage }}
+        </div>
+      </VSnackbar>
 
       <VTable>
         <thead>
@@ -271,9 +284,8 @@ function onClose() {
 
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteChildDialogVisible"
+      :auto-result="false"
       confirmation-question="Tem certeza que deseja excluir este item do menu?"
-      confirm-title="Item excluído!"
-      confirm-msg="O item foi removido com sucesso."
       cancel-title="Ação cancelada"
       cancel-msg="O item não foi excluído."
       @confirm="onDeleteConfirm"

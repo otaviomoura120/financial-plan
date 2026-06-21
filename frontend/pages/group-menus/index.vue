@@ -21,6 +21,7 @@ interface GroupMenuResponse {
 }
 
 const { error, setError, clearError } = useApiError()
+const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
 const groupMenus = ref<GroupMenuResponse[]>([])
 const search = shallowRef('')
@@ -99,9 +100,10 @@ async function onDeleteConfirm(confirmed: boolean) {
   try {
     await $fetch(`/api/group-menus/${selectedGroupMenu.value.id}`, { method: 'DELETE' })
     groupMenus.value = groupMenus.value.filter(g => g.id !== selectedGroupMenu.value!.id)
+    showSuccess('Group menu excluído com sucesso.')
   }
   catch (e) {
-    setError(e)
+    showError(e)
   }
   finally {
     isDeleting.value = false
@@ -173,6 +175,17 @@ function formatDate(iso: string) {
         :error="error"
         class="ma-4"
       />
+
+      <VSnackbar
+        v-model="snackbarVisible"
+        :color="snackbarColor"
+        :timeout="3000"
+      >
+        <div class="d-flex align-center gap-2">
+          <VIcon :icon="snackbarIcon" />
+          {{ snackbarMessage }}
+        </div>
+      </VSnackbar>
 
       <div
         v-if="isLoading"
@@ -296,9 +309,8 @@ function formatDate(iso: string) {
 
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
+      :auto-result="false"
       confirmation-question="Tem certeza que deseja excluir este group menu? Todos os itens vinculados também serão removidos."
-      confirm-title="Group menu excluído!"
-      confirm-msg="O group menu foi removido com sucesso."
       cancel-title="Ação cancelada"
       cancel-msg="O group menu não foi excluído."
       @confirm="onDeleteConfirm"

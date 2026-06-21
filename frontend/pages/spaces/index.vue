@@ -12,6 +12,7 @@ interface SpaceResponse {
 
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
+const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
 const spaces = ref<SpaceResponse[]>([])
 const search = shallowRef('')
@@ -103,9 +104,11 @@ async function onDeleteConfirm(confirmed: boolean) {
 
     if (spaceStore.activeSpace?.id === deletedId && spaces.value.length > 0)
       spaceStore.setActiveSpace(spaces.value[0])
+
+    showSuccess('Espaço excluído com sucesso.')
   }
   catch (e) {
-    setError(e)
+    showError(e)
   }
   finally {
     isDeleting.value = false
@@ -169,6 +172,17 @@ function formatDate(iso: string) {
         :error="error"
         class="ma-4"
       />
+
+      <VSnackbar
+        v-model="snackbarVisible"
+        :color="snackbarColor"
+        :timeout="3000"
+      >
+        <div class="d-flex align-center gap-2">
+          <VIcon :icon="snackbarIcon" />
+          {{ snackbarMessage }}
+        </div>
+      </VSnackbar>
 
       <div
         v-if="isLoading"
@@ -298,9 +312,8 @@ function formatDate(iso: string) {
 
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
+      :auto-result="false"
       confirmation-question="Tem certeza que deseja excluir este espaço? Todos os membros, roles e dados associados serão removidos permanentemente."
-      confirm-title="Espaço excluído!"
-      confirm-msg="O espaço foi removido com sucesso."
       cancel-title="Ação cancelada"
       cancel-msg="O espaço não foi excluído."
       @confirm="onDeleteConfirm"

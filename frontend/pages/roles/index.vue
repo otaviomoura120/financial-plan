@@ -11,6 +11,7 @@ interface RoleResponse {
 
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
+const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
 const roles = ref<RoleResponse[]>([])
 const search = shallowRef('')
@@ -107,9 +108,10 @@ async function onDeleteConfirm(confirmed: boolean) {
   try {
     await $fetch(`/api/roles/${selectedRole.value.id}`, { method: 'DELETE' })
     roles.value = roles.value.filter(r => r.id !== selectedRole.value!.id)
+    showSuccess('Role excluída com sucesso.')
   }
   catch (e) {
-    setError(e)
+    showError(e)
   }
   finally {
     isDeleting.value = false
@@ -168,6 +170,17 @@ function formatDate(iso: string) {
         :error="error"
         class="ma-4"
       />
+
+      <VSnackbar
+        v-model="snackbarVisible"
+        :color="snackbarColor"
+        :timeout="3000"
+      >
+        <div class="d-flex align-center gap-2">
+          <VIcon :icon="snackbarIcon" />
+          {{ snackbarMessage }}
+        </div>
+      </VSnackbar>
 
       <div
         v-if="isLoading"
@@ -286,9 +299,8 @@ function formatDate(iso: string) {
 
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
+      :auto-result="false"
       confirmation-question="Tem certeza que deseja excluir esta role? Todos os usuários com esta role perderão o acesso associado."
-      confirm-title="Role excluída!"
-      confirm-msg="A role foi removida com sucesso."
       cancel-title="Ação cancelada"
       cancel-msg="A role não foi excluída."
       @confirm="onDeleteConfirm"

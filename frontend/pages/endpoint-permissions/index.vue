@@ -16,6 +16,7 @@ interface EndpointPermissionResponse {
 definePageMeta({ middleware: 'auth' })
 
 const { error, setError, clearError } = useApiError()
+const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
 const items = ref<EndpointPermissionResponse[]>([])
 const search = shallowRef('')
@@ -89,9 +90,10 @@ async function onDeleteConfirm(confirmed: boolean) {
   try {
     await $fetch(`/api/endpoint-permissions/${selectedItem.value.id}`, { method: 'DELETE' })
     items.value = items.value.filter(i => i.id !== selectedItem.value!.id)
+    showSuccess('Permissão excluída com sucesso.')
   }
   catch (e) {
-    setError(e)
+    showError(e)
   }
   finally {
     isDeleting.value = false
@@ -146,6 +148,17 @@ function onItemSaved(saved: EndpointPermissionResponse) {
         :error="error"
         class="ma-4"
       />
+
+      <VSnackbar
+        v-model="snackbarVisible"
+        :color="snackbarColor"
+        :timeout="3000"
+      >
+        <div class="d-flex align-center gap-2">
+          <VIcon :icon="snackbarIcon" />
+          {{ snackbarMessage }}
+        </div>
+      </VSnackbar>
 
       <div
         v-if="isLoading"
@@ -252,9 +265,8 @@ function onItemSaved(saved: EndpointPermissionResponse) {
 
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
+      :auto-result="false"
       confirmation-question="Tem certeza que deseja excluir esta permissão? Todos os vínculos de role com esta permissão serão removidos."
-      confirm-title="Permissão excluída!"
-      confirm-msg="A permissão foi removida com sucesso."
       cancel-title="Ação cancelada"
       cancel-msg="A permissão não foi excluída."
       @confirm="onDeleteConfirm"
