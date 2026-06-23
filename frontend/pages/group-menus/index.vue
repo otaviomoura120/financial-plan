@@ -29,6 +29,7 @@ const page = shallowRef(1)
 const itemsPerPage = shallowRef(10)
 const isLoading = shallowRef(false)
 const isDeleting = shallowRef(false)
+const searchVisible = shallowRef(false)
 
 const isAddEditDialogVisible = shallowRef(false)
 const isChildrenDialogVisible = shallowRef(false)
@@ -136,6 +137,12 @@ function onChildrenUpdated(updated: GroupMenuResponse) {
   selectedGroupMenu.value = updated
 }
 
+function toggleSearch() {
+  searchVisible.value = !searchVisible.value
+  if (!searchVisible.value)
+    search.value = ''
+}
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('pt-BR')
 }
@@ -156,10 +163,21 @@ function formatDate(iso: string) {
           placeholder="Buscar por nome..."
           density="compact"
           prepend-inner-icon="tabler-search"
-          class="flex-grow-1"
+          class="d-none d-md-block flex-grow-1"
           style="max-inline-size: 280px"
           hide-details
         />
+
+        <VBtn
+          class="d-md-none"
+          icon
+          variant="text"
+          size="small"
+          color="default"
+          @click="toggleSearch"
+        >
+          <VIcon :icon="searchVisible ? 'tabler-x' : 'tabler-search'" />
+        </VBtn>
 
         <VBtn
           prepend-icon="tabler-plus"
@@ -167,6 +185,17 @@ function formatDate(iso: string) {
         >
           Adicionar Group Menu
         </VBtn>
+
+        <VTextField
+          v-if="searchVisible"
+          v-model="search"
+          placeholder="Buscar por nome..."
+          density="compact"
+          prepend-inner-icon="tabler-search"
+          class="d-md-none w-100"
+          hide-details
+          autofocus
+        />
       </VCardText>
 
       <VDivider />

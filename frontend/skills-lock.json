@@ -7,6 +7,12 @@
       "skillPath": "plugins/auth0/skills/auth0-nuxt/SKILL.md",
       "computedHash": "7f3e0e05e8d8198c1ed14e3db0868e4b191bb16ece2c604114d340e0be6bd90b"
     },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "4eabc66183767153e404b39d1b839b1c37f2d82d86f0a0d7e880a579d8d62336"
+    },
     "nuxt-ui": {
       "source": "nuxt/ui",
       "sourceType": "github",
