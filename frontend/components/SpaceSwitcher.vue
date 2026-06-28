@@ -16,7 +16,7 @@ function switchSpace(space: Space) {
     class="space-switcher px-4 py-3"
   >
     <div class="text-xs text-uppercase text-disabled font-weight-medium mb-1 letter-spacing-1">
-      Active Space
+      Espaço ativo
     </div>
 
     <template v-if="hasMultipleSpaces">

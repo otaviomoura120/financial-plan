@@ -236,7 +236,7 @@ function formatDate(iso: string) {
   <div>
     <VCard>
       <VCardText class="d-flex align-center flex-wrap gap-4">
-        <h5 class="text-h5">
+        <h5 class="text-h5 text-truncate" style="min-inline-size: 0">
           Usuários
         </h5>
 
@@ -267,7 +267,7 @@ function formatDate(iso: string) {
           prepend-icon="tabler-user-plus"
           @click="isAddDialogVisible = true"
         >
-          Adicionar Usuário
+          <span class="d-none d-sm-inline">Adicionar Usuário</span>
         </VBtn>
 
         <VTextField

@@ -147,7 +147,7 @@ function formatDate(iso: string) {
   <div>
     <VCard>
       <VCardText class="d-flex align-center flex-wrap gap-4">
-        <h5 class="text-h5">
+        <h5 class="text-h5 text-truncate" style="min-inline-size: 0">
           Roles
         </h5>
 
@@ -178,7 +178,7 @@ function formatDate(iso: string) {
           prepend-icon="tabler-plus"
           @click="openCreate"
         >
-          Adicionar Role
+          <span class="d-none d-sm-inline">Adicionar Role</span>
         </VBtn>
 
         <VTextField

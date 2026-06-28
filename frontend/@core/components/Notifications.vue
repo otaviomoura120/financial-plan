@@ -71,7 +71,7 @@ const toggleReadUnread = (isSeen: boolean, Id: number | string) => {
         <!-- 👉 Header -->
         <VCardItem class="notification-section">
           <VCardTitle class="text-h6">
-            Notifications
+            Notificações
           </VCardTitle>
 
           <template #append>
@@ -81,7 +81,7 @@ const toggleReadUnread = (isSeen: boolean, Id: number | string) => {
               color="primary"
               class="me-2"
             >
-              {{ totalUnseenNotifications }} New
+              {{ totalUnseenNotifications }} Nova
             </VChip>
             <IconBtn
               v-show="props.notifications.length"
@@ -98,7 +98,7 @@ const toggleReadUnread = (isSeen: boolean, Id: number | string) => {
                 activator="parent"
                 location="start"
               >
-                {{ !isAllMarkRead ? 'Mark all as unread' : 'Mark all as read' }}
+                {{ !isAllMarkRead ? 'Marcar Tudo como não lido' : 'Marcar Tudo como lido' }}
               </VTooltip>
             </IconBtn>
           </template>
@@ -187,7 +187,7 @@ const toggleReadUnread = (isSeen: boolean, Id: number | string) => {
               class="text-center text-medium-emphasis"
               style="block-size: 56px;"
             >
-              <VListItemTitle>No Notification Found!</VListItemTitle>
+              <VListItemTitle>Não foram encontradas notificações!</VListItemTitle>
             </VListItem>
           </VList>
         </PerfectScrollbar>

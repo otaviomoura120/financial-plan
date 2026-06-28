@@ -125,7 +125,7 @@ function toggleSearch() {
   <div>
     <VCard>
       <VCardText class="d-flex align-center flex-wrap gap-4">
-        <h5 class="text-h5">
+        <h5 class="text-h5 text-truncate" style="min-inline-size: 0">
           Permissões de Endpoint
         </h5>
 
@@ -156,7 +156,7 @@ function toggleSearch() {
           prepend-icon="tabler-plus"
           @click="openCreate"
         >
-          Adicionar Permissão
+          <span class="d-none d-sm-inline">Adicionar Permissão</span>
         </VBtn>
 
         <VTextField
@@ -203,9 +203,9 @@ function toggleSearch() {
           <tr>
             <th style="min-width: 200px">Nome</th>
             <th style="min-width: 200px">Endpoint</th>
-            <th style="min-width: 200px">Tipo</th>
+            <th style="min-width: 150px">Tipo</th>
             <th style="min-width: 200px">Grupo</th>
-            <th style="min-width: 200px">Métodos</th>
+            <th style="min-width: 100px">Métodos</th>
             <th>Sequência</th>
             <th class="text-center">
               Ações
