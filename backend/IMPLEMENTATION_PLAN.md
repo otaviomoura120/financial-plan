@@ -32,6 +32,37 @@ Decisões já validadas com o usuário:
 
 ---
 
+## Divisão em grupos de desenvolvimento
+
+> Cada grupo abaixo é dimensionado para caber numa única sessão/agente sem estourar a janela de contexto — cada tarefa de backend já implica código + spec Groovy + doc + `./gradlew test`, o que consome bastante contexto por item. Tarefas marcadas como **independente/coringa** não têm restrição de ordem e devem ser encaixadas em qualquer sessão que sobrar espaço, em vez de reservar uma sessão exclusiva só para elas.
+
+### Backend
+
+| Grupo | Tarefas | Por que agrupadas assim |
+|---|---|---|
+| **B1** | T2, T3 | Mesma unidade domain+infra da `Transaction`: novo enum/campo (`TRANSFER`) e a persistência real que já nasce mapeando esse campo — evita reabrir os mesmos arquivos em sessões separadas. |
+| **B2** | T4, T5 | Validação de FKs e o helper de efeito de saldo — preparam, mas ainda não tocam, os três services de ciclo de vida da Transaction. |
+| **B3** | T6, T7 | Integração de criar/editar — mexem nos mesmos arquivos (`CreateTransactionService`, `UpdateTransactionService`, `TransactionBalanceEffectService`); fazer juntas mantém o raciocínio de apply/revert fresco na mesma sessão. |
+| **B4** | T8, T9 | Fecha o ciclo de vida (delete + revert) e, em seguida, valida o resultado agregado (reports) — sequência natural de confirmação do que foi feito em B3. |
+| **B5** | T9b | Isolamento multi-tenant no filtro de Transaction — sensível (vazamento de dados entre spaces), melhor isolada em sua própria sessão. |
+| **B6** | T9c | 4 services novos + 4 specs novas (listagens) — grande o suficiente para ficar sozinha, sem perder o fio entre as 4 entidades. |
+| **B7** | T10 | Segurança fina em 5 controllers + atualização de `seed.sql` — grande e sensível, não deve ser misturada com lógica de negócio de outra tarefa. |
+| **B8** | T12 | Gate final — depende de todas as anteriores, roda sozinha ao final como critério objetivo de conclusão. |
+| **coringa** | T1, T11, T13 | Independentes entre si e sem overlap de arquivo com a cadeia principal (T2→T12) — encaixar como "extra" em qualquer grupo acima quando sobrar contexto na sessão. |
+
+### Frontend
+
+| Grupo | Tarefas | Por que agrupadas assim |
+|---|---|---|
+| **F1** | F1 | Piloto do padrão (tela mais simples: só `name` + `active`) — valida o template antes das próximas telas. |
+| **F2** | F2 | Bank Accounts — mesmo padrão de F1, com a regra extra de saldo não-editável. |
+| **F3** | F3 | Categories + SubCategories — inclui um dialog secundário (sub-recurso), por isso maior que F1/F2. |
+| **F4** | F4 | Transactions — página principal, maior complexidade de formulário (campos condicionais por `type`); depende dos selects de F1-F3. |
+| **F5** | F5 | Reports — só leitura, reaproveita formatação de linha de F4. |
+| **coringa** | F6 | Atualização de `PRODUCT.md`, sem dependência técnica de nenhuma tela — encaixar a qualquer momento, inclusive em paralelo aos grupos acima. |
+
+---
+
 ## Spec por entidade
 
 ### BankAccount (`domain/BankAccount.java`)
@@ -68,11 +99,15 @@ Sem domain próprio — deriva de `TransactionRepository.findByFilter`. `totalIn
 
 ## Tarefas de Backend (ordem de dependência)
 
+> **[coringa]** independente da cadeia principal — encaixar em qualquer sessão/grupo abaixo quando sobrar contexto.
+
 - [ ] **T1 — Persistência real de SubCategory**
 Criar `infrastructure/repository/jpa/JpaSubCategoryRepository.java` (`extends JpaRepository<SubCategoryEntityJpa, Long>` + `findByCategoryId`). Reescrever `SubCategoryRepositoryImpl.java` com mapeamento direto (sem Space), seguindo o padrão de `PaymentMethodRepositoryImpl.java`. Independente do resto, pode ser feito a qualquer momento.
 **Testes (obrigatório):** specs de `CreateSubCategoryService`/`UpdateSubCategoryService`/`DeleteSubCategoryService` (mockando `SubCategoryRepository`, `CategoryRepository`) cobrindo sucesso e categoria pai inexistente — `./gradlew test` verde antes de fechar.
 **Docs:** revisar `backend/docs/APP_OVERVIEW.md` (seção SubCategory / REST API Reference) — confirmar que o contrato já descrito bate com o comportamento real agora que não é mais stub; nenhuma mudança de contrato esperada.
 *Pronto quando:* `POST/PUT/DELETE /categories/subcategories/*` persistem e consultam de verdade.
+
+### [Grupo B1] Fundação: domínio TRANSFER + persistência de Transaction
 
 - [ ] **T2 — Suporte a TRANSFER no domain Transaction**
 Editar `domain/enums/TransactionType.java` (add `TRANSFER`). Editar `domain/Transaction.java`: novo campo `destinationBankAccountId`, atualizar construtor, `update(...)`, e `validate()` com a ramificação descrita acima.
@@ -86,6 +121,8 @@ Criar `infrastructure/repository/jpa/JpaTransactionRepository.java` — `extends
 **Testes (obrigatório):** cobertura indireta via specs de T4/T6 (que mockam `TransactionRepository`, então a implementação JPA em si é validada por teste manual/integration — documentar no PR os cenários manuais executados: create/update/delete/findByFilter contra o MySQL local).
 **Docs:** nenhuma mudança de contrato público — sem edição de doc necessária.
 *Pronto quando:* `POST/PUT/DELETE /transactions` persistem de verdade; `findByFilter` retorna resultados corretos para cada combinação de filtros.
+
+### [Grupo B2] Validação de FKs + helper de efeito de saldo
 
 - [ ] **T4 — Atualizar DTOs e validação de FKs em CreateTransactionService**
 Adicionar `destinationBankAccountId` em `CreateTransactionRequest`, `UpdateTransactionRequest`, `TransactionResponse` (`application/transaction/dto/`). Em `CreateTransactionService`, injetar `BankAccountRepository`, `CategoryRepository`, `SubCategoryRepository`, `PaymentMethodRepository`, `UserRepository` e validar existência de cada FK antes de montar a `Transaction` (padrão de `CreateBankAccountService`, que verifica `Space` existe): `bankAccountId` sempre; `destinationBankAccountId` só se `TRANSFER`; `categoryId`/`paymentMethodId` só se não-`TRANSFER`; `subCategoryId` se informado; `userId` sempre.
@@ -104,6 +141,8 @@ Isso evita duplicar a lógica de "qual conta(s) afetar por tipo" nos três servi
 **Docs:** criar `backend/docs/transaction-balance-effect.md` explicando a regra de efeito/reversão por tipo (INCOME/EXPENSE/TRANSFER) — referência de manutenção futura para quem mexer nessa lógica.
 *Pronto quando:* a spec isolada confirma que aplica/reverte corretamente os 3 tipos.
 
+### [Grupo B3] Integração de criação e atualização
+
 - [ ] **T6 — Integrar em CreateTransactionService**
 Depois de validar FKs (T4) e antes de salvar, chamar `balanceEffectService.apply(transaction)`. Envolver em `@Transactional` para atomicidade entre update(s) de BankAccount e save da Transaction.
 *Depende de:* T4, T5.
@@ -117,6 +156,8 @@ Capturar a Transaction antiga completa antes de `update(...)`. Chamar `balanceEf
 **Testes (obrigatório):** `UpdateTransactionServiceSpec.groovy` — mudança de amount, mudança de type, mudança de bankAccountId/destinationBankAccountId, confirmando reversão + reaplicação corretas nas contas certas.
 **Docs:** atualizar `backend/docs/transaction-balance-effect.md` com o fluxo de update (revert + reapply).
 *Pronto quando:* editar qualquer combinação desses campos deixa o(s) saldo(s) corretos, sem duplicar nem perder efeito, e a spec passa.
+
+### [Grupo B4] Fechamento do ciclo de vida + validação de Reports
 
 - [ ] **T8 — Integrar em DeleteTransactionService**
 Hoje o service só faz `transactionRepository.delete(id)` sem buscar antes. Mudar para: `findById` (lançar `DomainException("Transaction not found")` se `null`), `balanceEffectService.revert(transaction)`, então `delete(id)`. `@Transactional`.
@@ -132,12 +173,16 @@ Testar com transações reais (INCOME/EXPENSE/TRANSFER) criadas via T6, confirma
 **Docs:** atualizar `backend/docs/APP_OVERVIEW.md` seção "Key Flows → 3. Financial Report" explicitando que TRANSFER não entra nos totais.
 *Pronto quando:* os valores batem com o esperado e a spec passa.
 
+### [Grupo B5] Isolamento multi-tenant no filtro de Transaction
+
 - [ ] **T9b — Escopo por Space no filtro de Transaction (gap de isolamento multi-tenant)**
 `Transaction` não guarda `spaceId` diretamente (só `bankAccountId`), e `TransactionRepository.findByFilter` hoje não recebe `spaceId` — uma consulta sem filtro de conta vazaria transações de **todos os spaces**. Adicionar `spaceId` como parâmetro obrigatório em `findByFilter(...)` e em `ReportFilterRequest`; na implementação JPA (`TransactionRepositoryImpl`, via `Specification`), restringir com uma subquery: `bankAccountId IN (SELECT id FROM bank_accounts WHERE space_id = :spaceId)`. Atualizar `GenerateReportService`/`ReportController` para exigir `spaceId` no request.
 *Depende de:* T3.
 **Testes (obrigatório):** estender `GenerateReportServiceSpec.groovy` (T9) com um cenário de duas contas em spaces diferentes, confirmando que o filtro por `spaceId` isola corretamente.
 **Docs:** atualizar `backend/docs/APP_OVERVIEW.md` seção Reports, deixando claro que `spaceId` é obrigatório no filtro.
 *Pronto quando:* um `POST /reports` de um space nunca retorna transações de bank accounts de outro space, e a spec passa.
+
+### [Grupo B6] Endpoints de listagem
 
 - [ ] **T9c — Endpoints GET/listagem faltantes (bloqueiam o frontend)**
 Nenhum destes controllers tem endpoint de listagem hoje — sem isso as telas novas não têm como popular a tabela:
@@ -150,6 +195,8 @@ Nenhum destes controllers tem endpoint de listagem hoje — sem isso as telas no
 **Docs:** atualizar a tabela "REST API Reference" do `backend/docs/APP_OVERVIEW.md`, adicionando a linha `GET` em cada uma das 4 seções (Bank Accounts, Categories, Payment Methods, Transactions).
 *Pronto quando:* cada um desses GETs retorna os dados reais do space ativo e as specs passam.
 
+### [Grupo B7] Segurança fina nos controllers
+
 - [ ] **T10 — Segurança fina nos controllers do módulo core**
 Adicionar `@PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")` (padrão de `EndpointPermissionController.java`) em **todos** os métodos (incluindo os novos GETs de T9c) de `BankAccountController`, `CategoryController`, `PaymentMethodController`, `TransactionController`, `ReportController`.
 
@@ -158,17 +205,23 @@ Adicionar `@PreAuthorize("@securityService.userHasPermissionForURL(authenticatio
 **Testes (obrigatório):** teste de integração/manual documentado (não há Spock de `@PreAuthorize` isolado no padrão atual do projeto) — confirmar via chamada real com token de um usuário sem `ALLOW` recebendo 403, e com `ALLOW` funcionando; se o projeto já tiver algum padrão de teste de `SecurityService`/`@PreAuthorize` (ver `SecurityServiceSpec.groovy`), seguir o mesmo padrão para os novos endpoints.
 **Docs:** `backend/docs/seed.sql` (obrigatório, ver acima) + atualizar `backend/docs/APP_OVERVIEW.md` seção "Access Control Flow" se o padrão de proteção mudar.
 
+> **[coringa]** independente — distribuir entre as sessões dos grupos acima em vez de reservar uma sessão só para isso.
+
 - [ ] **T11 — Specs Groovy/Spock remanescentes (fora do fluxo de Transaction)**
 Cobrir os services que ficaram sem spec e não fazem parte da cadeia T1-T9c: `UpdateBankAccountServiceSpec`, `DeleteBankAccountServiceSpec`, `UpdateCategoryServiceSpec`, `DeleteCategoryServiceSpec`, `UpdatePaymentMethodServiceSpec`, `DeletePaymentMethodServiceSpec` — padrão de `CreateBankAccountServiceSpec.groovy` (mockando as interfaces de repository, nunca os `*RepositoryImpl`).
 *Depende de:* nenhuma (independente, pode ser feito a qualquer momento em paralelo).
 **Testes (obrigatório):** as próprias specs listadas acima, `./gradlew test` verde.
 **Docs:** nenhuma — são apenas testes de comportamento já documentado.
 
+### [Grupo B8] Gate final
+
 - [ ] **T12 — ArchUnit + suíte completa (gate final)**
 Rodar `./gradlew test` (inclui `ArchitectureTest` + todas as specs de T1-T11). Confirmar que nenhuma regra de camada foi violada (o novo `TransactionBalanceEffectService` fica em `application`, não em `domain`/`infrastructure`).
 *Depende de:* todas as anteriores.
 **Testes (obrigatório):** este É o gate de teste — `./gradlew test` 100% verde é o critério de pronto.
 **Docs:** nenhuma nova — apenas confirmar que todas as docs das tarefas anteriores foram de fato commitadas.
+
+> **[coringa/opcional]** baixa prioridade, encaixar em qualquer sessão livre.
 
 - [ ] **T13 — (opcional, baixa prioridade) Limpeza do código órfão Address**
 Remover `domain/Address.java` e `infrastructure/repository/jpa/AddressEntityJpa.java` (sem `validate()`, sem uso em nenhum lugar). Confirmar com `grep -r "Address" src/main` antes. Totalmente independente, pode ser feito a qualquer momento.
@@ -194,11 +247,15 @@ Hoje **nenhuma página financeira existe** — nem `bank-accounts`, `categories`
 
 **Ordem: primeiro as telas de cadastro básico (dependências de dropdown), depois as páginas principais que as consomem.**
 
+### [Grupo F1] Payment Methods (piloto do padrão)
+
 - [ ] **F1 — Payment Methods** (`pages/payment-methods/`)
 Tela mais simples (só `name` + `active`) — bom ponto de partida para validar o padrão. CRUD completo + `server/api/payment-methods/*`.
 *Depende de:* backend T10 (endpoint com `@PreAuthorize` + seed) e o GET de T9c.
 **Verificação:** rodar `pnpm dev`, abrir `/payment-methods`, criar/editar/excluir manualmente no navegador (este projeto não tem suíte de teste de frontend — a verificação é funcional/manual, seguindo a skill `verify`).
 **Docs:** criar `frontend/docs/payment-methods.md` (seguir o formato de `frontend/docs/user-invite.md`) descrevendo rotas, campos do form e componentes usados.
+
+### [Grupo F2] Bank Accounts
 
 - [ ] **F2 — Bank Accounts** (`pages/bank-accounts/`)
 Form de criação: `name`, `bankName`, `initialBalance`. Form de edição: só `name`/`bankName` (balance não é editável diretamente, só via transações — refletir isso na UI, sem campo de saldo editável no form de edição, só exibido como read-only na tabela). Exclusão = soft delete (`active=false`, backend já faz isso).
@@ -206,11 +263,15 @@ Form de criação: `name`, `bankName`, `initialBalance`. Form de edição: só `
 **Verificação:** manual no navegador — criar conta, conferir saldo inicial exibido, editar nome/banco, desativar.
 **Docs:** criar `frontend/docs/bank-accounts.md`.
 
+### [Grupo F3] Categories + SubCategories
+
 - [ ] **F3 — Categories + SubCategories** (`pages/categories/`)
 Lista de categorias (`name`, `active`). Gerenciar subcategorias como sub-recurso: seguir o padrão de `RolePermissionsDialog.vue` (dialog secundário aberto a partir de uma linha da tabela) — um `ManageSubCategoriesDialog.vue` que lista/cria/edita/exclui as subcategorias daquela categoria (`server/api/categories/[id]/subcategories/*`, espelhando `server/api/roles/[id]/permissions/*`).
 *Depende de:* backend T1 (persistência real de SubCategory) + T9c.
 **Verificação:** manual no navegador — criar categoria, abrir subcategorias, criar/editar/excluir subcategoria.
 **Docs:** criar `frontend/docs/categories.md`.
+
+### [Grupo F4] Transactions (página principal)
 
 - [ ] **F4 — Transactions** (`pages/transactions/`) — página principal
 Form: `type` (INCOME/EXPENSE/TRANSFER — select), `bankAccountId` (select, populado por F2/GET bank-accounts do space ativo), `destinationBankAccountId` (só aparece se `type=TRANSFER`, mesma lista de contas, excluindo a selecionada em `bankAccountId`), `categoryId`+`subCategoryId` (selects em cascata, só aparecem se `type≠TRANSFER`, populados por F3), `paymentMethodId` (select, só se `type≠TRANSFER`, populado por F1), `amount`, `transactionDate` (date picker), `description` (opcional). Lista com filtro de período (date range, default mês atual) usando o novo `GET /transactions`.
@@ -218,11 +279,15 @@ Form: `type` (INCOME/EXPENSE/TRANSFER — select), `bankAccountId` (select, popu
 **Verificação:** manual no navegador — criar INCOME/EXPENSE/TRANSFER, conferir que o saldo das contas envolvidas muda (checando em `/bank-accounts`), editar e excluir uma transação e conferir reversão do saldo.
 **Docs:** criar `frontend/docs/transactions.md`.
 
+### [Grupo F5] Reports
+
 - [ ] **F5 — Reports** (`pages/reports/`)
 Página só de leitura: formulário de filtro (`from`/`to` obrigatórios, demais opcionais — mesmos campos de `ReportFilterRequest`) + cards de resumo (`totalIncome`/`totalExpense`/`balance`, seguir estilo de "informativo, não alarmante" do `PRODUCT.md`) + tabela das transações do período (reaproveitar a formatação de linha usada em F4, sem ações de editar/excluir aqui). `server/api/reports/index.post.ts` proxy simples.
 *Depende de:* F4 (mesmos componentes de formatação de linha), backend T9b (escopo por space).
 **Verificação:** manual no navegador — filtrar por período, conferir totais e que TRANSFER aparece na lista mas não nos totais.
 **Docs:** criar `frontend/docs/reports.md`.
+
+> **[coringa]** sem dependência técnica de nenhuma tela — encaixar a qualquer momento, inclusive em paralelo aos grupos acima.
 
 - [ ] **F6 — Ajustar `frontend/PRODUCT.md`**
 O doc atual descreve o produto só como "admin control plane" (roles/permissions/spaces) e não menciona nada financeiro — está desatualizado frente ao propósito real do app (`backend/docs/APP_OVERVIEW.md`). Atualizar para refletir que o público final também inclui o usuário comum controlando as próprias finanças, não só admins operacionais.
