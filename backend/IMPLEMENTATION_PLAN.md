@@ -50,6 +50,27 @@ Decisões já validadas com o usuário:
 | **B8** | T12 | Gate final — depende de todas as anteriores, roda sozinha ao final como critério objetivo de conclusão. |
 | **coringa** | T1, T11, T13 | Independentes entre si e sem overlap de arquivo com a cadeia principal (T2→T12) — encaixar como "extra" em qualquer grupo acima quando sobrar contexto na sessão. |
 
+> Os grupos abaixo (`P`/`CC`/`AP`/`RPT`/`GATE`) pertencem aos módulos novos de **Cartão de Crédito** e **Contas a Pagar** (ver seções "Spec das novas entidades" e "Tarefas de Backend/Frontend — Cartão de Crédito e Contas a Pagar" mais adiante). Usam prefixos próprios em vez de continuar B9/B10 porque são dois módulos grandes que não fazem parte da cadeia de estabilização B1-B8 — os prefixos deixam claro onde termina "core" e começa "novo", e permitem que CC e AP avancem em paralelo por sessões diferentes (só sincronizam em P1 no início e RPT1/GATE1 no fim).
+
+| Grupo | Tarefas | Por que agrupadas assim |
+|---|---|---|
+| **P1** | P1 | Fundação compartilhada (rastreabilidade de pagamento em `Transaction`) — precisa existir antes de CC6/CC7/AP5/AP6. |
+| **CC1** | CC1 | `CreditCard` + `CreditCardInvoiceCycle` — domínio+persistência da entidade e da calculadora de ciclo de fatura. |
+| **CC2** | CC2 | CRUD de `CreditCard` + controller já com `@PreAuthorize` + seed. |
+| **CC3** | CC3 | `CreditCardInvoicePayment` — domínio+persistência, isolada por ser pequena e só usada a partir de CC5/CC6. |
+| **CC4** | CC4 | `CreditCardTransaction` — domínio+persistência com isolamento por Space desde o início. |
+| **CC5** | CC5 | CRUD de `CreditCardTransaction` + guarda de "mês já pago". |
+| **CC6** | CC6 | Pagamento de fatura + listagem — reaproveita `TransactionBalanceEffectService` do core. |
+| **CC7** | CC7 | Desfazer pagamento de fatura — ação dedicada e isolada (decisão validada: sem cascade automático). |
+| **AP1** | AP1 | `Bill` (template) — domínio+persistência. |
+| **AP2** | AP2 | `BillInstance` (ocorrência) — domínio+persistência com isolamento por Space desde o início. |
+| **AP3** | AP3 | CRUD de `Bill` (básico + agenda dedicada) + auto-criação de instância avulsa + controller. |
+| **AP4** | AP4 | Geração sob demanda de instâncias + listagem "contas do mês". |
+| **AP5** | AP5 | Pagamento de conta + edição de valor. |
+| **AP6** | AP6 | Desfazer pagamento de conta — ação dedicada, espelha CC7. |
+| **RPT1** | RPT1 | Saldo previsto em `GenerateReportService` — única tarefa que toca o Report para os dois módulos. |
+| **GATE1** | GATE1 | Gate final dos dois módulos novos. |
+
 ### Frontend
 
 | Grupo | Tarefas | Por que agrupadas assim |
@@ -60,6 +81,17 @@ Decisões já validadas com o usuário:
 | **F4** | F4 | Transactions — página principal, maior complexidade de formulário (campos condicionais por `type`); depende dos selects de F1-F3. |
 | **F5** | F5 | Reports — só leitura, reaproveita formatação de linha de F4. |
 | **coringa** | F6 | Atualização de `PRODUCT.md`, sem dependência técnica de nenhuma tela — encaixar a qualquer momento, inclusive em paralelo aos grupos acima. |
+
+> Grupos dos módulos novos (ver "Tarefas de Frontend — Cartão de Crédito e Contas a Pagar" mais adiante):
+
+| Grupo | Tarefas | Por que agrupadas assim |
+|---|---|---|
+| **FCC1** | FCC1 | Cadastro de Cartões — piloto do padrão para o módulo de cartão. |
+| **FCC2** | FCC2 | Lançamentos no cartão — dialog secundário a partir da linha do cartão. |
+| **FCC3** | FCC3 | Fatura, pagamento e reversão — maior complexidade (confirmação dedicada de "desfazer"). |
+| **FAP1** | FAP1 | Cadastro de Contas a Pagar (template + agenda). |
+| **FAP2** | FAP2 | Contas do mês — pagar/editar valor/desfazer. |
+| **FRPT1** | FRPT1 | Atualização da tela de Reports com saldo previsto. |
 
 ---
 
@@ -296,6 +328,287 @@ O doc atual descreve o produto só como "admin control plane" (roles/permissions
 
 ---
 
+# Módulos novos: Cartão de Crédito e Contas a Pagar
+
+## Contexto
+
+O plano acima (T1-T13/F1-F6) cobre a estabilização do módulo financeiro core e deixa "dívidas, cartões, contas fixas etc." explicitamente fora de escopo (ver Contexto no topo do arquivo, item 1 das decisões). Esta seção **adiciona o desenho** (ainda não a implementação) de dois módulos que dependem desse core já estabilizado:
+
+1. **Cartão de Crédito** — múltiplos cartões, cada um com limite e fatura (fechamento + vencimento). Lançamentos no cartão não afetam o saldo da conta bancária diretamente — só quando a fatura é paga.
+2. **Contas a Pagar** — uma conta vira uma expense no dia em que é marcada como paga; pode ser recorrente (luz, internet) ou avulsa.
+
+### Decisões validadas com o usuário para estes módulos
+
+1. **Reversão de pagamento exige confirmação dedicada.** Editar/excluir pelo fluxo genérico de Transações é **bloqueado** (`DomainException`) para transações vinculadas a um pagamento de fatura/conta. A reversão só acontece por uma ação própria e explícita — "Desfazer pagamento" — em cada módulo, com sua própria confirmação na UI. Sem cascade automático dentro do `DeleteTransactionService` do core.
+2. **Cartão de crédito tem `closingDay` (fechamento) E `dueDay` (vencimento)** — mais fiel ao ciclo real de fatura do que só uma data de vencimento.
+3. **Saldo previsto no relatório considera só pendências com vencimento dentro do período filtrado** (`from`/`to`).
+4. **Contas recorrentes (`Bill`) têm `recurring`/`startDate` editáveis** via uma ação dedicada (`UpdateBillScheduleService`), separada da edição básica. Como a geração de instâncias é sob demanda e sempre lê o estado atual do `Bill`, mudar a agenda só afeta instâncias ainda não geradas.
+
+---
+
+## Spec das novas entidades — Cartão de Crédito e Contas a Pagar
+
+### Extensão compartilhada: `Transaction` ganha rastreabilidade de origem
+**Novos campos em `domain/Transaction.java`:** `sourceType` (novo enum `domain/enums/TransactionSourceType`: `CREDIT_CARD_INVOICE_PAYMENT`, `BILL_INSTANCE_PAYMENT`), `sourceId` (Long). Ambos nulos para transações normais. Novo método `isLinkedToSource()`.
+**Regra em `UpdateTransactionService`:** se `sourceType != null` → `DomainException("Cannot edit a transaction generated by a bill/invoice payment")`.
+**Regra em `DeleteTransactionService`:** se `sourceType != null` → `DomainException("Cannot delete a transaction generated by a bill/invoice payment; use the dedicated undo action")`. **Sem cascade aqui** — a reversão vive em serviços dedicados nos módulos CC/AP (ver CC7/AP6), que chamam `TransactionRepository`/`TransactionBalanceEffectService` diretamente.
+
+### CreditCard (`domain/CreditCard.java`) — nova, tenancy direta (padrão BankAccount/PaymentMethod)
+**Campos:** id, version, space (Space), name, limit (BigDecimal), closingDay (Integer 1-31), dueDay (Integer 1-31), active, createdDate, updatedDate.
+**`validate()`:** name não-blank; space não-nulo; limit não-nulo e > 0; closingDay/dueDay não-nulos, entre 1 e 31.
+**Métodos:** `update(name, limit, closingDay, dueDay)`, `deactivate()`, lock otimista manual (`setVersion`).
+**Limite é informativo, não bloqueante** — mesma filosofia do saldo negativo permitido em `BankAccount`; sem validação de "limite excedido" ao lançar uma `CreditCardTransaction`.
+
+### CreditCardInvoiceCycle (`domain/CreditCardInvoiceCycle.java`) — nova, calculadora pura (sem estado, sem repositório)
+Métodos estáticos usados por CC4/CC5/CC6:
+- `resolveClosingDate(YearMonth month, int closingDay)` → `LocalDate` do fechamento naquele mês, clampado ao último dia do mês (evita estourar fevereiro).
+- `resolveReferenceMonth(LocalDate purchaseDate, int closingDay)` → mês (primeiro dia) da fatura à qual a compra pertence: se `purchaseDate <= resolveClosingDate(mês da compra, closingDay)`, é o próprio mês da compra; senão é o mês seguinte.
+- `resolveDueDate(LocalDate referenceMonth, int closingDay, int dueDay)` → se `dueDay <= closingDay`, o vencimento cai no mês **seguinte** ao `referenceMonth`; senão, cai dentro do próprio `referenceMonth`. Sempre clampado ao tamanho do mês.
+
+### CreditCardTransaction (`domain/CreditCardTransaction.java`) — nova, tenancy indireta (padrão Transaction/SubCategory)
+**Campos:** id, version, creditCardId (Long), userId (Long), categoryId (Long), subCategoryId (Long, opcional), amount (BigDecimal > 0), purchaseDate (LocalDate), description (opcional), createdDate, updatedDate.
+**`validate()`:** creditCardId, userId, categoryId, amount>0, purchaseDate obrigatórios; subCategoryId opcional.
+**Sem soft-delete** (hard delete, como `Transaction`).
+**Regra de aplicação:** create/update/delete são bloqueados se já existir `CreditCardInvoicePayment` para `(creditCardId, CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, card.closingDay))` — `DomainException("Cannot modify a transaction from a paid invoice")`.
+
+### CreditCardInvoicePayment (`domain/CreditCardInvoicePayment.java`) — nova, só existe quando paga
+**Decisão de design:** não existe uma "CreditCardInvoice" com status persistida a cada mês. Fatura em aberto é sempre computada em memória (soma das `CreditCardTransaction` do mês via `CreditCardInvoiceCycle`); só quando paga nasce esta linha (existência = pago).
+**Campos:** id, version, creditCardId, referenceMonth (LocalDate, único por creditCardId), dueDate (calculado no momento do pagamento), paidAmount (BigDecimal, soma travada), paidDate, paymentTransactionId (Long, FK para a Transaction EXPENSE gerada), bankAccountId, createdDate, updatedDate.
+**`validate()`:** creditCardId, referenceMonth, dueDate, paidAmount>0 obrigatórios. Sem `update()` de negócio. Único por `(credit_card_id, reference_month)`.
+
+### Bill (`domain/Bill.java`) — nova, tenancy direta (template recorrente OU avulso)
+**Campos:** id, version, space (Space), name, categoryId (Long, opcional), defaultAmount (BigDecimal > 0), startDate (LocalDate — âncora do primeiro vencimento e, se recorrente, do dia-do-mês), recurring (boolean), active, createdDate, updatedDate.
+**`validate()`:** name não-blank; space não-nulo; defaultAmount > 0; startDate não-nulo.
+**Um único Bill cobre avulso (`recurring=false`, gera 1 `BillInstance` na criação) e recorrente** (`recurring=true`, gera 1 `BillInstance`/mês sob demanda).
+**Métodos:**
+- `update(name, categoryId, defaultAmount)` — campos básicos.
+- `updateSchedule(recurring, startDate)` — agenda; dedicado e separado do básico. Como a geração é sob demanda e sempre lê o `Bill` atual, isso só afeta instâncias futuras (as já geradas mantêm seu `dueDate` antigo).
+- `deactivate()` — pausa geração futura; instâncias já geradas não são tocadas.
+
+### BillInstance (`domain/BillInstance.java`) — nova, tenancy indireta
+**Campos:** id, version, billId, referenceMonth (LocalDate, único por billId), dueDate, amount (copiado de `Bill.defaultAmount` na geração, editável enquanto PENDING), status (enum `BillInstanceStatus`: PENDING/PAID), paidDate, paymentTransactionId, bankAccountId, createdDate, updatedDate.
+**`validate()`:** billId, referenceMonth, dueDate, amount>0 obrigatórios.
+**Métodos:** `updateAmount(newAmount)` (só se PENDING), `markAsPaid(paidDate, paymentTransactionId, bankAccountId)` (só se PENDING), `revertToPending()` (usado só pelo Undo dedicado). Único por `(bill_id, reference_month)`.
+
+### Geração sob demanda — sem scheduler novo
+- **Cartão:** fatura aberta nunca é materializada — sempre computada em memória a partir de `CreditCardTransaction` existentes via `CreditCardInvoiceCycle`. Só a linha de pagamento (`CreditCardInvoicePayment`) é escrita, no momento do pagamento.
+- **Contas a pagar recorrentes:** precisam de materialização antecipada (usuário edita/paga antes de qualquer Transaction existir). `EnsureBillInstancesGeneratedService(spaceId, upToDate)` gera as `BillInstance` PENDING faltantes entre o último mês já gerado e `min(mês de upToDate, mês atual + 1)` — cap fixo evita gerar centenas de linhas de uma vez. Idempotente via índice único `(bill_id, reference_month)`. Chamado por `ListBillInstancesService` e por `GenerateReportService`.
+- **Por que não um job:** zero infra de `@Scheduled`/Quartz hoje no projeto; criar uma só para isso adicionaria uma categoria de falha nova (job travado, timezone, idempotência sob restart) para um resultado que a geração preguiçosa já entrega (tela sempre certa ao abrir). Só vira necessário se o produto quiser lembrete por e-mail/push **antes** de o usuário abrir o app — módulo futuro separado, fora de escopo.
+
+### Saldo previsto — cálculo e exposição
+**Novos campos em `ReportResponse`:** `currentBalance` (soma de `BankAccount.balance` ativas do space, ou só da conta filtrada), `pendingCreditCardInvoices` (lista `{creditCardId, creditCardName, referenceMonth, dueDate, amount}`) + `pendingCreditCardTotal`, `pendingBillInstances` (lista `{billInstanceId, billId, billName, referenceMonth, dueDate, amount}`) + `pendingBillTotal`, `projectedBalance = currentBalance - pendingCreditCardTotal - pendingBillTotal`.
+**Filtro:** uma fatura/instância pendente só entra na soma se seu `dueDate` cair dentro de `[from, to]` do `ReportFilterRequest` (decisão validada). `ReportFilterRequest` não precisa de campo novo (já tem `spaceId`/`from`/`to` via T9b do plano core).
+**Fontes:** faturas pendentes = `CreditCardTransaction` do período agrupadas por `(creditCardId, referenceMonth via CreditCardInvoiceCycle)`, excluindo grupos com `CreditCardInvoicePayment` já existente. Contas pendentes = `EnsureBillInstancesGeneratedService` + `BillInstanceRepository.findBySpaceAndPeriod` com `status=PENDING`.
+
+---
+
+## Tarefas de Backend — Cartão de Crédito e Contas a Pagar (grupos `P`/`CC`/`AP`/`RPT`/`GATE`)
+
+### [Grupo P1] Fundação compartilhada: rastreabilidade de pagamento em Transaction
+
+- [ ] **P1 — `sourceType`/`sourceId` em Transaction + bloqueio de edição/exclusão**
+Editar `domain/enums/TransactionSourceType.java` (novo). Editar `domain/Transaction.java`: campos `sourceType`/`sourceId`, `isLinkedToSource()`. Editar `TransactionEntityJpa`/`TransactionRepositoryImpl` (2 colunas nullable). Editar `UpdateTransactionService` e `DeleteTransactionService` para rejeitar (`DomainException`) qualquer transação vinculada — sem cascade, só bloqueio.
+*Depende de:* core T3, T7, T8 (mexe nos arquivos já estabilizados por eles).
+**Testes (obrigatório):** estender `TransactionSpec.groovy` + `UpdateTransactionServiceSpec.groovy` + `DeleteTransactionServiceSpec.groovy` com o cenário "transação vinculada rejeita update/delete".
+**Docs:** `APP_OVERVIEW.md` seção Transaction — novos campos + regra de bloqueio.
+*Pronto quando:* update/delete de uma Transaction com `sourceType` preenchido retornam 422, e as specs passam.
+
+### Módulo Cartão de Crédito
+
+### [Grupo CC1] Domínio e persistência: CreditCard + CreditCardInvoiceCycle
+
+- [ ] **CC1 — CreditCard + CreditCardInvoiceCycle: domain + persistência**
+Criar `domain/CreditCard.java`, `domain/CreditCardInvoiceCycle.java` (calculadora pura), `domain/repository/CreditCardRepository.java` (`save/update/findById/findBySpaceId/delete`), `CreditCardEntityJpa`, `JpaCreditCardRepository`, `CreditCardRepositoryImpl` (padrão `BankAccountRepositoryImpl`, tenancy direta).
+*Depende de:* nenhuma.
+**Testes (obrigatório):** `CreditCardSpec.groovy` (validate) + `CreditCardInvoiceCycleSpec.groovy` (resolveReferenceMonth/resolveDueDate cobrindo closingDay antes/depois de dueDay, e clamp de mês curto).
+**Docs:** subseção "CreditCard" em `backend/docs/APP_OVERVIEW.md`.
+*Pronto quando:* specs passam; persistência validada manualmente.
+
+### [Grupo CC2] CRUD de CreditCard + controller + seed
+
+- [ ] **CC2 — CreditCard: services CRUD + controller + `@PreAuthorize` desde o início**
+`CreateCreditCardService`, `UpdateCreditCardService`, `DeactivateCreditCardService`, `ListCreditCardsService` + DTOs + `CreditCardController` (`POST/PUT/DELETE/GET /credit-cards`) já com `@PreAuthorize` (não repetir o gap do T10 core).
+*Depende de:* CC1.
+**Testes (obrigatório):** uma spec por service.
+**Docs:** `backend/docs/seed.sql` (API + FRONT_PAGE `/credit-cards` + `group_menu_children` sob o grupo já existente `'Contas e Pagamentos'` + listas ADMIN/MEMBER) + `APP_OVERVIEW.md`.
+*Pronto quando:* CRUD funciona fim-a-fim e retorna 403 sem `ALLOW`.
+
+### [Grupo CC3] Domínio e persistência: CreditCardInvoicePayment
+
+- [ ] **CC3 — CreditCardInvoicePayment: domain + persistência**
+Criar `domain/CreditCardInvoicePayment.java`, `domain/repository/CreditCardInvoicePaymentRepository.java` (`save/findById/findByCreditCardIdAndReferenceMonth/deleteById`), JPA entity (índice único `credit_card_id+reference_month`), `JpaCreditCardInvoicePaymentRepository`, `CreditCardInvoicePaymentRepositoryImpl`.
+*Depende de:* CC1.
+**Testes (obrigatório):** `CreditCardInvoicePaymentSpec.groovy` (validate).
+**Docs:** nenhuma ainda (junto com CC6).
+*Pronto quando:* spec passa; `save`/`findByCreditCardIdAndReferenceMonth` funcionam manualmente.
+
+### [Grupo CC4] Domínio e persistência: CreditCardTransaction
+
+- [ ] **CC4 — CreditCardTransaction: domain + persistência (isolamento por Space desde o início)**
+Criar `domain/CreditCardTransaction.java`, `domain/repository/CreditCardTransactionRepository.java` (`save/update/findById/findByFilter(spaceId, creditCardId, categoryId, subCategoryId, from, to)/delete`), JPA entity, `JpaCreditCardTransactionRepository` (`JpaSpecificationExecutor`), `CreditCardTransactionRepositoryImpl` com filtro por `spaceId` via subquery **já embutido** (aprender com o gap de T9b do core).
+*Depende de:* CC1.
+**Testes (obrigatório):** `CreditCardTransactionSpec.groovy`.
+**Docs:** subseção "CreditCardTransaction" em `APP_OVERVIEW.md`.
+*Pronto quando:* spec passa; `findByFilter` isola por `spaceId` em teste manual com 2 spaces.
+
+### [Grupo CC5] CRUD de CreditCardTransaction com guarda de fatura paga
+
+- [ ] **CC5 — CreditCardTransaction: services CRUD + guarda "mês já pago" + controller**
+`CreateCreditCardTransactionService` (valida FKs), `UpdateCreditCardTransactionService`, `DeleteCreditCardTransactionService`, `ListCreditCardTransactionsService`. As 3 primeiras usam `CreditCardInvoiceCycle.resolveReferenceMonth` + `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` para rejeitar alteração de mês já pago. Controller `/credit-card-transactions` com `@PreAuthorize`.
+*Depende de:* CC1, CC3, CC4.
+**Testes (obrigatório):** uma spec por service, incluindo "mês já pago rejeita".
+**Docs:** `seed.sql` + `APP_OVERVIEW.md`.
+*Pronto quando:* CRUD funciona e a guarda é respeitada nas 3 operações.
+
+### [Grupo CC6] Pagamento de fatura + listagem
+
+- [ ] **CC6 — PayCreditCardInvoiceService + ListCreditCardInvoicesService**
+`ListCreditCardInvoicesService(spaceId, creditCardId?, from, to)`: agrupa `CreditCardTransaction` por `(creditCardId, referenceMonth)` via `CreditCardInvoiceCycle`, marca pago/aberto conforme existência de `CreditCardInvoicePayment`. `PayCreditCardInvoiceService.execute(creditCardId, referenceMonth, {bankAccountId, categoryId, paymentMethodId, paidDate})`: rejeita se já paga ou soma zero; soma as `CreditCardTransaction` do mês; chama `CreateTransactionService` (reaproveita `TransactionBalanceEffectService` de T5/T6 do core, `type=EXPENSE`, `sourceType=CREDIT_CARD_INVOICE_PAYMENT`); persiste `CreditCardInvoicePayment` com o `paymentTransactionId`. `@Transactional`. Controller: `GET /credit-cards/invoices?spaceId=&creditCardId=&from=&to=`, `POST /credit-cards/{id}/invoices/{referenceMonth}/pay`.
+*Depende de:* CC3, CC5, P1, core T5/T6.
+**Testes (obrigatório):** `PayCreditCardInvoiceServiceSpec.groovy` (sucesso, já paga, mês vazio, FK inexistente), `ListCreditCardInvoicesServiceSpec.groovy` (mistura aberto/pago).
+**Docs:** criar `backend/docs/credit-card-invoice.md` (formato de `transaction-balance-effect.md`) explicando o ciclo de fatura e por que não é materializada até o pagamento; `seed.sql`; `APP_OVERVIEW.md`.
+*Pronto quando:* pagar gera a Transaction correta e debita a conta escolhida.
+
+### [Grupo CC7] Desfazer pagamento de fatura (ação dedicada)
+
+- [ ] **CC7 — UndoCreditCardInvoicePaymentService + controller**
+`UndoCreditCardInvoicePaymentService(creditCardId, referenceMonth)`: busca `CreditCardInvoicePayment` (senão `DomainException`), busca a `Transaction` via `paymentTransactionId`, chama `TransactionBalanceEffectService.revert(transaction)` + `TransactionRepository.delete(transaction.id)` diretamente (não via `DeleteTransactionService`, que bloqueia transações vinculadas), depois `creditCardInvoicePaymentRepository.deleteById(payment.id)`. `@Transactional`. Controller: `POST /credit-cards/{id}/invoices/{referenceMonth}/undo-payment`, `@PreAuthorize`.
+*Depende de:* CC6, P1.
+**Testes (obrigatório):** `UndoCreditCardInvoicePaymentServiceSpec.groovy` (sucesso — saldo revertido e fatura volta a aberta; fatura inexistente/não paga rejeitada).
+**Docs:** `credit-card-invoice.md` (seção de reversão) + `seed.sql` + `APP_OVERVIEW.md`.
+*Pronto quando:* desfazer o pagamento reverte o saldo da conta e a fatura volta a aparecer como aberta em `ListCreditCardInvoicesService`.
+
+### Módulo Contas a Pagar
+
+### [Grupo AP1] Domínio e persistência: Bill
+
+- [ ] **AP1 — Bill: domain + persistência**
+Criar `domain/Bill.java`, `domain/repository/BillRepository.java`, JPA entity, `JpaBillRepository`, `BillRepositoryImpl` (tenancy direta).
+*Depende de:* nenhuma.
+**Testes (obrigatório):** `BillSpec.groovy` (validate, update, updateSchedule).
+**Docs:** subseção "Bill" em `APP_OVERVIEW.md`.
+*Pronto quando:* spec passa; persistência validada manualmente.
+
+### [Grupo AP2] Domínio e persistência: BillInstance
+
+- [ ] **AP2 — BillInstance: domain + persistência (isolamento por Space desde o início)**
+Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domain/repository/BillInstanceRepository.java` (`save/update/findById/findByBillIdAndReferenceMonth/findByBillId/findBySpaceAndPeriod`), JPA entity (índice único), `JpaBillInstanceRepository`, `BillInstanceRepositoryImpl` com filtro por `spaceId` via subquery já embutido.
+*Depende de:* AP1.
+**Testes (obrigatório):** `BillInstanceSpec.groovy` (validate, updateAmount bloqueado se PAID, markAsPaid bloqueado se já PAID, revertToPending).
+**Docs:** subseção "BillInstance" em `APP_OVERVIEW.md`.
+*Pronto quando:* spec passa; `findBySpaceAndPeriod` isola por space em teste manual.
+
+### [Grupo AP3] CRUD de Bill (básico + agenda) + instância automática avulsa + controller
+
+- [ ] **AP3 — Bill: services CRUD completos + auto-criação de instância única (não-recorrente) + controller**
+`CreateBillService` (se `recurring=false`, cria imediatamente 1 `BillInstance` PENDING com `dueDate=startDate`, na mesma transação), `UpdateBillService` (nome/categoria/defaultAmount), `UpdateBillScheduleService` (recurring/startDate — dedicado, só afeta futuro), `DeactivateBillService`, `ListBillsService` + controller `/bills` com `@PreAuthorize`.
+*Depende de:* AP1, AP2.
+**Testes (obrigatório):** uma spec por service, incluindo "Bill não-recorrente já nasce com 1 instância" e "updateSchedule não altera instâncias já geradas".
+**Docs:** `seed.sql` (API + FRONT_PAGE `/bills` + `group_menu_children` sob `'Contas e Pagamentos'`) + `APP_OVERVIEW.md`.
+*Pronto quando:* CRUD completo funciona, incluindo a agenda dedicada.
+
+### [Grupo AP4] Geração preguiçosa + listagem "contas do mês"
+
+- [ ] **AP4 — EnsureBillInstancesGeneratedService + ListBillInstancesService**
+`EnsureBillInstancesGeneratedService(spaceId, upToDate)`: gera `BillInstance` PENDING faltantes por `Bill` ativo+recorrente, do último mês existente até `min(mês de upToDate, mês atual+1)`, idempotente. `ListBillInstancesService(spaceId, from, to)`: chama o ensure-service, depois `findBySpaceAndPeriod`. Controller: `GET /bills/instances?spaceId=&from=&to=`.
+*Depende de:* AP2, AP3.
+**Testes (obrigatório):** `EnsureBillInstancesGeneratedServiceSpec.groovy` (gera só o que falta, respeita o cap, idempotente), `ListBillInstancesServiceSpec.groovy`.
+**Docs:** `seed.sql` + `APP_OVERVIEW.md`.
+*Pronto quando:* abrir a tela de um mês nunca visitado já mostra as instâncias corretas.
+
+### [Grupo AP5] Pagamento + edição de valor
+
+- [ ] **AP5 — PayBillInstanceService + UpdateBillInstanceAmountService**
+`UpdateBillInstanceAmountService(id, newAmount)` (bloqueia se PAID). `PayBillInstanceService.execute(id, {bankAccountId, paymentMethodId, categoryId?, paidDate})`: resolve categoria (request → `Bill.categoryId` → erro), chama `CreateTransactionService` (`type=EXPENSE`, `sourceType=BILL_INSTANCE_PAYMENT`), `billInstance.markAsPaid(...)`. `@Transactional`. Controller: `PUT /bills/instances/{id}/amount`, `POST /bills/instances/{id}/pay`.
+*Depende de:* AP2, AP4, P1, core T5/T6.
+**Testes (obrigatório):** `PayBillInstanceServiceSpec.groovy` (sucesso, já paga, sem categoria resolvível), `UpdateBillInstanceAmountServiceSpec.groovy`.
+**Docs:** criar `backend/docs/recurring-bills.md` (formato de `transaction-balance-effect.md`); `seed.sql`; `APP_OVERVIEW.md`.
+*Pronto quando:* editar valor e pagar funcionam fim-a-fim.
+
+### [Grupo AP6] Desfazer pagamento de conta (ação dedicada)
+
+- [ ] **AP6 — UndoBillInstancePaymentService + controller**
+`UndoBillInstancePaymentService(billInstanceId)`: busca `BillInstance` (valida `status==PAID`, senão `DomainException`), busca a `Transaction` via `paymentTransactionId`, `TransactionBalanceEffectService.revert(transaction)` + `TransactionRepository.delete(...)` diretamente, `billInstance.revertToPending()` + `update()`. `@Transactional`. Controller: `POST /bills/instances/{id}/undo-payment`, `@PreAuthorize`.
+*Depende de:* AP5, P1.
+**Testes (obrigatório):** `UndoBillInstancePaymentServiceSpec.groovy` (sucesso, instância não paga rejeitada).
+**Docs:** `recurring-bills.md` (seção de reversão) + `seed.sql` + `APP_OVERVIEW.md`.
+*Pronto quando:* desfazer o pagamento reverte o saldo e a instância volta a PENDING.
+
+### Fechamento compartilhado
+
+### [Grupo RPT1] Saldo previsto no Report
+
+- [ ] **RPT1 — Saldo previsto em GenerateReportService**
+Editar `ReportFilterRequest`/`ReportResponse` (campos novos da spec acima). Editar `GenerateReportService`: injeta `BankAccountRepository`, `CreditCardRepository`, `CreditCardTransactionRepository`, `CreditCardInvoicePaymentRepository`, `EnsureBillInstancesGeneratedService`, `BillInstanceRepository`; calcula `currentBalance`, pendências de cartão e de contas, `projectedBalance`.
+*Depende de:* CC6, AP5 (única tarefa que toca `GenerateReportService` para os dois módulos, evita reabrir o arquivo duas vezes).
+**Testes (obrigatório):** estender `GenerateReportServiceSpec.groovy` (fatura aberta dentro/fora do período, fatura paga não conta, instância pendente dentro/fora do período, `projectedBalance` correto).
+**Docs:** `APP_OVERVIEW.md` seção "Key Flows → 3. Financial Report".
+*Pronto quando:* `POST /reports` retorna `projectedBalance` correto.
+
+### [Grupo GATE1] Gate final dos dois módulos
+
+- [ ] **GATE1 — ArchUnit + suíte completa (gate final CC+AP)**
+Rodar `./gradlew test` (inclui `ArchitectureTest` + todas as specs de P1/CC1-7/AP1-6/RPT1). Confirmar que nenhum service novo vazou de camada.
+*Depende de:* todas as anteriores desta seção.
+**Testes (obrigatório):** `./gradlew test` 100% verde.
+**Docs:** nenhuma nova — confirmar que todas foram commitadas.
+
+---
+
+## Tarefas de Frontend — Cartão de Crédito e Contas a Pagar
+
+Reaproveitam integralmente o padrão já estabelecido no plano core (página + `AddEdit<Entidade>Dialog.vue` + `ConfirmDialog` + `server/api/<entidade>/*`), incluindo o padrão de dialog secundário aberto a partir de uma linha da tabela.
+
+### [Grupo FCC1] Cadastro de Cartões
+
+- [ ] **FCC1 — Credit Cards** (`pages/credit-cards/`)
+Form: `name`, `limit`, `closingDay`, `dueDay`. CRUD completo, mesmo padrão de F2 (Bank Accounts).
+*Depende de:* backend CC2.
+**Verificação:** manual no navegador — criar/editar/desativar cartão.
+**Docs:** criar `frontend/docs/credit-cards.md`.
+
+### [Grupo FCC2] Lançamentos no cartão
+
+- [ ] **FCC2 — Lançamentos de Cartão** (dialog secundário a partir da linha do cartão, `ManageCreditCardTransactionsDialog.vue`)
+Lista/cria/edita/exclui `CreditCardTransaction` do cartão selecionado: `categoryId`+`subCategoryId` (cascata, selects de F3), `amount`, `purchaseDate`, `description`. Filtro de período.
+*Depende de:* FCC1, F3 (selects de categoria), backend CC5.
+**Verificação:** manual no navegador — lançar compra; tentar editar/excluir uma compra de mês já pago (depois de FCC3 existir) e confirmar bloqueio.
+**Docs:** `frontend/docs/credit-cards.md` (seção adicional).
+
+### [Grupo FCC3] Fatura, pagamento e reversão
+
+- [ ] **FCC3 — Fatura do Cartão** (`pages/credit-cards/[id]/invoices.vue` ou dialog)
+Lista meses (aberto/pago) com totais; dialog "Pagar Fatura" (`bankAccountId`, `categoryId`, `paymentMethodId`, `paidDate`); ação "Desfazer Pagamento" com confirmação explícita dedicada ("Tem certeza? O saldo da conta X será revertido em R$Y").
+*Depende de:* FCC2, backend CC6, CC7.
+**Verificação:** manual no navegador — pagar fatura, conferir saldo da conta escolhida em `/bank-accounts`, desfazer o pagamento e confirmar que a fatura volta a "aberta" e o saldo é revertido.
+**Docs:** `frontend/docs/credit-cards.md` (seção adicional).
+
+### [Grupo FAP1] Cadastro de Contas a Pagar
+
+- [ ] **FAP1 — Bills** (`pages/bills/`)
+Form básico (`name`, `categoryId`, `defaultAmount`) + seção separada "Agenda" (`recurring`/`startDate`, editável via ação própria). CRUD (update básico + update de agenda conforme AP3).
+*Depende de:* backend AP3, F3 (categorias).
+**Verificação:** manual no navegador — criar conta avulsa (confirmar 1 instância já aparece em FAP2) e conta recorrente; editar a agenda de uma recorrente e confirmar que só instâncias futuras mudam.
+**Docs:** criar `frontend/docs/bills.md`.
+
+### [Grupo FAP2] Contas do mês (pagar/desfazer)
+
+- [ ] **FAP2 — Contas do Mês** (`pages/bills/instances.vue` ou seção da mesma página)
+Lista `BillInstance` do período selecionado (default mês atual), com edição inline de `amount` (só se PENDING), dialog "Marcar como Paga" (`bankAccountId`, `categoryId?`, `paymentMethodId`, `paidDate`) e ação "Desfazer Pagamento" com confirmação dedicada.
+*Depende de:* FAP1, backend AP4/AP5/AP6.
+**Verificação:** manual no navegador — editar valor de uma pendente, pagar, conferir saldo da conta, desfazer o pagamento e confirmar retorno a pendente.
+**Docs:** `frontend/docs/bills.md` (seção adicional).
+
+### [Grupo FRPT1] Atualização da tela de Reports
+
+- [ ] **FRPT1 — Saldo previsto em Reports** (atualização de `pages/reports/` de F5)
+Adicionar cards de `currentBalance`/`projectedBalance` e duas listas (faturas pendentes, contas pendentes) ao lado dos cards já existentes de `totalIncome`/`totalExpense`/`balance`.
+*Depende de:* F5 (já existente), backend RPT1.
+**Verificação:** manual no navegador — conferir que `projectedBalance` bate com `currentBalance - faturas pendentes - contas pendentes` do período filtrado.
+**Docs:** `frontend/docs/reports.md` (atualizar, não recriar).
+
+---
+
 ## Verificação end-to-end (depois de todas as tarefas)
 
 1. `./gradlew test` verde (unit specs + ArchitectureTest) — gate T12.
@@ -317,3 +630,12 @@ O doc atual descreve o produto só como "admin control plane" (roles/permissions
    - Abrir `/transactions` → criar INCOME/EXPENSE/TRANSFER usando os selects populados pelas telas acima; conferir que o saldo das contas envolvidas muda de acordo (checar em `/bank-accounts`).
    - Abrir `/reports` → filtrar por período e conferir que os totais batem e que a TRANSFER aparece na lista mas não nos totais.
    - Trocar de space ativo e confirmar que todas as 5 telas recarregam com os dados do novo space (isolamento correto).
+4. Módulos novos — Cartão de Crédito e Contas a Pagar (depois de P1/CC1-7/AP1-6/RPT1/GATE1 + FCC1-3/FAP1-2/FRPT1):
+   - Criar um CreditCard com `closingDay`/`dueDay` distintos; lançar compras que caiam em 2 meses de fatura diferentes (uma antes e outra depois do fechamento) e confirmar que `CreditCardInvoiceCycle` agrupou corretamente.
+   - Pagar a fatura de um mês → conferir débito na conta bancária escolhida (`/bank-accounts`) e que a `Transaction` gerada aparece com `sourceType=CREDIT_CARD_INVOICE_PAYMENT` e não pode ser editada/excluída pela tela normal de Transações.
+   - Tentar editar/excluir uma `CreditCardTransaction` de um mês já pago → deve rejeitar (`DomainException`).
+   - Usar a ação dedicada "Desfazer Pagamento" da fatura → confirmar que pede confirmação explícita, reverte o saldo da conta e a fatura volta a aparecer como aberta.
+   - Criar uma `Bill` avulsa (confirmar que já nasce com 1 `BillInstance` pendente) e uma recorrente; abrir a tela de "contas do mês" de um mês futuro nunca visitado e confirmar que a instância é gerada sob demanda.
+   - Editar o valor de uma `BillInstance` pendente, marcar como paga → conferir débito na conta escolhida; usar "Desfazer Pagamento" → confirmar reversão do saldo e retorno a PENDING.
+   - Editar a agenda (`recurring`/`startDate`) de uma `Bill` recorrente já em andamento → confirmar que instâncias já geradas (pendentes ou pagas) não mudam, só as futuras.
+   - `POST /reports` no período → conferir que `projectedBalance` bate com `currentBalance - pendências (fatura + contas) com vencimento dentro do período filtrado`.
