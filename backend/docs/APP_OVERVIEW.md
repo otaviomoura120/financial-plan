@@ -97,7 +97,12 @@ POST /transactions
     destinationBankAccountId only for TRANSFER; categoryId/paymentMethodId only for INCOME/EXPENSE;
     subCategoryId only when informed) → 422 DomainException if any is missing
   → Transaction.validate() checks required fields per type and amount > 0
-  → stored and returned as TransactionResponse
+  → TransactionBalanceEffectService.apply() credits/debits the bank account(s) involved (see transaction-balance-effect.md)
+  → stored and returned as TransactionResponse (all inside one @Transactional boundary)
+
+Editing a transaction (PUT /transactions/{id}) reverts the old balance effect and re-applies the new one — same
+service, same rules for FK validation — so changing type/amount/bankAccountId/destinationBankAccountId always
+leaves the affected bank account(s) with the correct resulting balance.
 ```
 
 ### 3. Financial Report

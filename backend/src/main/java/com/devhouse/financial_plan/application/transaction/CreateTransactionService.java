@@ -12,6 +12,7 @@ import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import com.devhouse.financial_plan.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 
@@ -24,18 +25,22 @@ public class CreateTransactionService {
     private final SubCategoryRepository subCategoryRepository;
     private final PaymentMethodRepository paymentMethodRepository;
     private final UserRepository userRepository;
+    private final TransactionBalanceEffectService balanceEffectService;
 
     public CreateTransactionService(TransactionRepository transactionRepository, BankAccountRepository bankAccountRepository,
                                      CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository,
-                                     PaymentMethodRepository paymentMethodRepository, UserRepository userRepository) {
+                                     PaymentMethodRepository paymentMethodRepository, UserRepository userRepository,
+                                     TransactionBalanceEffectService balanceEffectService) {
         this.transactionRepository = transactionRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
         this.paymentMethodRepository = paymentMethodRepository;
         this.userRepository = userRepository;
+        this.balanceEffectService = balanceEffectService;
     }
 
+    @Transactional
     public TransactionResponse execute(CreateTransactionRequest request) {
         validateForeignKeys(request);
         Transaction transaction = new Transaction(null, 0, request.type(), request.userId(),
@@ -43,6 +48,7 @@ public class CreateTransactionService {
                 request.paymentMethodId(), request.amount(), request.transactionDate(),
                 request.description(), Instant.now(), null);
         transaction.validate();
+        balanceEffectService.apply(transaction);
         Transaction saved = transactionRepository.save(transaction);
         return toResponse(saved);
     }

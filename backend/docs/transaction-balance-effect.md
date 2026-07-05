@@ -23,4 +23,10 @@ Mirrors the inverse of `apply` for the same transaction — used when undoing it
 ## Notes
 - Both methods read the current `BankAccount` via `BankAccountRepository.findById`, call `credit()`/`debit()` on the domain object, and persist it back via `update()`.
 - No "insufficient balance" guard exists anywhere in this flow — negative balances are allowed by design (see `BankAccount.credit()`/`debit()`), so `revert()` is never blocked.
-- This service does not itself call `TransactionRepository` — it only touches `BankAccountRepository`. Wiring it into create/update/delete (so it actually runs during the transaction lifecycle) is done by the services that consume it.
+- This service does not itself call `TransactionRepository` — it only touches `BankAccountRepository`.
+
+## Wiring into the Transaction lifecycle
+
+- **`CreateTransactionService`** (`@Transactional`): after FK validation and `Transaction.validate()`, calls `apply(transaction)` before persisting. If any FK is missing, `apply` is never reached.
+- **`UpdateTransactionService`** (`@Transactional`): takes a full in-memory snapshot of the transaction as loaded from the repository (before `Transaction.update(...)` mutates it), validates the new FKs, then calls `revert(old)` followed by `Transaction.update(...)` + `Transaction.validate()` + `apply(updated)`. This correctly handles changes to `type`, `amount`, `bankAccountId` and/or `destinationBankAccountId` — e.g. moving a transaction from one bank account to another reverts the effect on the old account and applies it to the new one. FK validation runs before `revert`, so an invalid new bank account/category/payment method/sub-category aborts the update without touching any balance.
+- **`DeleteTransactionService`**: not yet wired (see T8) — still deletes without reverting the balance effect.

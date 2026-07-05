@@ -176,14 +176,14 @@ Isso evita duplicar a lógica de "qual conta(s) afetar por tipo" nos três servi
 
 ### [Grupo B3] Integração de criação e atualização
 
-- [ ] **T6 — Integrar em CreateTransactionService**
+- [x] **T6 — Integrar em CreateTransactionService**
 Depois de validar FKs (T4) e antes de salvar, chamar `balanceEffectService.apply(transaction)`. Envolver em `@Transactional` para atomicidade entre update(s) de BankAccount e save da Transaction.
 *Depende de:* T4, T5.
 **Testes (obrigatório):** estender `CreateTransactionServiceSpec.groovy` de T4 com verificação de que `BankAccountRepository.update` foi chamado com o saldo correto para cada tipo.
 **Docs:** atualizar `backend/docs/transaction-balance-effect.md` (T5) e a seção "Key Flows → 2" do `APP_OVERVIEW.md` confirmando que criar uma transação já reflete no saldo.
 *Pronto quando:* criar INCOME/EXPENSE/TRANSFER reflete corretamente o(s) saldo(s) das conta(s) envolvidas e a spec passa.
 
-- [ ] **T7 — Integrar em UpdateTransactionService**
+- [x] **T7 — Integrar em UpdateTransactionService**
 Capturar a Transaction antiga completa antes de `update(...)`. Chamar `balanceEffectService.revert(old)`, então aplicar as mesmas validações de FK de T4 sobre os novos valores, montar a transaction atualizada e chamar `balanceEffectService.apply(updated)`. Cobre os casos de mudança de `type`, `amount`, `bankAccountId` e/ou `destinationBankAccountId`. `@Transactional`.
 *Depende de:* T6.
 **Testes (obrigatório):** `UpdateTransactionServiceSpec.groovy` — mudança de amount, mudança de type, mudança de bankAccountId/destinationBankAccountId, confirmando reversão + reaplicação corretas nas contas certas.
