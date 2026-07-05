@@ -92,8 +92,11 @@ POST /payment-methods → add payment methods
 ### 2. Recording a Transaction
 ```
 POST /transactions
-  body: { type, userId, bankAccountId, categoryId, subCategoryId, paymentMethodId, amount, transactionDate, description }
-  → Transaction.validate() checks all IDs present and amount > 0
+  body: { type, userId, bankAccountId, destinationBankAccountId, categoryId, subCategoryId, paymentMethodId, amount, transactionDate, description }
+  → CreateTransactionService validates that every referenced FK exists (userId, bankAccountId always;
+    destinationBankAccountId only for TRANSFER; categoryId/paymentMethodId only for INCOME/EXPENSE;
+    subCategoryId only when informed) → 422 DomainException if any is missing
+  → Transaction.validate() checks required fields per type and amount > 0
   → stored and returned as TransactionResponse
 ```
 

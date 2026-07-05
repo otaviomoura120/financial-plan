@@ -157,14 +157,14 @@ Criar `infrastructure/repository/jpa/JpaTransactionRepository.java` — `extends
 
 ### [Grupo B2] Validação de FKs + helper de efeito de saldo
 
-- [ ] **T4 — Atualizar DTOs e validação de FKs em CreateTransactionService**
+- [x] **T4 — Atualizar DTOs e validação de FKs em CreateTransactionService**
 Adicionar `destinationBankAccountId` em `CreateTransactionRequest`, `UpdateTransactionRequest`, `TransactionResponse` (`application/transaction/dto/`). Em `CreateTransactionService`, injetar `BankAccountRepository`, `CategoryRepository`, `SubCategoryRepository`, `PaymentMethodRepository`, `UserRepository` e validar existência de cada FK antes de montar a `Transaction` (padrão de `CreateBankAccountService`, que verifica `Space` existe): `bankAccountId` sempre; `destinationBankAccountId` só se `TRANSFER`; `categoryId`/`paymentMethodId` só se não-`TRANSFER`; `subCategoryId` se informado; `userId` sempre.
 *Depende de:* T3.
 **Testes (obrigatório):** `CreateTransactionServiceSpec.groovy` — sucesso INCOME/EXPENSE/TRANSFER, cada FK inexistente retornando `DomainException`, TRANSFER com `bankAccountId == destinationBankAccountId` rejeitado.
 **Docs:** atualizar `backend/docs/APP_OVERVIEW.md`, seção "Key Flows → 2. Recording a Transaction", com o novo campo e a validação de FKs.
 *Pronto quando:* `POST /transactions` com qualquer FK inexistente retorna 422 em vez de criar registro órfão, e a spec passa.
 
-- [ ] **T5 — Helper compartilhado de efeito de saldo**
+- [x] **T5 — Helper compartilhado de efeito de saldo**
 Criar uma classe de aplicação (ex: `application/transaction/TransactionBalanceEffectService.java`) injetável em Create/Update/Delete, com dois métodos:
 - `apply(Transaction t)`: INCOME → `bankAccountRepository.findById(t.bankAccountId).credit(amount)` + update; EXPENSE → mesma conta, `debit`; TRANSFER → `debit` na conta de origem + `credit` na conta de destino, ambas persistidas.
 - `revert(Transaction t)`: espelha o inverso de cada caso (INCOME→debit, EXPENSE→credit, TRANSFER→credit na origem + debit no destino).

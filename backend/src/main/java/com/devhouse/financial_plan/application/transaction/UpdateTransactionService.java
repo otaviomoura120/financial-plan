@@ -18,13 +18,13 @@ public class UpdateTransactionService {
     public TransactionResponse execute(Long id, UpdateTransactionRequest request) {
         Transaction transaction = transactionRepository.findById(id);
         transaction.setVersion(request.version());
-        transaction.update(request.type(), request.bankAccountId(), null, request.categoryId(),
+        transaction.update(request.type(), request.bankAccountId(), request.destinationBankAccountId(), request.categoryId(),
                 request.subCategoryId(), request.paymentMethodId(), request.amount(),
                 request.transactionDate(), request.description());
         transaction.validate();
         Transaction updated = transactionRepository.update(transaction);
         return new TransactionResponse(updated.getId(), updated.getVersion(), updated.getType(), updated.getUserId(),
-                updated.getBankAccountId(), updated.getCategoryId(), updated.getSubCategoryId(),
+                updated.getBankAccountId(), updated.getDestinationBankAccountId(), updated.getCategoryId(), updated.getSubCategoryId(),
                 updated.getPaymentMethodId(), updated.getAmount(), updated.getTransactionDate(),
                 updated.getDescription(), updated.getCreatedDate());
     }
