@@ -322,7 +322,7 @@ Página só de leitura: formulário de filtro (`from`/`to` obrigatórios, demais
 
 > **[coringa]** sem dependência técnica de nenhuma tela — encaixar a qualquer momento, inclusive em paralelo aos grupos acima.
 
-- [ ] **F6 — Ajustar `frontend/PRODUCT.md`**
+- [x] **F6 — Ajustar `frontend/PRODUCT.md`**
 O doc atual descreve o produto só como "admin control plane" (roles/permissions/spaces) e não menciona nada financeiro — está desatualizado frente ao propósito real do app (`backend/docs/APP_OVERVIEW.md`). Atualizar para refletir que o público final também inclui o usuário comum controlando as próprias finanças, não só admins operacionais.
 *Baixa prioridade, pode ser feito a qualquer momento.*
 **Docs:** esta tarefa É a própria atualização de doc (`frontend/PRODUCT.md`).
