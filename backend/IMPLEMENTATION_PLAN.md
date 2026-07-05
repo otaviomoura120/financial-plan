@@ -282,7 +282,7 @@ Hoje **nenhuma página financeira existe** — nem `bank-accounts`, `categories`
 
 ### [Grupo F1] Payment Methods (piloto do padrão)
 
-- [ ] **F1 — Payment Methods** (`pages/payment-methods/`)
+- [x] **F1 — Payment Methods** (`pages/payment-methods/`)
 Tela mais simples (só `name` + `active`) — bom ponto de partida para validar o padrão. CRUD completo + `server/api/payment-methods/*`.
 *Depende de:* backend T10 (endpoint com `@PreAuthorize` + seed) e o GET de T9c.
 **Verificação:** rodar `pnpm dev`, abrir `/payment-methods`, criar/editar/excluir manualmente no navegador (este projeto não tem suíte de teste de frontend — a verificação é funcional/manual, seguindo a skill `verify`).
