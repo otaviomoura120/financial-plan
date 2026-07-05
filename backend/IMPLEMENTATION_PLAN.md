@@ -58,8 +58,9 @@ Decisões já validadas com o usuário:
 | **CC1** | CC1 | `CreditCard` + `CreditCardInvoiceCycle` — domínio+persistência da entidade e da calculadora de ciclo de fatura. |
 | **CC2** | CC2 | CRUD de `CreditCard` + controller já com `@PreAuthorize` + seed. |
 | **CC3** | CC3 | `CreditCardInvoicePayment` — domínio+persistência, isolada por ser pequena e só usada a partir de CC5/CC6. |
-| **CC4** | CC4 | `CreditCardTransaction` — domínio+persistência com isolamento por Space desde o início. |
-| **CC5** | CC5 | CRUD de `CreditCardTransaction` + guarda de "mês já pago". |
+| **CC4** | CC4 | `CreditCardTransaction` — domínio+persistência com isolamento por Space desde o início, já com campos de parcelamento. |
+| **CC5** | CC5 | CRUD de `CreditCardTransaction` + guarda de "mês já pago" + criação de compra parcelada (N linhas). |
+| **CC5b** | CC5b | Antecipação das últimas N parcelas de uma compra para a fatura aberta solicitada — ação dedicada, sem mover dinheiro. |
 | **CC6** | CC6 | Pagamento de fatura + listagem — reaproveita `TransactionBalanceEffectService` do core. |
 | **CC7** | CC7 | Desfazer pagamento de fatura — ação dedicada e isolada (decisão validada: sem cascade automático). |
 | **AP1** | AP1 | `Bill` (template) — domínio+persistência. |
@@ -87,7 +88,7 @@ Decisões já validadas com o usuário:
 | Grupo | Tarefas | Por que agrupadas assim |
 |---|---|---|
 | **FCC1** | FCC1 | Cadastro de Cartões — piloto do padrão para o módulo de cartão. |
-| **FCC2** | FCC2 | Lançamentos no cartão — dialog secundário a partir da linha do cartão. |
+| **FCC2** | FCC2 | Lançamentos no cartão + parcelamento e antecipação de parcelas — dialog secundário a partir da linha do cartão. |
 | **FCC3** | FCC3 | Fatura, pagamento e reversão — maior complexidade (confirmação dedicada de "desfazer"). |
 | **FAP1** | FAP1 | Cadastro de Contas a Pagar (template + agenda). |
 | **FAP2** | FAP2 | Contas do mês — pagar/editar valor/desfazer. |
@@ -366,13 +367,37 @@ Métodos estáticos usados por CC4/CC5/CC6:
 - `resolveDueDate(LocalDate referenceMonth, int closingDay, int dueDay)` → se `dueDay <= closingDay`, o vencimento cai no mês **seguinte** ao `referenceMonth`; senão, cai dentro do próprio `referenceMonth`. Sempre clampado ao tamanho do mês.
 
 ### CreditCardTransaction (`domain/CreditCardTransaction.java`) — nova, tenancy indireta (padrão Transaction/SubCategory)
-**Campos:** id, version, creditCardId (Long), userId (Long), categoryId (Long), subCategoryId (Long, opcional), amount (BigDecimal > 0), purchaseDate (LocalDate), description (opcional), createdDate, updatedDate.
+**Campos:** id, version, creditCardId (Long), userId (Long), categoryId (Long), subCategoryId (Long, opcional), amount (BigDecimal > 0), purchaseDate (LocalDate), description (opcional), createdDate, updatedDate, **+ campos de parcelamento (ver abaixo)**.
 **`validate()`:** creditCardId, userId, categoryId, amount>0, purchaseDate obrigatórios; subCategoryId opcional.
 **Sem soft-delete** (hard delete, como `Transaction`).
-**Regra de aplicação:** create/update/delete são bloqueados se já existir `CreditCardInvoicePayment` para `(creditCardId, CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, card.closingDay))` — `DomainException("Cannot modify a transaction from a paid invoice")`.
+**Regra de aplicação:** create/update/delete são bloqueados se já existir `CreditCardInvoicePayment` para `(creditCardId, transaction.referenceMonth)` — `DomainException("Cannot modify a transaction from a paid invoice")`.
+
+#### Parcelamento e antecipação de parcelas
+
+Uma compra parcelada em X vezes é modelada como **1 registro por parcela** (X linhas de `CreditCardTransaction`, uma por fatura futura), vinculadas por um identificador de grupo — não como 1 registro com projeção calculada em memória. Compra à vista é só o caso `totalInstallments=1` (mesmo modelo, sem ramificação).
+
+**Mudança central de modelo — `referenceMonth` deixa de ser derivado e passa a ser armazenado:** hoje a fatura de uma `CreditCardTransaction` seria calculada em tempo de leitura via `CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, closingDay)`. Isso não serve para parcelas — a parcela 5/12 não tem uma `purchaseDate` 5 meses no futuro, ela pertence a uma fatura futura por construção, não por cálculo de data. Por isso `referenceMonth` (LocalDate, primeiro dia do mês) passa a ser **calculado e persistido na criação**:
+- Parcela 1 (ou compra à vista): `referenceMonth = CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, card.closingDay)`.
+- Parcela i (i > 1): `referenceMonth = referenceMonth(parcela 1).plusMonths(i - 1)`.
+
+`purchaseDate` continua existindo, mas passa a significar só "quando a compra original foi feita" (igual em todas as parcelas do grupo) — deixa de ser usada para cálculo de fatura em tempo de leitura. `CreditCardInvoiceCycle` continua usado (na criação, para a parcela 1, e em `resolveDueDate`/`resolveClosingDate` para metadados de exibição da fatura), só não é mais reinvocado a cada listagem. Isso também simplifica a guarda "mês já pago" acima, que passa a ler `transaction.referenceMonth` direto.
+
+**Campos novos:**
+- `referenceMonth` (LocalDate, não-nulo) — ver acima.
+- `installmentGroupId` (String/UUID, não-nulo) — gerado uma vez por compra (`UUID.randomUUID().toString()`), compartilhado por todas as parcelas da mesma compra (grupo de 1 elemento na compra à vista).
+- `installmentNumber` (Integer, 1-based, não-nulo) — posição da parcela dentro do grupo (ex: 3 de 12).
+- `totalInstallments` (Integer, não-nulo, default 1) — tamanho do grupo.
+- `anticipated` (boolean, default false) — marca se esta parcela já foi movida de mês via antecipação.
+- `originalReferenceMonth` (LocalDate, nulo exceto quando `anticipated=true`) — preserva o mês em que a parcela cairia originalmente, para auditoria/exibição.
+
+**`validate()` ganha:** `referenceMonth`/`installmentGroupId`/`installmentNumber`/`totalInstallments` não-nulos; `totalInstallments` entre 1 e 60 (limite de sanidade); `installmentNumber` entre 1 e `totalInstallments`.
+
+**Novo método de domínio — `anticipateTo(LocalDate targetReferenceMonth)`:** se `anticipated` já é `true`, mantém o `originalReferenceMonth` já gravado (não sobrescreve com valor intermediário); senão grava `originalReferenceMonth = this.referenceMonth`. Em seguida `this.referenceMonth = targetReferenceMonth; this.anticipated = true;` + `updatedDate = Instant.now()`.
+
+**Cálculo do valor de cada parcela (regra de aplicação, fica no service de criação, não no domínio):** dividir o valor total da compra por `totalInstallments` com arredondamento de 2 casas; a última parcela absorve o resíduo, garantindo que a soma das parcelas seja exatamente igual ao valor total informado (evita sobra/falta de centavos).
 
 ### CreditCardInvoicePayment (`domain/CreditCardInvoicePayment.java`) — nova, só existe quando paga
-**Decisão de design:** não existe uma "CreditCardInvoice" com status persistida a cada mês. Fatura em aberto é sempre computada em memória (soma das `CreditCardTransaction` do mês via `CreditCardInvoiceCycle`); só quando paga nasce esta linha (existência = pago).
+**Decisão de design:** não existe uma "CreditCardInvoice" com status persistida a cada mês. Fatura em aberto é sempre computada em memória (soma das `CreditCardTransaction` do mês, agrupadas pelo `referenceMonth` já armazenado em cada linha — ver parcelamento em `CreditCardTransaction`); só quando paga nasce esta linha (existência = pago).
 **Campos:** id, version, creditCardId, referenceMonth (LocalDate, único por creditCardId), dueDate (calculado no momento do pagamento), paidAmount (BigDecimal, soma travada), paidDate, paymentTransactionId (Long, FK para a Transaction EXPENSE gerada), bankAccountId, createdDate, updatedDate.
 **`validate()`:** creditCardId, referenceMonth, dueDate, paidAmount>0 obrigatórios. Sem `update()` de negócio. Único por `(credit_card_id, reference_month)`.
 
@@ -391,14 +416,14 @@ Métodos estáticos usados por CC4/CC5/CC6:
 **Métodos:** `updateAmount(newAmount)` (só se PENDING), `markAsPaid(paidDate, paymentTransactionId, bankAccountId)` (só se PENDING), `revertToPending()` (usado só pelo Undo dedicado). Único por `(bill_id, reference_month)`.
 
 ### Geração sob demanda — sem scheduler novo
-- **Cartão:** fatura aberta nunca é materializada — sempre computada em memória a partir de `CreditCardTransaction` existentes via `CreditCardInvoiceCycle`. Só a linha de pagamento (`CreditCardInvoicePayment`) é escrita, no momento do pagamento.
+- **Cartão:** fatura aberta nunca é materializada — sempre computada em memória a partir de `CreditCardTransaction` existentes, agrupadas pelo `referenceMonth` armazenado em cada linha (parcelas já nascem com o `referenceMonth` correto na criação — ver CC5 — sem depender de `CreditCardInvoiceCycle` em tempo de leitura). Só a linha de pagamento (`CreditCardInvoicePayment`) é escrita, no momento do pagamento.
 - **Contas a pagar recorrentes:** precisam de materialização antecipada (usuário edita/paga antes de qualquer Transaction existir). `EnsureBillInstancesGeneratedService(spaceId, upToDate)` gera as `BillInstance` PENDING faltantes entre o último mês já gerado e `min(mês de upToDate, mês atual + 1)` — cap fixo evita gerar centenas de linhas de uma vez. Idempotente via índice único `(bill_id, reference_month)`. Chamado por `ListBillInstancesService` e por `GenerateReportService`.
 - **Por que não um job:** zero infra de `@Scheduled`/Quartz hoje no projeto; criar uma só para isso adicionaria uma categoria de falha nova (job travado, timezone, idempotência sob restart) para um resultado que a geração preguiçosa já entrega (tela sempre certa ao abrir). Só vira necessário se o produto quiser lembrete por e-mail/push **antes** de o usuário abrir o app — módulo futuro separado, fora de escopo.
 
 ### Saldo previsto — cálculo e exposição
 **Novos campos em `ReportResponse`:** `currentBalance` (soma de `BankAccount.balance` ativas do space, ou só da conta filtrada), `pendingCreditCardInvoices` (lista `{creditCardId, creditCardName, referenceMonth, dueDate, amount}`) + `pendingCreditCardTotal`, `pendingBillInstances` (lista `{billInstanceId, billId, billName, referenceMonth, dueDate, amount}`) + `pendingBillTotal`, `projectedBalance = currentBalance - pendingCreditCardTotal - pendingBillTotal`.
 **Filtro:** uma fatura/instância pendente só entra na soma se seu `dueDate` cair dentro de `[from, to]` do `ReportFilterRequest` (decisão validada). `ReportFilterRequest` não precisa de campo novo (já tem `spaceId`/`from`/`to` via T9b do plano core).
-**Fontes:** faturas pendentes = `CreditCardTransaction` do período agrupadas por `(creditCardId, referenceMonth via CreditCardInvoiceCycle)`, excluindo grupos com `CreditCardInvoicePayment` já existente. Contas pendentes = `EnsureBillInstancesGeneratedService` + `BillInstanceRepository.findBySpaceAndPeriod` com `status=PENDING`.
+**Fontes:** faturas pendentes = `CreditCardTransaction` do período agrupadas por `(creditCardId, referenceMonth)` (campo já armazenado — inclui parcelas futuras de compras parceladas e parcelas antecipadas), excluindo grupos com `CreditCardInvoicePayment` já existente. Contas pendentes = `EnsureBillInstancesGeneratedService` + `BillInstanceRepository.findBySpaceAndPeriod` com `status=PENDING`.
 
 ---
 
@@ -445,25 +470,39 @@ Criar `domain/CreditCardInvoicePayment.java`, `domain/repository/CreditCardInvoi
 ### [Grupo CC4] Domínio e persistência: CreditCardTransaction
 
 - [ ] **CC4 — CreditCardTransaction: domain + persistência (isolamento por Space desde o início)**
-Criar `domain/CreditCardTransaction.java`, `domain/repository/CreditCardTransactionRepository.java` (`save/update/findById/findByFilter(spaceId, creditCardId, categoryId, subCategoryId, from, to)/delete`), JPA entity, `JpaCreditCardTransactionRepository` (`JpaSpecificationExecutor`), `CreditCardTransactionRepositoryImpl` com filtro por `spaceId` via subquery **já embutido** (aprender com o gap de T9b do core).
+Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento — ver spec acima: `referenceMonth`, `installmentGroupId`, `installmentNumber`, `totalInstallments`, `anticipated`, `originalReferenceMonth`), `domain/repository/CreditCardTransactionRepository.java` (`save/update/findById/findByFilter(spaceId, creditCardId, categoryId, subCategoryId, from, to)/findByInstallmentGroupId(String)/delete`), JPA entity, `JpaCreditCardTransactionRepository` (`JpaSpecificationExecutor`), `CreditCardTransactionRepositoryImpl` com filtro por `spaceId` via subquery **já embutido** (aprender com o gap de T9b do core). Índice não-único em `(credit_card_id, reference_month)` para acelerar o agrupamento de fatura (não é único como em `CreditCardInvoicePayment` — várias parcelas, inclusive de compras diferentes ou antecipadas, coexistem na mesma fatura).
 *Depende de:* CC1.
-**Testes (obrigatório):** `CreditCardTransactionSpec.groovy`.
-**Docs:** subseção "CreditCardTransaction" em `APP_OVERVIEW.md`.
-*Pronto quando:* spec passa; `findByFilter` isola por `spaceId` em teste manual com 2 spaces.
+**Testes (obrigatório):** `CreditCardTransactionSpec.groovy` (incluindo `validate()` dos campos de parcelamento: `totalInstallments` fora de 1-60, `installmentNumber` fora de 1-`totalInstallments`, e o método `anticipateTo`).
+**Docs:** subseção "CreditCardTransaction" em `APP_OVERVIEW.md` (incluindo o modelo de parcelamento).
+*Pronto quando:* spec passa; `findByFilter`/`findByInstallmentGroupId` isolam por `spaceId` em teste manual com 2 spaces.
 
-### [Grupo CC5] CRUD de CreditCardTransaction com guarda de fatura paga
+### [Grupo CC5] CRUD de CreditCardTransaction com guarda de fatura paga + parcelamento
 
-- [ ] **CC5 — CreditCardTransaction: services CRUD + guarda "mês já pago" + controller**
-`CreateCreditCardTransactionService` (valida FKs), `UpdateCreditCardTransactionService`, `DeleteCreditCardTransactionService`, `ListCreditCardTransactionsService`. As 3 primeiras usam `CreditCardInvoiceCycle.resolveReferenceMonth` + `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` para rejeitar alteração de mês já pago. Controller `/credit-card-transactions` com `@PreAuthorize`.
+- [ ] **CC5 — CreditCardTransaction: services CRUD + guarda "mês já pago" + parcelamento + controller**
+`CreateCreditCardTransactionService` (valida FKs; ganha parâmetro opcional `totalInstallments` no request — default 1: se `<= 1`, comportamento simples de hoje (1 linha, `installmentGroupId` novo, `installmentNumber=1`); se `> 1`, gera as `totalInstallments` linhas em uma única chamada `@Transactional`, mesmo `installmentGroupId`, `installmentNumber` de 1 a N, `referenceMonth` sequencial mês a mês a partir da parcela 1, valor dividido com arredondamento de 2 casas e a última parcela absorvendo o resíduo), `UpdateCreditCardTransactionService`, `DeleteCreditCardTransactionService` (operam por linha individual — sem cascata entre parcelas do mesmo grupo; editar/excluir uma parcela não renumera nem recalcula as demais), `ListCreditCardTransactionsService`, `ListInstallmentGroupService` (novo — retorna todas as parcelas de um `installmentGroupId`, usado pela UI para mostrar progresso e pela antecipação para listar candidatas). As 3 primeiras leem `transaction.referenceMonth` direto (já não recalculam via `CreditCardInvoiceCycle`) + `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` para rejeitar alteração de mês já pago. Controller `/credit-card-transactions` com `@PreAuthorize`, incluindo `GET /credit-card-transactions/installment-groups/{installmentGroupId}`.
 *Depende de:* CC1, CC3, CC4.
-**Testes (obrigatório):** uma spec por service, incluindo "mês já pago rejeita".
+**Testes (obrigatório):** uma spec por service, incluindo "mês já pago rejeita" e "compra em N parcelas" (`installmentGroupId` compartilhado, `referenceMonth` sequencial, soma dos valores igual ao total, arredondamento correto quando não divide exato).
 **Docs:** `seed.sql` + `APP_OVERVIEW.md`.
-*Pronto quando:* CRUD funciona e a guarda é respeitada nas 3 operações.
+*Pronto quando:* CRUD funciona, a guarda é respeitada nas 3 operações, e criar com `totalInstallments>1` gera as N linhas corretamente.
+
+### [Grupo CC5b] Antecipação de parcelas
+
+- [ ] **CC5b — AnticipateCreditCardInstallmentsService + controller**
+`execute(installmentGroupId, targetReferenceMonth, installmentsToAnticipate)`: (1) busca todas as linhas do grupo via `findByInstallmentGroupId` (vazio → `DomainException`); (2) valida que a fatura alvo está **aberta** — `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` deve ser nulo, senão `DomainException("Cannot anticipate into a paid invoice")`; (3) filtra elegíveis = linhas do grupo com `referenceMonth > targetReferenceMonth` (estritamente futuras em relação ao alvo); (4) se `installmentsToAnticipate > elegíveis.size()`, `DomainException("Not enough remaining installments to anticipate")`; (5) ordena elegíveis por `installmentNumber` decrescente e pega as `installmentsToAnticipate` primeiras (as últimas parcelas, de trás pra frente); (6) para cada uma, `transaction.anticipateTo(targetReferenceMonth)` + `repository.update(transaction)`. `@Transactional`. **Não move dinheiro nem chama `TransactionBalanceEffectService`** — só reatribui a quais faturas as parcelas pertencem; o efeito no saldo só acontece quando a fatura alvo for de fato paga via `PayCreditCardInvoiceService` (CC6), como qualquer outra fatura. Controller: `POST /credit-card-transactions/installment-groups/{installmentGroupId}/anticipate` (body `{targetReferenceMonth, installmentsToAnticipate}`), `@PreAuthorize`.
+*Depende de:* CC4, CC5 (não depende de CC6/CC7).
+**Testes (obrigatório):** `AnticipateCreditCardInstallmentsServiceSpec.groovy` — sucesso (move exatamente as N últimas, preserva as intermediárias, marca `anticipated=true` e grava `originalReferenceMonth`), fatura alvo já paga rejeitada, `installmentsToAnticipate` maior que o disponível rejeitado, grupo inexistente rejeitado, antecipar uma parcela já antecipada antes não sobrescreve o `originalReferenceMonth` original.
+**Docs:** seção de antecipação em `backend/docs/credit-card-invoice.md` (junto com CC6) + `seed.sql` + `APP_OVERVIEW.md`.
+*Pronto quando:* antecipar N parcelas de uma compra as move todas para a fatura aberta solicitada, mantendo as demais parcelas do grupo intactas, e a spec passa.
+
+**Fora de escopo (parcelamento/antecipação, apenas registrado, não vira tarefa):**
+- Desfazer uma antecipação (mover a parcela de volta ao mês original) — não foi solicitado; se necessário no futuro, seria um `UndoAnticipation` simétrico usando o `originalReferenceMonth` já preservado no modelo.
+- Renumeração/recalculo do grupo ao editar ou excluir uma parcela individual — comportamento aceito como está (cada linha é independente após a criação).
+- Um relatório dedicado de "compras parceladas em aberto" (progresso por compra) — `ListInstallmentGroupService` (CC5) já dá a base de dados para isso, mas uma tela/relatório dedicado fica para quando a UI do módulo (FCC2/FCC3) for desenhada.
 
 ### [Grupo CC6] Pagamento de fatura + listagem
 
 - [ ] **CC6 — PayCreditCardInvoiceService + ListCreditCardInvoicesService**
-`ListCreditCardInvoicesService(spaceId, creditCardId?, from, to)`: agrupa `CreditCardTransaction` por `(creditCardId, referenceMonth)` via `CreditCardInvoiceCycle`, marca pago/aberto conforme existência de `CreditCardInvoicePayment`. `PayCreditCardInvoiceService.execute(creditCardId, referenceMonth, {bankAccountId, categoryId, paymentMethodId, paidDate})`: rejeita se já paga ou soma zero; soma as `CreditCardTransaction` do mês; chama `CreateTransactionService` (reaproveita `TransactionBalanceEffectService` de T5/T6 do core, `type=EXPENSE`, `sourceType=CREDIT_CARD_INVOICE_PAYMENT`); persiste `CreditCardInvoicePayment` com o `paymentTransactionId`. `@Transactional`. Controller: `GET /credit-cards/invoices?spaceId=&creditCardId=&from=&to=`, `POST /credit-cards/{id}/invoices/{referenceMonth}/pay`.
+`ListCreditCardInvoicesService(spaceId, creditCardId?, from, to)`: agrupa `CreditCardTransaction` por `(creditCardId, referenceMonth)` **direto pelo campo armazenado** `referenceMonth` (não mais via `CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, closingDay)` em tempo de leitura — `CreditCardInvoiceCycle` continua usado só para calcular `dueDate`/`closingDate` de exibição a partir do `referenceMonth` de cada grupo), marca pago/aberto conforme existência de `CreditCardInvoicePayment`. `PayCreditCardInvoiceService.execute(creditCardId, referenceMonth, {bankAccountId, categoryId, paymentMethodId, paidDate})`: rejeita se já paga ou soma zero; soma as `CreditCardTransaction` do mês (incluindo parcelas antecipadas de outras compras, que já chegam com `referenceMonth` ajustado); chama `CreateTransactionService` (reaproveita `TransactionBalanceEffectService` de T5/T6 do core, `type=EXPENSE`, `sourceType=CREDIT_CARD_INVOICE_PAYMENT`); persiste `CreditCardInvoicePayment` com o `paymentTransactionId`. `@Transactional`. Controller: `GET /credit-cards/invoices?spaceId=&creditCardId=&from=&to=`, `POST /credit-cards/{id}/invoices/{referenceMonth}/pay`.
 *Depende de:* CC3, CC5, P1, core T5/T6.
 **Testes (obrigatório):** `PayCreditCardInvoiceServiceSpec.groovy` (sucesso, já paga, mês vazio, FK inexistente), `ListCreditCardInvoicesServiceSpec.groovy` (mistura aberto/pago).
 **Docs:** criar `backend/docs/credit-card-invoice.md` (formato de `transaction-balance-effect.md`) explicando o ciclo de fatura e por que não é materializada até o pagamento; `seed.sql`; `APP_OVERVIEW.md`.
@@ -541,7 +580,8 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 - [ ] **RPT1 — Saldo previsto em GenerateReportService**
 Editar `ReportFilterRequest`/`ReportResponse` (campos novos da spec acima). Editar `GenerateReportService`: injeta `BankAccountRepository`, `CreditCardRepository`, `CreditCardTransactionRepository`, `CreditCardInvoicePaymentRepository`, `EnsureBillInstancesGeneratedService`, `BillInstanceRepository`; calcula `currentBalance`, pendências de cartão e de contas, `projectedBalance`.
 *Depende de:* CC6, AP5 (única tarefa que toca `GenerateReportService` para os dois módulos, evita reabrir o arquivo duas vezes).
-**Testes (obrigatório):** estender `GenerateReportServiceSpec.groovy` (fatura aberta dentro/fora do período, fatura paga não conta, instância pendente dentro/fora do período, `projectedBalance` correto).
+**Nota sobre parcelas de cartão:** ao contrário de `BillInstance` (que depende de `EnsureBillInstancesGeneratedService` rodando sob demanda), as parcelas de `CreditCardTransaction` já nascem materializadas na criação da compra (ver CC5) — então `pendingCreditCardInvoices`/`pendingCreditCardTotal` já enxergam parcelas de meses futuros dentro do período filtrado (`from`/`to`) sem nenhum passo de geração adicional; só é preciso que a consulta agrupe pelo `referenceMonth` armazenado (ver CC4/CC6), não há necessidade de um serviço de geração análogo ao de Bills para o cartão.
+**Testes (obrigatório):** estender `GenerateReportServiceSpec.groovy` (fatura aberta dentro/fora do período, fatura paga não conta, instância pendente dentro/fora do período, `projectedBalance` correto, parcelas futuras de uma compra parcelada aparecendo no período filtrado sem ação extra).
 **Docs:** `APP_OVERVIEW.md` seção "Key Flows → 3. Financial Report".
 *Pronto quando:* `POST /reports` retorna `projectedBalance` correto.
 
@@ -570,9 +610,9 @@ Form: `name`, `limit`, `closingDay`, `dueDay`. CRUD completo, mesmo padrão de F
 ### [Grupo FCC2] Lançamentos no cartão
 
 - [ ] **FCC2 — Lançamentos de Cartão** (dialog secundário a partir da linha do cartão, `ManageCreditCardTransactionsDialog.vue`)
-Lista/cria/edita/exclui `CreditCardTransaction` do cartão selecionado: `categoryId`+`subCategoryId` (cascata, selects de F3), `amount`, `purchaseDate`, `description`. Filtro de período.
-*Depende de:* FCC1, F3 (selects de categoria), backend CC5.
-**Verificação:** manual no navegador — lançar compra; tentar editar/excluir uma compra de mês já pago (depois de FCC3 existir) e confirmar bloqueio.
+Lista/cria/edita/exclui `CreditCardTransaction` do cartão selecionado: `categoryId`+`subCategoryId` (cascata, selects de F3), `amount`, `purchaseDate`, `description`, `totalInstallments` (campo opcional "parcelar em X vezes" — se preenchido >1, a UI só cria, não edita/exclui em lote). Cada linha da lista mostra "N/total" quando fizer parte de um grupo parcelado (via `GET .../installment-groups/{id}`) e um selo "antecipada" quando `anticipated=true`. Ação "Antecipar parcelas" na linha de uma compra parcelada (dialog: escolher quantas das últimas parcelas antecipar para a fatura aberta atual) chamando `POST .../installment-groups/{id}/anticipate` (backend CC5b). Filtro de período.
+*Depende de:* FCC1, F3 (selects de categoria), backend CC5, CC5b.
+**Verificação:** manual no navegador — lançar compra parcelada em 6x e conferir as 6 linhas geradas; tentar editar/excluir uma compra de mês já pago (depois de FCC3 existir) e confirmar bloqueio; antecipar as 2 últimas parcelas e conferir que só elas mudam de fatura.
 **Docs:** `frontend/docs/credit-cards.md` (seção adicional).
 
 ### [Grupo FCC3] Fatura, pagamento e reversão
@@ -632,6 +672,9 @@ Adicionar cards de `currentBalance`/`projectedBalance` e duas listas (faturas pe
    - Trocar de space ativo e confirmar que todas as 5 telas recarregam com os dados do novo space (isolamento correto).
 4. Módulos novos — Cartão de Crédito e Contas a Pagar (depois de P1/CC1-7/AP1-6/RPT1/GATE1 + FCC1-3/FAP1-2/FRPT1):
    - Criar um CreditCard com `closingDay`/`dueDay` distintos; lançar compras que caiam em 2 meses de fatura diferentes (uma antes e outra depois do fechamento) e confirmar que `CreditCardInvoiceCycle` agrupou corretamente.
+   - Lançar uma compra parcelada em 6x → confirmar 6 `CreditCardTransaction` criadas, uma por mês seguinte, com valores somando exatamente o total (incluindo caso de divisão não-exata, ex: R$100,00 em 3x).
+   - `POST /reports` com período cobrindo os próximos 6 meses → confirmar que `pendingCreditCardTotal`/`projectedBalance` já refletem as parcelas futuras sem nenhuma ação extra do usuário.
+   - Antecipar as 2 últimas parcelas dessa compra para a fatura aberta atual → confirmar que só essas 2 mudam de fatura (as demais permanecem nos meses originais), que a fatura alvo passa a somar o valor extra, e que tentar antecipar para uma fatura já paga é rejeitado.
    - Pagar a fatura de um mês → conferir débito na conta bancária escolhida (`/bank-accounts`) e que a `Transaction` gerada aparece com `sourceType=CREDIT_CARD_INVOICE_PAYMENT` e não pode ser editada/excluída pela tela normal de Transações.
    - Tentar editar/excluir uma `CreditCardTransaction` de um mês já pago → deve rejeitar (`DomainException`).
    - Usar a ação dedicada "Desfazer Pagamento" da fatura → confirmar que pede confirmação explícita, reverte o saldo da conta e a fatura volta a aparecer como aberta.
