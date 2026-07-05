@@ -137,6 +137,19 @@ Incoming request  (must carry Authorization: Bearer <token> and X-Space-Id: <spa
       → userHasPermissionForRole  (space derived from role ID)
   → allowed or 403
 ```
+All 5 core financial controllers (`BankAccountController`, `CategoryController`, `PaymentMethodController`,
+`TransactionController`, `ReportController` — including their new `GET` list endpoints) now use
+`@PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")` on every method, the same
+pattern as `EndpointPermissionController`/`GroupMenuController`. Each endpoint has a corresponding `API` row in
+`endpoint_permissions` (see `seed.sql`, section 1) reusing the same `name` as the entity's existing `FRONT_PAGE` row
+(`'Contas Bancárias'`, `'Categorias'`, `'Formas de Pagamento'`, `'Transações'`, `'Relatórios'`), so ADMIN/MEMBER
+inherit `ALLOW` automatically through the existing `ep.name IN (...)` joins — no change needed to the ADMIN/MEMBER
+seed blocks. OWNER gets `ALLOW` on everything via the existing `CROSS JOIN`.
+
+There is no isolated Spock test for `@PreAuthorize` itself in this project (see `SecurityServiceSpec.groovy`, which
+tests the underlying matching logic generically). Verify manually per role before treating this as fully closed:
+call each new/existing endpoint with a MEMBER/ADMIN token that has no `ALLOW` for it and confirm `403`, then with a
+token that does and confirm success.
 
 ### 5. Managing Roles & Permissions
 ```

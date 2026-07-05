@@ -55,7 +55,30 @@ VALUES
 (1, '/spaces/[0-9]+/members/[0-9]+',          'Gerenciar Membros do Espaço',43, 'API', 'PUT,DELETE',     'Espaço', NOW(), NOW()),
 (1, '/spaces/[0-9]+/invites',                 'Listar Convites do Espaço',  44, 'API', 'GET',            'Espaço', NOW(), NOW()),
 (1, '/spaces/[0-9]+/invites',                 'Convidar para Espaço',       45, 'API', 'POST',           'Espaço', NOW(), NOW()),
-(1, '/spaces/[0-9]+/invites/[0-9]+',          'Cancelar Convite do Espaço', 46, 'API', 'DELETE',         'Espaço', NOW(), NOW());
+(1, '/spaces/[0-9]+/invites/[0-9]+',          'Cancelar Convite do Espaço', 46, 'API', 'DELETE',         'Espaço', NOW(), NOW()),
+
+-- BankAccountController — /bank-accounts
+-- name reuses the FRONT_PAGE row 'Contas Bancárias' (section 2) so ADMIN/MEMBER
+-- already ALLOW it via the existing ep.name IN (...) joins in section 5 below.
+(1, '/bank-accounts',                         'Contas Bancárias',           50, 'API', 'GET,POST',   'Conta',        NOW(), NOW()),
+(1, '/bank-accounts/[0-9]+',                  'Contas Bancárias',           51, 'API', 'PUT,DELETE', 'Conta',        NOW(), NOW()),
+
+-- CategoryController — /categories (includes /subcategories sub-resource)
+(1, '/categories',                            'Categorias',                 52, 'API', 'GET,POST',   'Configuração', NOW(), NOW()),
+(1, '/categories/[0-9]+',                     'Categorias',                 53, 'API', 'PUT,DELETE', 'Configuração', NOW(), NOW()),
+(1, '/categories/subcategories',              'Categorias',                 54, 'API', 'POST',       'Configuração', NOW(), NOW()),
+(1, '/categories/subcategories/[0-9]+',       'Categorias',                 55, 'API', 'PUT,DELETE', 'Configuração', NOW(), NOW()),
+
+-- PaymentMethodController — /payment-methods
+(1, '/payment-methods',                       'Formas de Pagamento',        56, 'API', 'GET,POST',   'Conta',        NOW(), NOW()),
+(1, '/payment-methods/[0-9]+',                'Formas de Pagamento',        57, 'API', 'PUT,DELETE', 'Conta',        NOW(), NOW()),
+
+-- TransactionController — /transactions
+(1, '/transactions',                          'Transações',                 58, 'API', 'GET,POST',   'Financeiro',   NOW(), NOW()),
+(1, '/transactions/[0-9]+',                   'Transações',                 59, 'API', 'PUT,DELETE', 'Financeiro',   NOW(), NOW()),
+
+-- ReportController — /reports
+(1, '/reports',                               'Relatórios',                 60, 'API', 'POST',       'Financeiro',   NOW(), NOW());
 
 
 -- =============================================================================

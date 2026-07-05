@@ -8,7 +8,10 @@ import com.devhouse.financial_plan.application.transaction.dto.CreateTransaction
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse;
 import com.devhouse.financial_plan.application.transaction.dto.UpdateTransactionRequest;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -31,6 +34,7 @@ public class TransactionController {
     }
 
     @GetMapping
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
     public List<TransactionResponse> list(@RequestParam Long spaceId,
                                            @RequestParam(required = false) Long userId,
                                            @RequestParam(required = false) Long bankAccountId,
@@ -39,25 +43,29 @@ public class TransactionController {
                                            @RequestParam(required = false) Long paymentMethodId,
                                            @RequestParam(required = false) TransactionType type,
                                            @RequestParam(required = false) LocalDate from,
-                                           @RequestParam(required = false) LocalDate to) {
+                                           @RequestParam(required = false) LocalDate to,
+                                           Authentication authentication, HttpServletRequest request) {
         return listTransactionsService.execute(spaceId, userId, bankAccountId, categoryId, subCategoryId,
                 paymentMethodId, type, from, to);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public TransactionResponse create(@RequestBody CreateTransactionRequest request) {
-        return createTransactionService.execute(request);
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public TransactionResponse create(@RequestBody CreateTransactionRequest body, Authentication authentication, HttpServletRequest request) {
+        return createTransactionService.execute(body);
     }
 
     @PutMapping("/{id}")
-    public TransactionResponse update(@PathVariable Long id, @RequestBody UpdateTransactionRequest request) {
-        return updateTransactionService.execute(id, request);
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public TransactionResponse update(@PathVariable Long id, @RequestBody UpdateTransactionRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateTransactionService.execute(id, body);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
         deleteTransactionService.execute(id);
     }
 }

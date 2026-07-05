@@ -230,7 +230,7 @@ Nenhum destes controllers tem endpoint de listagem hoje — sem isso as telas no
 
 ### [Grupo B7] Segurança fina nos controllers
 
-- [ ] **T10 — Segurança fina nos controllers do módulo core**
+- [x] **T10 — Segurança fina nos controllers do módulo core**
 Adicionar `@PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")` (padrão de `EndpointPermissionController.java`) em **todos** os métodos (incluindo os novos GETs de T9c) de `BankAccountController`, `CategoryController`, `PaymentMethodController`, `TransactionController`, `ReportController`.
 
 **Atualizar `backend/docs/seed.sql` a cada endpoint novo** (regra permanente para qualquer tela nova daqui pra frente, não só desta rodada): adicionar um `INSERT INTO endpoint_permissions` (type=API) por endpoint, seguindo a numeração de `sequence` já usada. Importante: reaproveitar exatamente os mesmos `name` que já existem nas linhas `FRONT_PAGE` da seção 2 do seed (`'Contas Bancárias'`, `'Categorias'`, `'Formas de Pagamento'`, `'Transações'`, `'Relatórios'`) — os blocos de `ADMIN`/`MEMBER` na seção 5 já fazem `JOIN ... ON ep.name IN (...)` usando esses nomes, então as novas linhas API herdam `ALLOW` automaticamente sem precisar editar os blocos de ADMIN/MEMBER. `OWNER` já recebe tudo via `CROSS JOIN`. Lembrar que `CreateEndpointPermissionService` cria `DENY` automático para roles existentes ao criar uma `EndpointPermission` em runtime — o seed é o caminho recomendado para popular de uma vez.
@@ -240,7 +240,7 @@ Adicionar `@PreAuthorize("@securityService.userHasPermissionForURL(authenticatio
 
 > **[coringa]** independente — distribuir entre as sessões dos grupos acima em vez de reservar uma sessão só para isso.
 
-- [ ] **T11 — Specs Groovy/Spock remanescentes (fora do fluxo de Transaction)**
+- [x] **T11 — Specs Groovy/Spock remanescentes (fora do fluxo de Transaction)**
 Cobrir os services que ficaram sem spec e não fazem parte da cadeia T1-T9c: `UpdateBankAccountServiceSpec`, `DeleteBankAccountServiceSpec`, `UpdateCategoryServiceSpec`, `DeleteCategoryServiceSpec`, `UpdatePaymentMethodServiceSpec`, `DeletePaymentMethodServiceSpec` — padrão de `CreateBankAccountServiceSpec.groovy` (mockando as interfaces de repository, nunca os `*RepositoryImpl`).
 *Depende de:* nenhuma (independente, pode ser feito a qualquer momento em paralelo).
 **Testes (obrigatório):** as próprias specs listadas acima, `./gradlew test` verde.
@@ -248,7 +248,7 @@ Cobrir os services que ficaram sem spec e não fazem parte da cadeia T1-T9c: `Up
 
 ### [Grupo B8] Gate final
 
-- [ ] **T12 — ArchUnit + suíte completa (gate final)**
+- [x] **T12 — ArchUnit + suíte completa (gate final)**
 Rodar `./gradlew test` (inclui `ArchitectureTest` + todas as specs de T1-T11). Confirmar que nenhuma regra de camada foi violada (o novo `TransactionBalanceEffectService` fica em `application`, não em `domain`/`infrastructure`).
 *Depende de:* todas as anteriores.
 **Testes (obrigatório):** este É o gate de teste — `./gradlew test` 100% verde é o critério de pronto.

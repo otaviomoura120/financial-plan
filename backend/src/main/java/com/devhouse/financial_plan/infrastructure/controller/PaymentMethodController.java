@@ -7,7 +7,10 @@ import com.devhouse.financial_plan.application.paymentmethod.UpdatePaymentMethod
 import com.devhouse.financial_plan.application.paymentmethod.dto.CreatePaymentMethodRequest;
 import com.devhouse.financial_plan.application.paymentmethod.dto.PaymentMethodResponse;
 import com.devhouse.financial_plan.application.paymentmethod.dto.UpdatePaymentMethodRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,24 +32,28 @@ public class PaymentMethodController {
     }
 
     @GetMapping
-    public List<PaymentMethodResponse> list(@RequestParam Long spaceId) {
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public List<PaymentMethodResponse> list(@RequestParam Long spaceId, Authentication authentication, HttpServletRequest request) {
         return listPaymentMethodsService.execute(spaceId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public PaymentMethodResponse create(@RequestBody CreatePaymentMethodRequest request) {
-        return createPaymentMethodService.execute(request);
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public PaymentMethodResponse create(@RequestBody CreatePaymentMethodRequest body, Authentication authentication, HttpServletRequest request) {
+        return createPaymentMethodService.execute(body);
     }
 
     @PutMapping("/{id}")
-    public PaymentMethodResponse update(@PathVariable Long id, @RequestBody UpdatePaymentMethodRequest request) {
-        return updatePaymentMethodService.execute(id, request);
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public PaymentMethodResponse update(@PathVariable Long id, @RequestBody UpdatePaymentMethodRequest body, Authentication authentication, HttpServletRequest request) {
+        return updatePaymentMethodService.execute(id, body);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
         deletePaymentMethodService.execute(id);
     }
 }
