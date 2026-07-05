@@ -192,14 +192,14 @@ Capturar a Transaction antiga completa antes de `update(...)`. Chamar `balanceEf
 
 ### [Grupo B4] Fechamento do ciclo de vida + validação de Reports
 
-- [ ] **T8 — Integrar em DeleteTransactionService**
+- [x] **T8 — Integrar em DeleteTransactionService**
 Hoje o service só faz `transactionRepository.delete(id)` sem buscar antes. Mudar para: `findById` (lançar `DomainException("Transaction not found")` se `null`), `balanceEffectService.revert(transaction)`, então `delete(id)`. `@Transactional`.
 *Depende de:* T5, T3.
 **Testes (obrigatório):** `DeleteTransactionServiceSpec.groovy` — reversão correta do saldo, e cenário "transaction not found" retornando `DomainException`.
 **Docs:** atualizar `backend/docs/transaction-balance-effect.md` com o fluxo de delete (revert).
 *Pronto quando:* excluir uma transação restaura o(s) saldo(s) ao estado anterior à criação dela, e a spec passa.
 
-- [ ] **T9 — Validar Reports fim-a-fim**
+- [x] **T9 — Validar Reports fim-a-fim**
 Testar com transações reais (INCOME/EXPENSE/TRANSFER) criadas via T6, confirmando que TRANSFER aparece na lista de `transactions[]` mas não entra em `totalIncome`/`totalExpense`/`balance`.
 *Depende de:* T3, T6.
 **Testes (obrigatório):** `GenerateReportServiceSpec.groovy` (criar — hoje não existe nenhum teste para este service) cobrindo filtros combinados e a exclusão de TRANSFER dos totais.

@@ -112,6 +112,10 @@ POST /reports
   → queries transactions matching all filters
   → returns: { transactions[], totalIncome, totalExpense, balance }
 ```
+`TRANSFER` transactions are included in `transactions[]` but excluded from `totalIncome`/`totalExpense`/`balance` —
+`Transaction.isIncome()`/`isExpense()` both return `false` for `TRANSFER`, so the sums naturally skip it without any
+extra branching in `GenerateReportService`. Also delete a transaction reverts its `TransactionBalanceEffectService`
+balance effect (see transaction-balance-effect.md), so recorded balances stay consistent for reporting purposes.
 
 ### 4. Access Control Flow
 ```
