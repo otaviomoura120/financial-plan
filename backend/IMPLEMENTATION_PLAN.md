@@ -208,7 +208,7 @@ Testar com transações reais (INCOME/EXPENSE/TRANSFER) criadas via T6, confirma
 
 ### [Grupo B5] Isolamento multi-tenant no filtro de Transaction
 
-- [ ] **T9b — Escopo por Space no filtro de Transaction (gap de isolamento multi-tenant)**
+- [x] **T9b — Escopo por Space no filtro de Transaction (gap de isolamento multi-tenant)**
 `Transaction` não guarda `spaceId` diretamente (só `bankAccountId`), e `TransactionRepository.findByFilter` hoje não recebe `spaceId` — uma consulta sem filtro de conta vazaria transações de **todos os spaces**. Adicionar `spaceId` como parâmetro obrigatório em `findByFilter(...)` e em `ReportFilterRequest`; na implementação JPA (`TransactionRepositoryImpl`, via `Specification`), restringir com uma subquery: `bankAccountId IN (SELECT id FROM bank_accounts WHERE space_id = :spaceId)`. Atualizar `GenerateReportService`/`ReportController` para exigir `spaceId` no request.
 *Depende de:* T3.
 **Testes (obrigatório):** estender `GenerateReportServiceSpec.groovy` (T9) com um cenário de duas contas em spaces diferentes, confirmando que o filtro por `spaceId` isola corretamente.

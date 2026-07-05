@@ -4,6 +4,7 @@ import com.devhouse.financial_plan.application.report.dto.ReportFilterRequest;
 import com.devhouse.financial_plan.application.report.dto.ReportResponse;
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse;
 import com.devhouse.financial_plan.domain.Transaction;
+import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +21,11 @@ public class GenerateReportService {
     }
 
     public ReportResponse execute(ReportFilterRequest filter) {
+        if (filter.spaceId() == null) {
+            throw new DomainException("Space is required");
+        }
         List<Transaction> transactions = transactionRepository.findByFilter(
-                filter.userId(), filter.bankAccountId(), filter.categoryId(), filter.subCategoryId(),
+                filter.spaceId(), filter.userId(), filter.bankAccountId(), filter.categoryId(), filter.subCategoryId(),
                 filter.paymentMethodId(), filter.type(), filter.from(), filter.to());
 
         List<TransactionResponse> responses = buildResponses(transactions);

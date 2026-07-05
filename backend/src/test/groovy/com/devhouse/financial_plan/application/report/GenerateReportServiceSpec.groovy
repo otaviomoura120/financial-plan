@@ -4,6 +4,7 @@ import com.devhouse.financial_plan.application.report.dto.ReportFilterRequest
 import com.devhouse.financial_plan.application.report.dto.ReportResponse
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.enums.TransactionType
+import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.TransactionRepository
 import spock.lang.Specification
 
@@ -24,14 +25,14 @@ class GenerateReportServiceSpec extends Specification {
 
     def "execute forwards every filter field to the repository, in the expected order"() {
         given:
-        ReportFilterRequest filter = new ReportFilterRequest(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31),
-                1L, 2L, 3L, 4L, 5L, TransactionType.EXPENSE)
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31),
+                2L, 3L, 4L, 5L, 6L, TransactionType.EXPENSE)
 
         when:
         service.execute(filter)
 
         then:
-        1 * transactionRepository.findByFilter(1L, 2L, 3L, 4L, 5L, TransactionType.EXPENSE,
+        1 * transactionRepository.findByFilter(1L, 2L, 3L, 4L, 5L, 6L, TransactionType.EXPENSE,
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)) >> []
     }
 
@@ -41,7 +42,7 @@ class GenerateReportServiceSpec extends Specification {
         Transaction expense = buildTransaction(TransactionType.EXPENSE, new BigDecimal("100.00"))
         Transaction transfer = buildTransaction(TransactionType.TRANSFER, new BigDecimal("500.00"), 2L)
         transactionRepository.findByFilter(*_) >> [income, expense, transfer]
-        ReportFilterRequest filter = new ReportFilterRequest(LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -57,7 +58,7 @@ class GenerateReportServiceSpec extends Specification {
     def "execute returns zero totals when there are no transactions in the period"() {
         given:
         transactionRepository.findByFilter(*_) >> []
-        ReportFilterRequest filter = new ReportFilterRequest(LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -67,5 +68,36 @@ class GenerateReportServiceSpec extends Specification {
         response.totalIncome() == BigDecimal.ZERO
         response.totalExpense() == BigDecimal.ZERO
         response.balance() == BigDecimal.ZERO
+    }
+
+    def "execute throws DomainException when spaceId is missing"() {
+        given:
+        ReportFilterRequest filter = new ReportFilterRequest(null, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+
+        when:
+        service.execute(filter)
+
+        then:
+        thrown(DomainException)
+        0 * transactionRepository.findByFilter(*_)
+    }
+
+    def "execute isolates results per space and never mixes totals across spaces"() {
+        given:
+        Transaction spaceOneIncome = buildTransaction(TransactionType.INCOME, new BigDecimal("100.00"))
+        transactionRepository.findByFilter(1L, _, _, _, _, _, _, _, _) >> [spaceOneIncome]
+        transactionRepository.findByFilter(2L, _, _, _, _, _, _, _, _) >> []
+        ReportFilterRequest filterSpaceOne = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+        ReportFilterRequest filterSpaceTwo = new ReportFilterRequest(2L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+
+        when:
+        ReportResponse responseSpaceOne = service.execute(filterSpaceOne)
+        ReportResponse responseSpaceTwo = service.execute(filterSpaceTwo)
+
+        then:
+        responseSpaceOne.transactions().size() == 1
+        responseSpaceOne.totalIncome() == new BigDecimal("100.00")
+        responseSpaceTwo.transactions().isEmpty()
+        responseSpaceTwo.totalIncome() == BigDecimal.ZERO
     }
 }

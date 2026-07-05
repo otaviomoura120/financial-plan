@@ -5,6 +5,7 @@ import com.devhouse.financial_plan.domain.enums.TransactionType;
 import java.time.LocalDate;
 
 public record ReportFilterRequest(
+        Long spaceId,
         LocalDate from,
         LocalDate to,
         Long userId,

@@ -3,8 +3,10 @@ package com.devhouse.financial_plan.infrastructure.repository;
 import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.BankAccountEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaTransactionRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.TransactionEntityJpa;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,9 +57,9 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     @Override
-    public List<Transaction> findByFilter(Long userId, Long bankAccountId, Long categoryId, Long subCategoryId,
+    public List<Transaction> findByFilter(Long spaceId, Long userId, Long bankAccountId, Long categoryId, Long subCategoryId,
                                           Long paymentMethodId, TransactionType type, LocalDate from, LocalDate to) {
-        Specification<TransactionEntityJpa> specification = buildSpecification(userId, bankAccountId, categoryId,
+        Specification<TransactionEntityJpa> specification = buildSpecification(spaceId, userId, bankAccountId, categoryId,
                 subCategoryId, paymentMethodId, type, from, to);
         return jpaTransactionRepository.findAll(specification).stream()
                 .map(this::toDomain)
@@ -69,11 +71,12 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         jpaTransactionRepository.deleteById(id);
     }
 
-    private Specification<TransactionEntityJpa> buildSpecification(Long userId, Long bankAccountId, Long categoryId,
+    private Specification<TransactionEntityJpa> buildSpecification(Long spaceId, Long userId, Long bankAccountId, Long categoryId,
                                                                      Long subCategoryId, Long paymentMethodId,
                                                                      TransactionType type, LocalDate from, LocalDate to) {
         return (root, query, criteriaBuilder) -> {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            predicates.add(root.get("bankAccountId").in(bankAccountIdsInSpace(spaceId, query, criteriaBuilder)));
             if (userId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("userId"), userId));
             }
@@ -100,6 +103,15 @@ public class TransactionRepositoryImpl implements TransactionRepository {
             }
             return criteriaBuilder.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
+    }
+
+    private Subquery<Long> bankAccountIdsInSpace(Long spaceId, jakarta.persistence.criteria.CriteriaQuery<?> query,
+                                                  jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder) {
+        Subquery<Long> subquery = query.subquery(Long.class);
+        jakarta.persistence.criteria.Root<BankAccountEntityJpa> bankAccountRoot = subquery.from(BankAccountEntityJpa.class);
+        subquery.select(bankAccountRoot.get("id"));
+        subquery.where(criteriaBuilder.equal(bankAccountRoot.get("spaceId"), spaceId));
+        return subquery;
     }
 
     private void applyFields(Transaction transaction, TransactionEntityJpa entity) {

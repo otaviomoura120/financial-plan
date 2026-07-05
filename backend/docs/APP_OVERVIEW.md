@@ -108,10 +108,16 @@ leaves the affected bank account(s) with the correct resulting balance.
 ### 3. Financial Report
 ```
 POST /reports
-  body: { from, to, userId?, bankAccountId?, categoryId?, subCategoryId?, paymentMethodId?, type? }
-  → queries transactions matching all filters
+  body: { spaceId, from, to, userId?, bankAccountId?, categoryId?, subCategoryId?, paymentMethodId?, type? }
+  → spaceId is required (422 DomainException if missing)
+  → queries transactions matching all filters, scoped to bank accounts of that space
   → returns: { transactions[], totalIncome, totalExpense, balance }
 ```
+`spaceId` is mandatory and enforces multi-tenant isolation: `Transaction` has no `spaceId` column of its own (only
+`bankAccountId`), so `TransactionRepositoryImpl.findByFilter` restricts results with
+`bankAccountId IN (SELECT id FROM bank_accounts WHERE space_id = :spaceId)` — a report for one space can never
+return transactions whose bank account belongs to another space, regardless of the other filters supplied.
+
 `TRANSFER` transactions are included in `transactions[]` but excluded from `totalIncome`/`totalExpense`/`balance` —
 `Transaction.isIncome()`/`isExpense()` both return `false` for `TRANSFER`, so the sums naturally skip it without any
 extra branching in `GenerateReportService`. Also delete a transaction reverts its `TransactionBalanceEffectService`
