@@ -314,7 +314,7 @@ Form: `type` (INCOME/EXPENSE/TRANSFER — select), `bankAccountId` (select, popu
 
 ### [Grupo F5] Reports
 
-- [ ] **F5 — Reports** (`pages/reports/`)
+- [x] **F5 — Reports** (`pages/reports/`)
 Página só de leitura: formulário de filtro (`from`/`to` obrigatórios, demais opcionais — mesmos campos de `ReportFilterRequest`) + cards de resumo (`totalIncome`/`totalExpense`/`balance`, seguir estilo de "informativo, não alarmante" do `PRODUCT.md`) + tabela das transações do período (reaproveitar a formatação de linha usada em F4, sem ações de editar/excluir aqui). `server/api/reports/index.post.ts` proxy simples.
 *Depende de:* F4 (mesmos componentes de formatação de linha), backend T9b (escopo por space).
 **Verificação:** manual no navegador — filtrar por período, conferir totais e que TRANSFER aparece na lista mas não nos totais.
