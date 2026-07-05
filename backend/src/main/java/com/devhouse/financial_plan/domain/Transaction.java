@@ -16,6 +16,7 @@ public class Transaction {
     private TransactionType type;
     private Long userId;
     private Long bankAccountId;
+    private Long destinationBankAccountId;
     private Long categoryId;
     private Long subCategoryId;
     private Long paymentMethodId;
@@ -25,12 +26,13 @@ public class Transaction {
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public Transaction(Long id, Integer version, TransactionType type, Long userId, Long bankAccountId, Long categoryId, Long subCategoryId, Long paymentMethodId, BigDecimal amount, LocalDate transactionDate, String description, Instant createdDate, Instant updatedDate) {
+    public Transaction(Long id, Integer version, TransactionType type, Long userId, Long bankAccountId, Long destinationBankAccountId, Long categoryId, Long subCategoryId, Long paymentMethodId, BigDecimal amount, LocalDate transactionDate, String description, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
         this.type = type;
         this.userId = userId;
         this.bankAccountId = bankAccountId;
+        this.destinationBankAccountId = destinationBankAccountId;
         this.categoryId = categoryId;
         this.subCategoryId = subCategoryId;
         this.paymentMethodId = paymentMethodId;
@@ -51,24 +53,34 @@ public class Transaction {
         if (bankAccountId == null) {
             throw new DomainException("Bank account is required");
         }
-        if (categoryId == null) {
-            throw new DomainException("Category is required");
-        }
-        if (paymentMethodId == null) {
-            throw new DomainException("Payment method is required");
-        }
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new DomainException("Amount must be positive");
         }
         if (transactionDate == null) {
             throw new DomainException("Transaction date is required");
         }
+        if (isTransfer()) {
+            if (destinationBankAccountId == null) {
+                throw new DomainException("Destination bank account is required for a transfer");
+            }
+            if (destinationBankAccountId.equals(bankAccountId)) {
+                throw new DomainException("Destination bank account must be different from the origin bank account");
+            }
+        } else {
+            if (categoryId == null) {
+                throw new DomainException("Category is required");
+            }
+            if (paymentMethodId == null) {
+                throw new DomainException("Payment method is required");
+            }
+        }
     }
 
-    public void update(TransactionType type, Long bankAccountId, Long categoryId, Long subCategoryId,
+    public void update(TransactionType type, Long bankAccountId, Long destinationBankAccountId, Long categoryId, Long subCategoryId,
                        Long paymentMethodId, BigDecimal amount, LocalDate transactionDate, String description) {
         this.type = type;
         this.bankAccountId = bankAccountId;
+        this.destinationBankAccountId = destinationBankAccountId;
         this.categoryId = categoryId;
         this.subCategoryId = subCategoryId;
         this.paymentMethodId = paymentMethodId;
@@ -84,6 +96,10 @@ public class Transaction {
 
     public boolean isExpense() {
         return TransactionType.EXPENSE.equals(type);
+    }
+
+    public boolean isTransfer() {
+        return TransactionType.TRANSFER.equals(type);
     }
 
     public Long getId() { return id; }
@@ -103,6 +119,8 @@ public class Transaction {
     public void setUserId(Long userId) { this.userId = userId; }
     public Long getBankAccountId() { return bankAccountId; }
     public void setBankAccountId(Long bankAccountId) { this.bankAccountId = bankAccountId; }
+    public Long getDestinationBankAccountId() { return destinationBankAccountId; }
+    public void setDestinationBankAccountId(Long destinationBankAccountId) { this.destinationBankAccountId = destinationBankAccountId; }
     public Long getCategoryId() { return categoryId; }
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     public Long getSubCategoryId() { return subCategoryId; }

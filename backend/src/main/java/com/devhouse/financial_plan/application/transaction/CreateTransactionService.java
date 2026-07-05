@@ -19,7 +19,7 @@ public class CreateTransactionService {
 
     public TransactionResponse execute(CreateTransactionRequest request) {
         Transaction transaction = new Transaction(null, 0, request.type(), request.userId(),
-                request.bankAccountId(), request.categoryId(), request.subCategoryId(),
+                request.bankAccountId(), null, request.categoryId(), request.subCategoryId(),
                 request.paymentMethodId(), request.amount(), request.transactionDate(),
                 request.description(), Instant.now(), null);
         transaction.validate();

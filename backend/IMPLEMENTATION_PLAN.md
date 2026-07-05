@@ -134,7 +134,7 @@ Sem domain próprio — deriva de `TransactionRepository.findByFilter`. `totalIn
 
 > **[coringa]** independente da cadeia principal — encaixar em qualquer sessão/grupo abaixo quando sobrar contexto.
 
-- [ ] **T1 — Persistência real de SubCategory**
+- [x] **T1 — Persistência real de SubCategory**
 Criar `infrastructure/repository/jpa/JpaSubCategoryRepository.java` (`extends JpaRepository<SubCategoryEntityJpa, Long>` + `findByCategoryId`). Reescrever `SubCategoryRepositoryImpl.java` com mapeamento direto (sem Space), seguindo o padrão de `PaymentMethodRepositoryImpl.java`. Independente do resto, pode ser feito a qualquer momento.
 **Testes (obrigatório):** specs de `CreateSubCategoryService`/`UpdateSubCategoryService`/`DeleteSubCategoryService` (mockando `SubCategoryRepository`, `CategoryRepository`) cobrindo sucesso e categoria pai inexistente — `./gradlew test` verde antes de fechar.
 **Docs:** revisar `backend/docs/APP_OVERVIEW.md` (seção SubCategory / REST API Reference) — confirmar que o contrato já descrito bate com o comportamento real agora que não é mais stub; nenhuma mudança de contrato esperada.
@@ -142,13 +142,13 @@ Criar `infrastructure/repository/jpa/JpaSubCategoryRepository.java` (`extends Jp
 
 ### [Grupo B1] Fundação: domínio TRANSFER + persistência de Transaction
 
-- [ ] **T2 — Suporte a TRANSFER no domain Transaction**
+- [x] **T2 — Suporte a TRANSFER no domain Transaction**
 Editar `domain/enums/TransactionType.java` (add `TRANSFER`). Editar `domain/Transaction.java`: novo campo `destinationBankAccountId`, atualizar construtor, `update(...)`, e `validate()` com a ramificação descrita acima.
 **Testes (obrigatório):** `domain/TransactionSpec.groovy` (criar se não existir) cobrindo `validate()` para os 3 tipos: INCOME/EXPENSE (categoryId/paymentMethodId obrigatórios), TRANSFER (destinationBankAccountId obrigatório e diferente de bankAccountId, categoryId/paymentMethodId dispensados).
 **Docs:** atualizar `backend/docs/APP_OVERVIEW.md` seção "Transaction" com o novo campo `destinationBankAccountId` e o valor `TRANSFER`.
 *Pronto quando:* `Transaction.validate()` cobre os três tipos corretamente e a spec passa.
 
-- [ ] **T3 — Persistência real de Transaction (já com destinationBankAccountId)**
+- [x] **T3 — Persistência real de Transaction (já com destinationBankAccountId)**
 Criar `infrastructure/repository/jpa/JpaTransactionRepository.java` — `extends JpaRepository<TransactionEntityJpa, Long> & JpaSpecificationExecutor<TransactionEntityJpa>` (specification para suportar os filtros opcionais de `findByFilter`). Adicionar coluna `destinationBankAccountId` em `TransactionEntityJpa`. Reescrever `TransactionRepositoryImpl.java` com mapeamento direto de campos escalares, seguindo a estrutura de `BankAccountRepositoryImpl.java` (sem resolver Space).
 *Depende de:* T2 (campo/enum já precisam existir para mapear).
 **Testes (obrigatório):** cobertura indireta via specs de T4/T6 (que mockam `TransactionRepository`, então a implementação JPA em si é validada por teste manual/integration — documentar no PR os cenários manuais executados: create/update/delete/findByFilter contra o MySQL local).

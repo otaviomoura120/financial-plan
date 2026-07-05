@@ -56,11 +56,13 @@ Defines how a transaction was paid — cash, credit card, debit card, pix, check
 
 ### Transaction
 The **central entity** of the system. Represents a single financial event:
-- `type`: `INCOME` or `EXPENSE`
+- `type`: `INCOME`, `EXPENSE` or `TRANSFER`
 - `amount`: positive `BigDecimal`
 - `transactionDate`: `LocalDate` of when it happened
-- Links: `userId`, `bankAccountId`, `categoryId`, `subCategoryId`, `paymentMethodId`
+- Links: `userId`, `bankAccountId`, `destinationBankAccountId`, `categoryId`, `subCategoryId`, `paymentMethodId`
 - `description`: optional notes
+
+For `INCOME`/`EXPENSE`, `categoryId` and `paymentMethodId` are required and `destinationBankAccountId` must be null. For `TRANSFER`, `destinationBankAccountId` is required and must differ from `bankAccountId`; `categoryId`/`paymentMethodId` are not required. `TRANSFER` moves money between two bank accounts within the same space and is excluded from `totalIncome`/`totalExpense`/`balance` in Reports (see below), though it still appears in the transaction list.
 
 ### EndpointPermission & RoleEndpointPermission
 `EndpointPermission` defines one access rule for an HTTP endpoint or a frontend page:

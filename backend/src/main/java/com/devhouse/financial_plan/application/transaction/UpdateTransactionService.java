@@ -18,7 +18,7 @@ public class UpdateTransactionService {
     public TransactionResponse execute(Long id, UpdateTransactionRequest request) {
         Transaction transaction = transactionRepository.findById(id);
         transaction.setVersion(request.version());
-        transaction.update(request.type(), request.bankAccountId(), request.categoryId(),
+        transaction.update(request.type(), request.bankAccountId(), null, request.categoryId(),
                 request.subCategoryId(), request.paymentMethodId(), request.amount(),
                 request.transactionDate(), request.description());
         transaction.validate();

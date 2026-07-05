@@ -2,7 +2,9 @@ package com.devhouse.financial_plan.application.category;
 
 import com.devhouse.financial_plan.application.category.dto.CreateSubCategoryRequest;
 import com.devhouse.financial_plan.application.category.dto.SubCategoryResponse;
+import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
 import org.springframework.stereotype.Service;
@@ -21,7 +23,10 @@ public class CreateSubCategoryService {
     }
 
     public SubCategoryResponse execute(CreateSubCategoryRequest request) {
-        categoryRepository.findById(request.categoryId());
+        Category category = categoryRepository.findById(request.categoryId());
+        if (category == null) {
+            throw new DomainException("Category not found");
+        }
         SubCategory subCategory = new SubCategory(null, 0, request.categoryId(), request.name(),
                 true, Instant.now(), null);
         subCategory.validate();

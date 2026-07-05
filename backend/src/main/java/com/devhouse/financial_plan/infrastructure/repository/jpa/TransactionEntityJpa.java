@@ -22,6 +22,8 @@ public class TransactionEntityJpa {
     private Long userId;
     @Column(name = "bank_account_id")
     private Long bankAccountId;
+    @Column(name = "destination_bank_account_id")
+    private Long destinationBankAccountId;
     @Column(name = "category_id")
     private Long categoryId;
     @Column(name = "sub_category_id")
@@ -44,6 +46,8 @@ public class TransactionEntityJpa {
     public void setUserId(Long userId) { this.userId = userId; }
     public Long getBankAccountId() { return bankAccountId; }
     public void setBankAccountId(Long bankAccountId) { this.bankAccountId = bankAccountId; }
+    public Long getDestinationBankAccountId() { return destinationBankAccountId; }
+    public void setDestinationBankAccountId(Long destinationBankAccountId) { this.destinationBankAccountId = destinationBankAccountId; }
     public Long getCategoryId() { return categoryId; }
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
     public Long getSubCategoryId() { return subCategoryId; }
