@@ -306,7 +306,7 @@ Lista de categorias (`name`, `active`). Gerenciar subcategorias como sub-recurso
 
 ### [Grupo F4] Transactions (página principal)
 
-- [ ] **F4 — Transactions** (`pages/transactions/`) — página principal
+- [x] **F4 — Transactions** (`pages/transactions/`) — página principal
 Form: `type` (INCOME/EXPENSE/TRANSFER — select), `bankAccountId` (select, populado por F2/GET bank-accounts do space ativo), `destinationBankAccountId` (só aparece se `type=TRANSFER`, mesma lista de contas, excluindo a selecionada em `bankAccountId`), `categoryId`+`subCategoryId` (selects em cascata, só aparecem se `type≠TRANSFER`, populados por F3), `paymentMethodId` (select, só se `type≠TRANSFER`, populado por F1), `amount`, `transactionDate` (date picker), `description` (opcional). Lista com filtro de período (date range, default mês atual) usando o novo `GET /transactions`.
 *Depende de:* F1, F2, F3 (para os selects) e backend T2-T9c completos (domain+persistência+efeito de saldo+listagem funcionando).
 **Verificação:** manual no navegador — criar INCOME/EXPENSE/TRANSFER, conferir que o saldo das contas envolvidas muda (checando em `/bank-accounts`), editar e excluir uma transação e conferir reversão do saldo.
