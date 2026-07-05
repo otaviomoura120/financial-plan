@@ -290,7 +290,7 @@ Tela mais simples (só `name` + `active`) — bom ponto de partida para validar 
 
 ### [Grupo F2] Bank Accounts
 
-- [ ] **F2 — Bank Accounts** (`pages/bank-accounts/`)
+- [x] **F2 — Bank Accounts** (`pages/bank-accounts/`)
 Form de criação: `name`, `bankName`, `initialBalance`. Form de edição: só `name`/`bankName` (balance não é editável diretamente, só via transações — refletir isso na UI, sem campo de saldo editável no form de edição, só exibido como read-only na tabela). Exclusão = soft delete (`active=false`, backend já faz isso).
 *Depende de:* mesma base de F1 (padrão), backend T9c/T10.
 **Verificação:** manual no navegador — criar conta, conferir saldo inicial exibido, editar nome/banco, desativar.
