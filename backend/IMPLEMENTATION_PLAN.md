@@ -217,7 +217,7 @@ Testar com transações reais (INCOME/EXPENSE/TRANSFER) criadas via T6, confirma
 
 ### [Grupo B6] Endpoints de listagem
 
-- [ ] **T9c — Endpoints GET/listagem faltantes (bloqueiam o frontend)**
+- [x] **T9c — Endpoints GET/listagem faltantes (bloqueiam o frontend)**
 Nenhum destes controllers tem endpoint de listagem hoje — sem isso as telas novas não têm como popular a tabela:
 - `GET /bank-accounts?spaceId=` → novo `ListBankAccountsService`, reaproveitando `BankAccountRepository.findBySpaceId` (já existe).
 - `GET /categories?spaceId=` → novo `ListCategoriesService`; para cada `Category`, buscar suas `SubCategory` via `SubCategoryRepository.findByCategoryId` e popular `CategoryResponse.subCategories` (hoje sempre retornado vazio nos outros services — aqui passa a ser real).

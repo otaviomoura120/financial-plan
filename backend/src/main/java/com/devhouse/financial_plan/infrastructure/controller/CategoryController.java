@@ -5,6 +5,8 @@ import com.devhouse.financial_plan.application.category.dto.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/categories")
 public class CategoryController {
@@ -15,14 +17,21 @@ public class CategoryController {
     private final CreateSubCategoryService createSubCategoryService;
     private final UpdateSubCategoryService updateSubCategoryService;
     private final DeleteSubCategoryService deleteSubCategoryService;
+    private final ListCategoriesService listCategoriesService;
 
-    public CategoryController(CreateCategoryService createCategoryService, UpdateCategoryService updateCategoryService, DeleteCategoryService deleteCategoryService, CreateSubCategoryService createSubCategoryService, UpdateSubCategoryService updateSubCategoryService, DeleteSubCategoryService deleteSubCategoryService) {
+    public CategoryController(CreateCategoryService createCategoryService, UpdateCategoryService updateCategoryService, DeleteCategoryService deleteCategoryService, CreateSubCategoryService createSubCategoryService, UpdateSubCategoryService updateSubCategoryService, DeleteSubCategoryService deleteSubCategoryService, ListCategoriesService listCategoriesService) {
         this.createCategoryService = createCategoryService;
         this.updateCategoryService = updateCategoryService;
         this.deleteCategoryService = deleteCategoryService;
         this.createSubCategoryService = createSubCategoryService;
         this.updateSubCategoryService = updateSubCategoryService;
         this.deleteSubCategoryService = deleteSubCategoryService;
+        this.listCategoriesService = listCategoriesService;
+    }
+
+    @GetMapping
+    public List<CategoryResponse> list(@RequestParam Long spaceId) {
+        return listCategoriesService.execute(spaceId);
     }
 
     @PostMapping

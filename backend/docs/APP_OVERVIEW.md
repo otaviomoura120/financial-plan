@@ -169,13 +169,15 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 ### Transactions `/transactions`
 | Method | Path | Purpose |
 |--------|------|---------|
-| POST | `/` | Record income or expense |
+| GET | `/?spaceId=&userId=&bankAccountId=&categoryId=&subCategoryId=&paymentMethodId=&type=&from=&to=` | List transactions of a space (spaceId required, all other filters optional; no `from`/`to` = all transactions) |
+| POST | `/` | Record income, expense or transfer |
 | PUT | `/{id}` | Update transaction |
 | DELETE | `/{id}` | Delete transaction |
 
 ### Categories `/categories`
 | Method | Path | Purpose |
 |--------|------|---------|
+| GET | `/?spaceId=` | List categories of a space, each with its subcategories populated |
 | POST | `/` | Create category |
 | PUT | `/{id}` | Rename category |
 | DELETE | `/{id}` | Deactivate category |
@@ -186,6 +188,7 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 ### Bank Accounts `/bank-accounts`
 | Method | Path | Purpose |
 |--------|------|---------|
+| GET | `/?spaceId=` | List bank accounts of a space |
 | POST | `/` | Create bank account |
 | PUT | `/{id}` | Update account metadata |
 | DELETE | `/{id}` | Deactivate account |
@@ -193,6 +196,7 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 ### Payment Methods `/payment-methods`
 | Method | Path | Purpose |
 |--------|------|---------|
+| GET | `/?spaceId=` | List payment methods of a space |
 | POST | `/` | Create payment method |
 | PUT | `/{id}` | Rename payment method |
 | DELETE | `/{id}` | Deactivate payment method |
