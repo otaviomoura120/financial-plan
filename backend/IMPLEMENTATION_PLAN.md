@@ -298,7 +298,7 @@ Form de criação: `name`, `bankName`, `initialBalance`. Form de edição: só `
 
 ### [Grupo F3] Categories + SubCategories
 
-- [ ] **F3 — Categories + SubCategories** (`pages/categories/`)
+- [x] **F3 — Categories + SubCategories** (`pages/categories/`)
 Lista de categorias (`name`, `active`). Gerenciar subcategorias como sub-recurso: seguir o padrão de `RolePermissionsDialog.vue` (dialog secundário aberto a partir de uma linha da tabela) — um `ManageSubCategoriesDialog.vue` que lista/cria/edita/exclui as subcategorias daquela categoria (`server/api/categories/[id]/subcategories/*`, espelhando `server/api/roles/[id]/permissions/*`).
 *Depende de:* backend T1 (persistência real de SubCategory) + T9c.
 **Verificação:** manual no navegador — criar categoria, abrir subcategorias, criar/editar/excluir subcategoria.
