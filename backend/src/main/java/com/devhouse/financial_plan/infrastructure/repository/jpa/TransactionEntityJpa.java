@@ -18,18 +18,24 @@ public class TransactionEntityJpa {
     private Integer version;
     @Enumerated(EnumType.STRING)
     private TransactionType type;
-    @Column(name = "user_id")
-    private Long userId;
-    @Column(name = "bank_account_id")
-    private Long bankAccountId;
-    @Column(name = "destination_bank_account_id")
-    private Long destinationBankAccountId;
-    @Column(name = "category_id")
-    private Long categoryId;
-    @Column(name = "sub_category_id")
-    private Long subCategoryId;
-    @Column(name = "payment_method_id")
-    private Long paymentMethodId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private UserEntityJpa user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bank_account_id")
+    private BankAccountEntityJpa bankAccount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "destination_bank_account_id")
+    private BankAccountEntityJpa destinationBankAccount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private CategoryEntityJpa category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sub_category_id")
+    private SubCategoryEntityJpa subCategory;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_method_id")
+    private PaymentMethodEntityJpa paymentMethod;
     private BigDecimal amount;
     @Column(name = "transaction_date")
     private LocalDate transactionDate;
@@ -42,18 +48,18 @@ public class TransactionEntityJpa {
     public void setVersion(Integer version) { this.version = version; }
     public TransactionType getType() { return type; }
     public void setType(TransactionType type) { this.type = type; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-    public Long getBankAccountId() { return bankAccountId; }
-    public void setBankAccountId(Long bankAccountId) { this.bankAccountId = bankAccountId; }
-    public Long getDestinationBankAccountId() { return destinationBankAccountId; }
-    public void setDestinationBankAccountId(Long destinationBankAccountId) { this.destinationBankAccountId = destinationBankAccountId; }
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
-    public Long getSubCategoryId() { return subCategoryId; }
-    public void setSubCategoryId(Long subCategoryId) { this.subCategoryId = subCategoryId; }
-    public Long getPaymentMethodId() { return paymentMethodId; }
-    public void setPaymentMethodId(Long paymentMethodId) { this.paymentMethodId = paymentMethodId; }
+    public UserEntityJpa getUser() { return user; }
+    public void setUser(UserEntityJpa user) { this.user = user; }
+    public BankAccountEntityJpa getBankAccount() { return bankAccount; }
+    public void setBankAccount(BankAccountEntityJpa bankAccount) { this.bankAccount = bankAccount; }
+    public BankAccountEntityJpa getDestinationBankAccount() { return destinationBankAccount; }
+    public void setDestinationBankAccount(BankAccountEntityJpa destinationBankAccount) { this.destinationBankAccount = destinationBankAccount; }
+    public CategoryEntityJpa getCategory() { return category; }
+    public void setCategory(CategoryEntityJpa category) { this.category = category; }
+    public SubCategoryEntityJpa getSubCategory() { return subCategory; }
+    public void setSubCategory(SubCategoryEntityJpa subCategory) { this.subCategory = subCategory; }
+    public PaymentMethodEntityJpa getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(PaymentMethodEntityJpa paymentMethod) { this.paymentMethod = paymentMethod; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public LocalDate getTransactionDate() { return transactionDate; }

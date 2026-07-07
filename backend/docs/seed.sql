@@ -62,16 +62,20 @@ VALUES
 -- already ALLOW it via the existing ep.name IN (...) joins in section 5 below.
 (1, '/bank-accounts',                         'Contas Bancárias',           50, 'API', 'GET,POST',   'Conta',        NOW(), NOW()),
 (1, '/bank-accounts/[0-9]+',                  'Contas Bancárias',           51, 'API', 'PUT,DELETE', 'Conta',        NOW(), NOW()),
+(1, '/bank-accounts/[0-9]+/status',           'Contas Bancárias',           61, 'API', 'PATCH',      'Conta',        NOW(), NOW()),
 
 -- CategoryController — /categories (includes /subcategories sub-resource)
 (1, '/categories',                            'Categorias',                 52, 'API', 'GET,POST',   'Configuração', NOW(), NOW()),
 (1, '/categories/[0-9]+',                     'Categorias',                 53, 'API', 'PUT,DELETE', 'Configuração', NOW(), NOW()),
 (1, '/categories/subcategories',              'Categorias',                 54, 'API', 'POST',       'Configuração', NOW(), NOW()),
 (1, '/categories/subcategories/[0-9]+',       'Categorias',                 55, 'API', 'PUT,DELETE', 'Configuração', NOW(), NOW()),
+(1, '/categories/[0-9]+/status',              'Categorias',                 63, 'API', 'PATCH',      'Configuração', NOW(), NOW()),
+(1, '/categories/subcategories/[0-9]+/status','Categorias',                 64, 'API', 'PATCH',      'Configuração', NOW(), NOW()),
 
 -- PaymentMethodController — /payment-methods
 (1, '/payment-methods',                       'Formas de Pagamento',        56, 'API', 'GET,POST',   'Conta',        NOW(), NOW()),
 (1, '/payment-methods/[0-9]+',                'Formas de Pagamento',        57, 'API', 'PUT,DELETE', 'Conta',        NOW(), NOW()),
+(1, '/payment-methods/[0-9]+/status',         'Formas de Pagamento',        62, 'API', 'PATCH',      'Conta',        NOW(), NOW()),
 
 -- TransactionController — /transactions
 (1, '/transactions',                          'Transações',                 58, 'API', 'GET,POST',   'Financeiro',   NOW(), NOW()),
@@ -225,3 +229,85 @@ WHERE r.name = 'MEMBER';
 --   ALTER TABLE space_invites
 --     MODIFY COLUMN status ENUM('PENDING','ACCEPTED','CANCELLED','DECLINED') NOT NULL;
 -- =============================================================================
+
+-- =============================================================================
+-- 6. INCREMENTAL — novos endpoints PATCH .../status (Exclusão real + Ativar/Inativar)
+--    Os 4 INSERTs abaixo já estão embutidos na seção 1 (linhas 65, 72, 73, 78) para quem
+--    roda o seed inteiro num banco vazio. Esta seção é para quem já tinha rodado o seed
+--    ANTES dessas 4 linhas existirem — insere só o que falta e regrava os ALLOW de
+--    role_endpoint_permissions para OWNER/ADMIN/MEMBER (a seção 5 só roda uma vez, então
+--    endpoint_permissions criados depois dela não ganham ALLOW sozinhos). Idempotente
+--    (seguro rodar mais de uma vez) via WHERE NOT EXISTS.
+-- =============================================================================
+
+-- 6.1 — endpoint_permissions (API) que ainda não existirem
+-- (colunas da subquery precisam de alias explícito — MySQL rejeita nomes de coluna
+-- duplicados em derived table, e NOW() repetido vira "NOW()" duas vezes sem alias)
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bank-accounts/[0-9]+/status' AS endpoint, 'Contas Bancárias' AS name,
+           61 AS sequence, 'API' AS type, 'PATCH' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bank-accounts/[0-9]+/status' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/payment-methods/[0-9]+/status' AS endpoint, 'Formas de Pagamento' AS name,
+           62 AS sequence, 'API' AS type, 'PATCH' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/payment-methods/[0-9]+/status' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/categories/[0-9]+/status' AS endpoint, 'Categorias' AS name,
+           63 AS sequence, 'API' AS type, 'PATCH' AS permitted_methods, 'Configuração' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/categories/[0-9]+/status' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/categories/subcategories/[0-9]+/status' AS endpoint, 'Categorias' AS name,
+           64 AS sequence, 'API' AS type, 'PATCH' AS permitted_methods, 'Configuração' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/categories/subcategories/[0-9]+/status' AND type = 'API');
+
+-- 6.2 — role_endpoint_permissions: OWNER ganha ALLOW em tudo que ainda não tem (cobre os 4 novos + qualquer outro endpoint futuro)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'OWNER'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 6.3 — role_endpoint_permissions: ADMIN ganha ALLOW nos 4 novos endpoints (mesmo `name` já presente na allow-list original)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep
+    ON ep.endpoint IN ('/bank-accounts/[0-9]+/status', '/payment-methods/[0-9]+/status',
+                        '/categories/[0-9]+/status', '/categories/subcategories/[0-9]+/status')
+WHERE r.name = 'ADMIN'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 6.4 — role_endpoint_permissions: MEMBER ganha ALLOW nos 4 novos endpoints (mesmo motivo)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep
+    ON ep.endpoint IN ('/bank-accounts/[0-9]+/status', '/payment-methods/[0-9]+/status',
+                        '/categories/[0-9]+/status', '/categories/subcategories/[0-9]+/status')
+WHERE r.name = 'MEMBER'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );

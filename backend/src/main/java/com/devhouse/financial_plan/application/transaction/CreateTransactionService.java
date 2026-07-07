@@ -2,7 +2,12 @@ package com.devhouse.financial_plan.application.transaction;
 
 import com.devhouse.financial_plan.application.transaction.dto.CreateTransactionRequest;
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse;
+import com.devhouse.financial_plan.domain.BankAccount;
+import com.devhouse.financial_plan.domain.Category;
+import com.devhouse.financial_plan.domain.PaymentMethod;
+import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.Transaction;
+import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository;
@@ -42,10 +47,21 @@ public class CreateTransactionService {
 
     @Transactional
     public TransactionResponse execute(CreateTransactionRequest request) {
-        validateForeignKeys(request);
-        Transaction transaction = new Transaction(null, 0, request.type(), request.userId(),
-                request.bankAccountId(), request.destinationBankAccountId(), request.categoryId(), request.subCategoryId(),
-                request.paymentMethodId(), request.amount(), request.transactionDate(),
+        User user = resolveUser(request.userId());
+        BankAccount bankAccount = resolveBankAccount(request.bankAccountId(), "Bank account not found");
+        BankAccount destinationBankAccount = null;
+        Category category = null;
+        PaymentMethod paymentMethod = null;
+        if (TransactionType.TRANSFER.equals(request.type())) {
+            destinationBankAccount = resolveBankAccount(request.destinationBankAccountId(), "Destination bank account not found");
+        } else {
+            category = resolveCategory(request.categoryId());
+            paymentMethod = resolvePaymentMethod(request.paymentMethodId());
+        }
+        SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+
+        Transaction transaction = new Transaction(null, 0, request.type(), user, bankAccount, destinationBankAccount,
+                category, subCategory, paymentMethod, request.amount(), request.transactionDate(),
                 request.description(), Instant.now(), null);
         transaction.validate();
         balanceEffectService.apply(transaction);
@@ -53,41 +69,55 @@ public class CreateTransactionService {
         return toResponse(saved);
     }
 
-    private void validateForeignKeys(CreateTransactionRequest request) {
-        if (userRepository.findById(request.userId()) == null) {
+    private User resolveUser(Long userId) {
+        User user = userRepository.findById(userId);
+        if (user == null) {
             throw new DomainException("User not found");
         }
-        if (bankAccountRepository.findById(request.bankAccountId()) == null) {
-            throw new DomainException("Bank account not found");
-        }
-        if (TransactionType.TRANSFER.equals(request.type())) {
-            validateDestinationBankAccount(request.destinationBankAccountId());
-        } else {
-            validateCategoryAndPaymentMethod(request.categoryId(), request.paymentMethodId());
-        }
-        if (request.subCategoryId() != null && subCategoryRepository.findById(request.subCategoryId()) == null) {
-            throw new DomainException("Sub category not found");
-        }
+        return user;
     }
 
-    private void validateDestinationBankAccount(Long destinationBankAccountId) {
-        if (destinationBankAccountId != null && bankAccountRepository.findById(destinationBankAccountId) == null) {
-            throw new DomainException("Destination bank account not found");
+    private BankAccount resolveBankAccount(Long bankAccountId, String errorMessage) {
+        BankAccount bankAccount = bankAccountId != null ? bankAccountRepository.findById(bankAccountId) : null;
+        if (bankAccount == null) {
+            throw new DomainException(errorMessage);
         }
+        return bankAccount;
     }
 
-    private void validateCategoryAndPaymentMethod(Long categoryId, Long paymentMethodId) {
-        if (categoryId != null && categoryRepository.findById(categoryId) == null) {
+    private Category resolveCategory(Long categoryId) {
+        Category category = categoryId != null ? categoryRepository.findById(categoryId) : null;
+        if (category == null) {
             throw new DomainException("Category not found");
         }
-        if (paymentMethodId != null && paymentMethodRepository.findById(paymentMethodId) == null) {
+        return category;
+    }
+
+    private PaymentMethod resolvePaymentMethod(Long paymentMethodId) {
+        PaymentMethod paymentMethod = paymentMethodId != null ? paymentMethodRepository.findById(paymentMethodId) : null;
+        if (paymentMethod == null) {
             throw new DomainException("Payment method not found");
         }
+        return paymentMethod;
+    }
+
+    private SubCategory resolveSubCategory(Long subCategoryId) {
+        if (subCategoryId == null) {
+            return null;
+        }
+        SubCategory subCategory = subCategoryRepository.findById(subCategoryId);
+        if (subCategory == null) {
+            throw new DomainException("Sub category not found");
+        }
+        return subCategory;
     }
 
     private TransactionResponse toResponse(Transaction t) {
-        return new TransactionResponse(t.getId(), t.getVersion(), t.getType(), t.getUserId(), t.getBankAccountId(),
-                t.getDestinationBankAccountId(), t.getCategoryId(), t.getSubCategoryId(), t.getPaymentMethodId(), t.getAmount(),
+        return new TransactionResponse(t.getId(), t.getVersion(), t.getType(), t.getUser().getId(), t.getBankAccount().getId(),
+                t.getDestinationBankAccount() != null ? t.getDestinationBankAccount().getId() : null,
+                t.getCategory() != null ? t.getCategory().getId() : null,
+                t.getSubCategory() != null ? t.getSubCategory().getId() : null,
+                t.getPaymentMethod() != null ? t.getPaymentMethod().getId() : null, t.getAmount(),
                 t.getTransactionDate(), t.getDescription(), t.getCreatedDate());
     }
 }

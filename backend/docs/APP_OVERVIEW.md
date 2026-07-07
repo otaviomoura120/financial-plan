@@ -193,10 +193,12 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | GET | `/?spaceId=` | List categories of a space, each with its subcategories populated |
 | POST | `/` | Create category |
 | PUT | `/{id}` | Rename category |
-| DELETE | `/{id}` | Deactivate category |
+| PATCH | `/{id}/status` | Activate/deactivate category (`{active: boolean}`) |
+| DELETE | `/{id}` | Delete category (hard delete; rejects with 422 if linked subcategories or transactions exist) |
 | POST | `/subcategories` | Create subcategory |
 | PUT | `/subcategories/{id}` | Rename subcategory |
-| DELETE | `/subcategories/{id}` | Deactivate subcategory |
+| PATCH | `/subcategories/{id}/status` | Activate/deactivate subcategory (`{active: boolean}`) |
+| DELETE | `/subcategories/{id}` | Delete subcategory (hard delete; rejects with 422 if linked transactions exist) |
 
 ### Bank Accounts `/bank-accounts`
 | Method | Path | Purpose |
@@ -204,7 +206,8 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | GET | `/?spaceId=` | List bank accounts of a space |
 | POST | `/` | Create bank account |
 | PUT | `/{id}` | Update account metadata |
-| DELETE | `/{id}` | Deactivate account |
+| PATCH | `/{id}/status` | Activate/deactivate account (`{active: boolean}`) |
+| DELETE | `/{id}` | Delete account (hard delete; rejects with 422 if linked transactions exist) |
 
 ### Payment Methods `/payment-methods`
 | Method | Path | Purpose |
@@ -212,7 +215,8 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | GET | `/?spaceId=` | List payment methods of a space |
 | POST | `/` | Create payment method |
 | PUT | `/{id}` | Rename payment method |
-| DELETE | `/{id}` | Deactivate payment method |
+| PATCH | `/{id}/status` | Activate/deactivate payment method (`{active: boolean}`) |
+| DELETE | `/{id}` | Delete payment method (hard delete; rejects with 422 if linked transactions exist) |
 
 ### Roles `/roles`
 | Method | Path | Purpose |

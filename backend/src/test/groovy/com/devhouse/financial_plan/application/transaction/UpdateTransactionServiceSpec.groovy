@@ -7,6 +7,7 @@ import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
+import com.devhouse.financial_plan.domain.User
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository
@@ -36,12 +37,27 @@ class UpdateTransactionServiceSpec extends Specification {
         new BankAccount(id, 0, space, "Account " + id, "BankCorp", balance, true, Instant.now(), null)
     }
 
+    private User buildUser(Long id) {
+        new User(id, 0, "auth0|" + id, "User " + id, null, null, null, null, "user${id}@test.com", null, true,
+                null, null, Instant.now(), null, false)
+    }
+
+    private Category buildCategoryObj(Long id) {
+        id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
+    }
+
+    private PaymentMethod buildPaymentMethodObj(Long id) {
+        id == null ? null : new PaymentMethod(id, 0, null, "Method " + id, true, Instant.now(), null)
+    }
+
     private Transaction buildExistingTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId,
                                                   BigDecimal amount) {
         Long categoryId = TransactionType.TRANSFER.equals(type) ? null : 10L
         Long paymentMethodId = TransactionType.TRANSFER.equals(type) ? null : 20L
-        new Transaction(1L, 0, type, 1L, bankAccountId, destinationBankAccountId, categoryId, null,
-                paymentMethodId, amount, LocalDate.now(), "desc", Instant.now(), null)
+        new Transaction(1L, 0, type, buildUser(1L), buildAccount(bankAccountId, BigDecimal.ZERO),
+                destinationBankAccountId != null ? buildAccount(destinationBankAccountId, BigDecimal.ZERO) : null,
+                buildCategoryObj(categoryId), null, buildPaymentMethodObj(paymentMethodId),
+                amount, LocalDate.now(), "desc", Instant.now(), null)
     }
 
     def "execute reverts old amount and applies new amount on the same EXPENSE account"() {

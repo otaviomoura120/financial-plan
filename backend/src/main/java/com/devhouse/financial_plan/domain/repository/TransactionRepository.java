@@ -12,4 +12,8 @@ public interface TransactionRepository {
     Transaction findById(Long id);
     List<Transaction> findByFilter(Long spaceId, Long userId, Long bankAccountId, Long categoryId, Long subCategoryId, Long paymentMethodId, TransactionType type, LocalDate from, LocalDate to);
     void delete(Long id);
+    boolean existsByBankAccountId(Long bankAccountId);
+    boolean existsByCategoryId(Long categoryId);
+    boolean existsBySubCategoryId(Long subCategoryId);
+    boolean existsByPaymentMethodId(Long paymentMethodId);
 }

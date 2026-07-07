@@ -36,6 +36,9 @@ const isDeleteDialogVisible = shallowRef(false)
 const selectedSubCategory = shallowRef<SubCategoryResponse | null>(null)
 const isDeleting = shallowRef(false)
 
+const isStatusDialogVisible = shallowRef(false)
+const isTogglingStatus = shallowRef(false)
+
 watch(
   () => props.isDialogVisible,
   visible => {
@@ -137,10 +140,7 @@ async function onDeleteConfirm(confirmed: boolean) {
   try {
     await $fetch(`/api/categories/subcategories/${selectedSubCategory.value.id}`, { method: 'DELETE' })
 
-    const idx = localSubCategories.value.findIndex(sc => sc.id === selectedSubCategory.value!.id)
-
-    if (idx >= 0)
-      localSubCategories.value[idx] = { ...localSubCategories.value[idx], active: false }
+    localSubCategories.value = localSubCategories.value.filter(sc => sc.id !== selectedSubCategory.value!.id)
 
     emitUpdated()
   }
@@ -149,6 +149,43 @@ async function onDeleteConfirm(confirmed: boolean) {
   }
   finally {
     isDeleting.value = false
+    selectedSubCategory.value = null
+  }
+}
+
+function openToggleStatus(subCategory: SubCategoryResponse) {
+  selectedSubCategory.value = subCategory
+  isStatusDialogVisible.value = true
+}
+
+async function onToggleStatusConfirm(confirmed: boolean) {
+  if (!confirmed || !selectedSubCategory.value)
+    return
+
+  const target = selectedSubCategory.value
+  const nextActive = !target.active
+
+  isTogglingStatus.value = true
+  clearError()
+
+  try {
+    const updated = await $fetch<SubCategoryResponse>(`/api/categories/subcategories/${target.id}/status`, {
+      method: 'PATCH',
+      body: { active: nextActive },
+    })
+
+    const idx = localSubCategories.value.findIndex(sc => sc.id === target.id)
+
+    if (idx >= 0)
+      localSubCategories.value[idx] = updated
+
+    emitUpdated()
+  }
+  catch (e) {
+    setError(e)
+  }
+  finally {
+    isTogglingStatus.value = false
     selectedSubCategory.value = null
   }
 }
@@ -279,13 +316,25 @@ function onClose() {
                 icon
                 variant="text"
                 size="small"
+                :color="subCategory.active ? 'secondary' : 'success'"
+                @click="openToggleStatus(subCategory)"
+              >
+                <VIcon :icon="subCategory.active ? 'tabler-toggle-right' : 'tabler-toggle-left'" />
+                <VTooltip activator="parent">
+                  {{ subCategory.active ? 'Inativar' : 'Ativar' }}
+                </VTooltip>
+              </VBtn>
+
+              <VBtn
+                icon
+                variant="text"
+                size="small"
                 color="error"
-                :disabled="!subCategory.active"
                 @click="openDelete(subCategory)"
               >
                 <VIcon icon="tabler-trash" />
                 <VTooltip activator="parent">
-                  {{ subCategory.active ? 'Excluir' : 'Já inativa' }}
+                  Excluir definitivamente
                 </VTooltip>
               </VBtn>
             </div>
@@ -316,10 +365,22 @@ function onClose() {
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
       :auto-result="false"
-      confirmation-question="Tem certeza que deseja excluir esta subcategoria?"
+      confirm-color="error"
+      confirmation-question="Tem certeza que deseja excluir definitivamente esta subcategoria? Esta ação não pode ser desfeita."
       cancel-title="Ação cancelada"
       cancel-msg="A subcategoria não foi excluída."
       @confirm="onDeleteConfirm"
+    />
+
+    <ConfirmDialog
+      v-model:is-dialog-visible="isStatusDialogVisible"
+      :auto-result="false"
+      :confirmation-question="selectedSubCategory?.active
+        ? 'Tem certeza que deseja inativar esta subcategoria?'
+        : 'Tem certeza que deseja ativar esta subcategoria?'"
+      cancel-title="Ação cancelada"
+      cancel-msg="O status da subcategoria não foi alterado."
+      @confirm="onToggleStatusConfirm"
     />
   </VDialog>
 </template>

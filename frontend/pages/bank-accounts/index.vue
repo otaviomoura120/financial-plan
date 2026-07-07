@@ -26,6 +26,8 @@ const searchVisible = shallowRef(false)
 
 const isAddEditDialogVisible = shallowRef(false)
 const isDeleteDialogVisible = shallowRef(false)
+const isStatusDialogVisible = shallowRef(false)
+const isTogglingStatus = shallowRef(false)
 
 const selectedBankAccount = shallowRef<BankAccountResponse | null>(null)
 
@@ -103,18 +105,52 @@ async function onDeleteConfirm(confirmed: boolean) {
   try {
     await $fetch(`/api/bank-accounts/${selectedBankAccount.value.id}`, { method: 'DELETE' })
 
-    const idx = bankAccounts.value.findIndex(ba => ba.id === selectedBankAccount.value!.id)
+    bankAccounts.value = bankAccounts.value.filter(ba => ba.id !== selectedBankAccount.value!.id)
 
-    if (idx >= 0)
-      bankAccounts.value[idx] = { ...bankAccounts.value[idx], active: false }
-
-    showSuccess('Conta bancária desativada com sucesso.')
+    showSuccess('Conta bancária excluída com sucesso.')
   }
   catch (e) {
     showError(e)
   }
   finally {
     isDeleting.value = false
+    selectedBankAccount.value = null
+  }
+}
+
+function openToggleStatus(bankAccount: BankAccountResponse) {
+  selectedBankAccount.value = bankAccount
+  isStatusDialogVisible.value = true
+}
+
+async function onToggleStatusConfirm(confirmed: boolean) {
+  if (!confirmed || !selectedBankAccount.value)
+    return
+
+  const target = selectedBankAccount.value
+  const nextActive = !target.active
+
+  isTogglingStatus.value = true
+  clearError()
+
+  try {
+    const updated = await $fetch<BankAccountResponse>(`/api/bank-accounts/${target.id}/status`, {
+      method: 'PATCH',
+      body: { active: nextActive },
+    })
+
+    const idx = bankAccounts.value.findIndex(ba => ba.id === target.id)
+
+    if (idx >= 0)
+      bankAccounts.value[idx] = updated
+
+    showSuccess(nextActive ? 'Conta bancária ativada com sucesso.' : 'Conta bancária inativada com sucesso.')
+  }
+  catch (e) {
+    showError(e)
+  }
+  finally {
+    isTogglingStatus.value = false
     selectedBankAccount.value = null
   }
 }
@@ -281,13 +317,25 @@ function formatBalance(balance: number) {
                   icon
                   variant="text"
                   size="small"
+                  :color="bankAccount.active ? 'secondary' : 'success'"
+                  @click="openToggleStatus(bankAccount)"
+                >
+                  <VIcon :icon="bankAccount.active ? 'tabler-toggle-right' : 'tabler-toggle-left'" />
+                  <VTooltip activator="parent">
+                    {{ bankAccount.active ? 'Inativar' : 'Ativar' }}
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
                   color="error"
-                  :disabled="!bankAccount.active"
                   @click="openDelete(bankAccount)"
                 >
                   <VIcon icon="tabler-trash" />
                   <VTooltip activator="parent">
-                    {{ bankAccount.active ? 'Excluir' : 'Já inativa' }}
+                    Excluir definitivamente
                   </VTooltip>
                 </VBtn>
               </td>
@@ -323,10 +371,22 @@ function formatBalance(balance: number) {
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
       :auto-result="false"
-      confirmation-question="Tem certeza que deseja excluir esta conta bancária?"
+      confirm-color="error"
+      confirmation-question="Tem certeza que deseja excluir definitivamente esta conta bancária? Esta ação não pode ser desfeita."
       cancel-title="Ação cancelada"
       cancel-msg="A conta bancária não foi excluída."
       @confirm="onDeleteConfirm"
+    />
+
+    <ConfirmDialog
+      v-model:is-dialog-visible="isStatusDialogVisible"
+      :auto-result="false"
+      :confirmation-question="selectedBankAccount?.active
+        ? 'Tem certeza que deseja inativar esta conta bancária?'
+        : 'Tem certeza que deseja ativar esta conta bancária?'"
+      cancel-title="Ação cancelada"
+      cancel-msg="O status da conta bancária não foi alterado."
+      @confirm="onToggleStatusConfirm"
     />
   </div>
 </template>

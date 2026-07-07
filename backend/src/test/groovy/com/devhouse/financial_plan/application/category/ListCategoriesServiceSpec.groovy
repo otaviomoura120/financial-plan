@@ -20,7 +20,7 @@ class ListCategoriesServiceSpec extends Specification {
         given:
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
         Category category = new Category(10L, 0, space, "Food", true, Instant.now(), null)
-        SubCategory subCategory = new SubCategory(20L, 0, 10L, "Restaurants", true, Instant.now(), null)
+        SubCategory subCategory = new SubCategory(20L, 0, category, "Restaurants", true, Instant.now(), null)
         categoryRepository.findBySpaceId(1L) >> [category]
         subCategoryRepository.findByCategoryId(10L) >> [subCategory]
 

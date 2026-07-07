@@ -21,6 +21,6 @@ public class UpdateSubCategoryService {
         subCategory.rename(request.name());
         subCategory.validate();
         SubCategory updated = subCategoryRepository.update(subCategory);
-        return new SubCategoryResponse(updated.getId(), updated.getVersion(), updated.getCategoryId(), updated.getName(), updated.isActive());
+        return new SubCategoryResponse(updated.getId(), updated.getVersion(), updated.getCategory().getId(), updated.getName(), updated.isActive());
     }
 }

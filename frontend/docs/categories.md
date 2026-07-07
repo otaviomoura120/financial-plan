@@ -15,9 +15,11 @@ pattern (dialog opened from a table row) — adapted for full CRUD instead of re
 | GET | `/categories` | `spaceId` (query) | `CategoryResponse[]` — **includes nested `subCategories`** |
 | POST | `/categories` | `{ spaceId, name }` | `CategoryResponse` (`subCategories: []`) |
 | PUT | `/categories/{id}` | `{ version, name }` | `CategoryResponse` (`subCategories: []` — see note below) |
+| PATCH | `/categories/{id}/status` | `{ active: boolean }` | `CategoryResponse` |
 | DELETE | `/categories/{id}` | — | `204 No Content` |
 | POST | `/categories/subcategories` | `{ categoryId, name }` | `SubCategoryResponse` |
 | PUT | `/categories/subcategories/{id}` | `{ version, name }` | `SubCategoryResponse` |
+| PATCH | `/categories/subcategories/{id}/status` | `{ active: boolean }` | `SubCategoryResponse` |
 | DELETE | `/categories/subcategories/{id}` | — | `204 No Content` |
 
 `CategoryResponse`: `{ id, version, name, active, subCategories: SubCategoryResponse[] }`.
@@ -35,8 +37,13 @@ via `SubCategoryRepository.findByCategoryId`). The frontend works around this:
   and keeps its own local copy in sync as creates/edits/deletes happen, emitting the updated
   array back up via `updated` so the row on the main table stays correct without a full refetch.
 
-Same soft-delete convention as Payment Methods/Bank Accounts for both `Category.deactivate()`
-and `SubCategory.deactivate()` — rows are never removed, `active` flips to `false`.
+`DELETE` is now a **hard delete** at both levels. `DeleteCategoryService` first rejects (`422`)
+if the category still has any subcategories (`SubCategoryRepository.existsByCategoryId`), then
+if it has any `Transaction`s linked directly (`TransactionRepository.existsByCategoryId`) —
+only when both are clear is the row actually removed. `DeleteSubCategoryService` rejects (`422`)
+if any `Transaction` references it (`existsBySubCategoryId`). Activating/deactivating is now a
+separate, reversible action via `PATCH .../status` at both levels
+(`UpdateCategoryStatusService` / `UpdateSubCategoryStatusService`).
 
 ## Frontend — file map
 
@@ -49,10 +56,12 @@ and `SubCategory.deactivate()` — rows are never removed, `active` flips to `fa
 | `server/api/categories/index.get.ts` | Proxies `GET /categories?spaceId=` |
 | `server/api/categories/index.post.ts` | Proxies `POST /categories` |
 | `server/api/categories/[id].put.ts` | Proxies `PUT /categories/{id}` |
-| `server/api/categories/[id].delete.ts` | Proxies `DELETE /categories/{id}` |
+| `server/api/categories/[id]/status.patch.ts` | Proxies `PATCH /categories/{id}/status` |
+| `server/api/categories/[id].delete.ts` | Proxies `DELETE /categories/{id}` — catches backend errors and re-throws via `createError({statusCode, statusMessage, data})` so the real `DomainException` message reaches the client |
 | `server/api/categories/subcategories/index.post.ts` | Proxies `POST /categories/subcategories` |
 | `server/api/categories/subcategories/[id].put.ts` | Proxies `PUT /categories/subcategories/{id}` |
-| `server/api/categories/subcategories/[id].delete.ts` | Proxies `DELETE /categories/subcategories/{id}` |
+| `server/api/categories/subcategories/[id]/status.patch.ts` | Proxies `PATCH /categories/subcategories/{id}/status` |
+| `server/api/categories/subcategories/[id].delete.ts` | Proxies `DELETE /categories/subcategories/{id}` — same `createError` error-forwarding pattern |
 
 Note the subcategory routes mirror the backend's flat `/categories/subcategories` path (not
 nested under a category id in the URL) — `categoryId` travels in the request body instead, same
@@ -62,10 +71,14 @@ as the backend controller.
 
 - `pages/categories/index.vue` fetches on mount and on `spaceStore.activeSpace` change, same as
   the other F1-F2 pages.
-- Table shows the **count of active subcategories** (not total), name, status chip, and three
-  row actions: Gerenciar subcategorias (opens `ManageSubCategoriesDialog`), Editar, Excluir.
-- "Excluir" (category) disabled once `active === false`; delete flips `active` in place, same
-  soft-delete UX as F1/F2.
+- Table shows the **count of active subcategories** (not total), name, status chip, and four
+  row actions: Gerenciar subcategorias (opens `ManageSubCategoriesDialog`), Editar,
+  Ativar/Inativar, Excluir.
+- "Ativar/Inativar" (toggle icon) is always enabled and flips `active` via `PATCH .../status`,
+  with its own confirmation dialog; row updates in place.
+- "Excluir" is always enabled and performs a real hard delete (`confirm-color="error"`,
+  irreversible warning); on success the row is removed from the local array. A `422` (linked
+  subcategories or transactions) surfaces the real backend message via the snackbar/alert.
 
 ## `ManageSubCategoriesDialog.vue`
 
@@ -73,8 +86,10 @@ as the backend controller.
 - Inline creation: a text field + "Adicionar" button at the top (`Enter` also submits).
 - Inline editing: clicking the pencil icon on a row swaps it for a text field with
   confirm/cancel icon buttons (`Enter`/`Esc` also work).
-- Deleting a subcategory reuses `ConfirmDialog` nested inside this dialog; on confirm it's a
-  soft delete — the row stays, marked "Inativa", delete button disabled afterward.
+- Each row also has an "Ativar/Inativar" toggle (`PATCH .../status`) and a real "Excluir"
+  action (`ConfirmDialog` nested inside this dialog, `confirm-color="error"`) — deleting is a
+  hard delete now: on success the row is removed from the local list; if the subcategory has
+  transactions linked to it, the backend's `422` message is shown via `ApiErrorAlert`.
 - Every create/edit/delete emits `updated` with the full local subcategories array so the
   parent page's row stays in sync without an extra round trip.
 
@@ -83,4 +98,7 @@ as the backend controller.
 No frontend test suite exists in this project — verified manually: `pnpm dev`, open
 `/categories`, create a category, open "Gerenciar subcategorias", create/edit/delete a few
 subcategories (confirm the active count on the main table updates after closing the dialog),
-edit the category name, deactivate the category.
+toggle a category/subcategory inactive/active, try deleting a category that still has
+subcategories (expect the real backend error message), try deleting a category/subcategory used
+by a transaction (expect the real backend error message), delete a category/subcategory with no
+dependencies (row disappears).

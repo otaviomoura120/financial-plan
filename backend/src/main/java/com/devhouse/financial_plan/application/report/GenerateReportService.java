@@ -37,10 +37,12 @@ public class GenerateReportService {
 
     private List<TransactionResponse> buildResponses(List<Transaction> transactions) {
         return transactions.stream()
-                .map(t -> new TransactionResponse(t.getId(), t.getVersion(), t.getType(), t.getUserId(),
-                        t.getBankAccountId(), t.getDestinationBankAccountId(), t.getCategoryId(), t.getSubCategoryId(),
-                        t.getPaymentMethodId(), t.getAmount(), t.getTransactionDate(),
-                        t.getDescription(), t.getCreatedDate()))
+                .map(t -> new TransactionResponse(t.getId(), t.getVersion(), t.getType(), t.getUser().getId(),
+                        t.getBankAccount().getId(), t.getDestinationBankAccount() != null ? t.getDestinationBankAccount().getId() : null,
+                        t.getCategory() != null ? t.getCategory().getId() : null,
+                        t.getSubCategory() != null ? t.getSubCategory().getId() : null,
+                        t.getPaymentMethod() != null ? t.getPaymentMethod().getId() : null, t.getAmount(),
+                        t.getTransactionDate(), t.getDescription(), t.getCreatedDate()))
                 .toList();
     }
 

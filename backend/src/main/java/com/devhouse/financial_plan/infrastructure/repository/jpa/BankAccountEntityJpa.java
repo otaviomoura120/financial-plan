@@ -14,8 +14,9 @@ public class BankAccountEntityJpa {
     private Long id;
     @Version
     private Integer version;
-    @Column(name = "space_id")
-    private Long spaceId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "space_id")
+    private SpaceEntityJpa space;
     private String name;
     @Column(name = "bank_name")
     private String bankName;
@@ -27,8 +28,8 @@ public class BankAccountEntityJpa {
     public Long getId() { return id; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
-    public Long getSpaceId() { return spaceId; }
-    public void setSpaceId(Long spaceId) { this.spaceId = spaceId; }
+    public SpaceEntityJpa getSpace() { return space; }
+    public void setSpace(SpaceEntityJpa space) { this.space = space; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getBankName() { return bankName; }

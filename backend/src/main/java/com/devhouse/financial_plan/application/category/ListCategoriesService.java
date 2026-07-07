@@ -35,7 +35,7 @@ public class ListCategoriesService {
     }
 
     private SubCategoryResponse toSubCategoryResponse(SubCategory subCategory) {
-        return new SubCategoryResponse(subCategory.getId(), subCategory.getVersion(), subCategory.getCategoryId(),
+        return new SubCategoryResponse(subCategory.getId(), subCategory.getVersion(), subCategory.getCategory().getId(),
                 subCategory.getName(), subCategory.isActive());
     }
 }

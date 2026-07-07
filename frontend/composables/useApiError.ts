@@ -13,9 +13,18 @@ export function useApiError() {
     }
 
     if (e instanceof Error) {
-      const fetchErr = e as { data?: { message?: string }; statusMessage?: string }
+      const fetchErr = e as { data?: unknown; statusMessage?: string }
+      const data = fetchErr.data
 
-      error.value = fetchErr.data?.message ?? fetchErr.statusMessage ?? e.message ?? FALLBACK
+      if (typeof data === 'string' && data) {
+        error.value = data
+
+        return
+      }
+
+      const dataMessage = (data as { message?: string } | undefined)?.message
+
+      error.value = dataMessage ?? fetchErr.statusMessage ?? e.message ?? FALLBACK
 
       return
     }

@@ -18,23 +18,23 @@ public class TransactionBalanceEffectService {
 
     public void apply(Transaction transaction) {
         if (transaction.isIncome()) {
-            creditAccount(transaction.getBankAccountId(), transaction.getAmount());
+            creditAccount(transaction.getBankAccount().getId(), transaction.getAmount());
         } else if (transaction.isExpense()) {
-            debitAccount(transaction.getBankAccountId(), transaction.getAmount());
+            debitAccount(transaction.getBankAccount().getId(), transaction.getAmount());
         } else if (transaction.isTransfer()) {
-            debitAccount(transaction.getBankAccountId(), transaction.getAmount());
-            creditAccount(transaction.getDestinationBankAccountId(), transaction.getAmount());
+            debitAccount(transaction.getBankAccount().getId(), transaction.getAmount());
+            creditAccount(transaction.getDestinationBankAccount().getId(), transaction.getAmount());
         }
     }
 
     public void revert(Transaction transaction) {
         if (transaction.isIncome()) {
-            debitAccount(transaction.getBankAccountId(), transaction.getAmount());
+            debitAccount(transaction.getBankAccount().getId(), transaction.getAmount());
         } else if (transaction.isExpense()) {
-            creditAccount(transaction.getBankAccountId(), transaction.getAmount());
+            creditAccount(transaction.getBankAccount().getId(), transaction.getAmount());
         } else if (transaction.isTransfer()) {
-            creditAccount(transaction.getBankAccountId(), transaction.getAmount());
-            debitAccount(transaction.getDestinationBankAccountId(), transaction.getAmount());
+            creditAccount(transaction.getBankAccount().getId(), transaction.getAmount());
+            debitAccount(transaction.getDestinationBankAccount().getId(), transaction.getAmount());
         }
     }
 

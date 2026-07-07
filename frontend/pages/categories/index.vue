@@ -30,6 +30,8 @@ const searchVisible = shallowRef(false)
 const isAddEditDialogVisible = shallowRef(false)
 const isSubCategoriesDialogVisible = shallowRef(false)
 const isDeleteDialogVisible = shallowRef(false)
+const isStatusDialogVisible = shallowRef(false)
+const isTogglingStatus = shallowRef(false)
 
 const selectedCategory = shallowRef<CategoryResponse | null>(null)
 const subCategoriesTargetId = shallowRef<number | null>(null)
@@ -123,18 +125,55 @@ async function onDeleteConfirm(confirmed: boolean) {
   try {
     await $fetch(`/api/categories/${selectedCategory.value.id}`, { method: 'DELETE' })
 
-    const idx = categories.value.findIndex(c => c.id === selectedCategory.value!.id)
+    categories.value = categories.value.filter(c => c.id !== selectedCategory.value!.id)
 
-    if (idx >= 0)
-      categories.value[idx] = { ...categories.value[idx], active: false }
-
-    showSuccess('Categoria desativada com sucesso.')
+    showSuccess('Categoria excluída com sucesso.')
   }
   catch (e) {
     showError(e)
   }
   finally {
     isDeleting.value = false
+    selectedCategory.value = null
+  }
+}
+
+function openToggleStatus(category: CategoryResponse) {
+  selectedCategory.value = category
+  isStatusDialogVisible.value = true
+}
+
+async function onToggleStatusConfirm(confirmed: boolean) {
+  if (!confirmed || !selectedCategory.value)
+    return
+
+  const target = selectedCategory.value
+  const nextActive = !target.active
+
+  isTogglingStatus.value = true
+  clearError()
+
+  try {
+    // A resposta sempre traz subCategories: [] (UpdateCategoryStatusService não popula esse
+    // campo, mesma limitação documentada para o PUT em AddEditCategoryDialog.vue) — preserva
+    // a lista local de subcategorias em vez de sobrescrever com o array vazio do backend.
+    const updated = await $fetch<CategoryResponse>(`/api/categories/${target.id}/status`, {
+      method: 'PATCH',
+      body: { active: nextActive },
+    })
+
+    const idx = categories.value.findIndex(c => c.id === target.id)
+
+    if (idx >= 0)
+      categories.value[idx] = { ...updated, subCategories: categories.value[idx].subCategories }
+
+    showSuccess(nextActive ? 'Categoria ativada com sucesso.' : 'Categoria inativada com sucesso.')
+  }
+  catch (e) {
+    showError(e)
+  }
+  finally {
+    isTogglingStatus.value = false
     selectedCategory.value = null
   }
 }
@@ -310,13 +349,25 @@ function activeSubCategoriesCount(category: CategoryResponse) {
                   icon
                   variant="text"
                   size="small"
+                  :color="category.active ? 'secondary' : 'success'"
+                  @click="openToggleStatus(category)"
+                >
+                  <VIcon :icon="category.active ? 'tabler-toggle-right' : 'tabler-toggle-left'" />
+                  <VTooltip activator="parent">
+                    {{ category.active ? 'Inativar' : 'Ativar' }}
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
                   color="error"
-                  :disabled="!category.active"
                   @click="openDelete(category)"
                 >
                   <VIcon icon="tabler-trash" />
                   <VTooltip activator="parent">
-                    {{ category.active ? 'Excluir' : 'Já inativa' }}
+                    Excluir definitivamente
                   </VTooltip>
                 </VBtn>
               </td>
@@ -360,10 +411,22 @@ function activeSubCategoriesCount(category: CategoryResponse) {
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
       :auto-result="false"
-      confirmation-question="Tem certeza que deseja excluir esta categoria?"
+      confirm-color="error"
+      confirmation-question="Tem certeza que deseja excluir definitivamente esta categoria? Esta ação não pode ser desfeita."
       cancel-title="Ação cancelada"
       cancel-msg="A categoria não foi excluída."
       @confirm="onDeleteConfirm"
+    />
+
+    <ConfirmDialog
+      v-model:is-dialog-visible="isStatusDialogVisible"
+      :auto-result="false"
+      :confirmation-question="selectedCategory?.active
+        ? 'Tem certeza que deseja inativar esta categoria?'
+        : 'Tem certeza que deseja ativar esta categoria?'"
+      cancel-title="Ação cancelada"
+      cancel-msg="O status da categoria não foi alterado."
+      @confirm="onToggleStatusConfirm"
     />
   </div>
 </template>

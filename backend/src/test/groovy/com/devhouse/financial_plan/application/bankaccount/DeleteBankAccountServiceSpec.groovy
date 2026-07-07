@@ -1,27 +1,36 @@
 package com.devhouse.financial_plan.application.bankaccount
 
-import com.devhouse.financial_plan.domain.BankAccount
-import com.devhouse.financial_plan.domain.Space
+import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository
+import com.devhouse.financial_plan.domain.repository.TransactionRepository
 import spock.lang.Specification
-
-import java.time.Instant
 
 class DeleteBankAccountServiceSpec extends Specification {
 
     BankAccountRepository bankAccountRepository = Mock()
-    DeleteBankAccountService service = new DeleteBankAccountService(bankAccountRepository)
+    TransactionRepository transactionRepository = Mock()
+    DeleteBankAccountService service = new DeleteBankAccountService(bankAccountRepository, transactionRepository)
 
-    def "execute deactivates the bank account instead of hard-deleting it"() {
+    def "execute hard-deletes the bank account when there are no linked transactions"() {
         given:
-        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        BankAccount account = new BankAccount(10L, 0, space, "Main Account", "BankCorp", new BigDecimal("500.00"), true, Instant.now(), null)
-        bankAccountRepository.findById(10L) >> account
+        transactionRepository.existsByBankAccountId(10L) >> false
 
         when:
         service.execute(10L)
 
         then:
-        1 * bankAccountRepository.update({ !it.isActive() })
+        1 * bankAccountRepository.delete(10L)
+    }
+
+    def "execute throws DomainException and does not delete when there are linked transactions"() {
+        given:
+        transactionRepository.existsByBankAccountId(10L) >> true
+
+        when:
+        service.execute(10L)
+
+        then:
+        thrown(DomainException)
+        0 * bankAccountRepository.delete(_)
     }
 }

@@ -3,9 +3,20 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
   const id = getRouterParam(event, 'id')
 
-  return $fetch(`/payment-methods/${id}`, {
-    baseURL: config.public.apiBaseUrl,
-    method: 'DELETE',
-    headers: buildBackendHeaders(event, accessToken),
-  })
+  try {
+    return await $fetch(`/payment-methods/${id}`, {
+      baseURL: config.public.apiBaseUrl,
+      method: 'DELETE',
+      headers: buildBackendHeaders(event, accessToken),
+    })
+  }
+  catch (e) {
+    const fetchError = e as { statusCode?: number; data?: unknown }
+
+    throw createError({
+      statusCode: fetchError.statusCode ?? 500,
+      statusMessage: typeof fetchError.data === 'string' ? fetchError.data : 'unknown',
+      data: fetchError.data,
+    })
+  }
 })

@@ -10,16 +10,16 @@ public class SubCategory {
 
     private Long id;
     private Integer version;
-    private Long categoryId;
+    private Category category;
     private String name;
     private boolean active;
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public SubCategory(Long id, Integer version, Long categoryId, String name, boolean active, Instant createdDate, Instant updatedDate) {
+    public SubCategory(Long id, Integer version, Category category, String name, boolean active, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
-        this.categoryId = categoryId;
+        this.category = category;
         this.name = name;
         this.active = active;
         this.createdDate = createdDate;
@@ -30,7 +30,7 @@ public class SubCategory {
         if (name == null || name.isBlank()) {
             throw new DomainException("SubCategory name cannot be empty");
         }
-        if (categoryId == null) {
+        if (category == null) {
             throw new DomainException("SubCategory must belong to a category");
         }
     }
@@ -47,6 +47,10 @@ public class SubCategory {
         this.active = false;
     }
 
+    public void activate() {
+        this.active = true;
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -58,8 +62,8 @@ public class SubCategory {
         this.version = version;
     }
 
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public Category getCategory() { return category; }
+    public void setCategory(Category category) { this.category = category; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public boolean isActive() { return active; }

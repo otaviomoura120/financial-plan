@@ -23,7 +23,7 @@ class CreateSubCategoryServiceSpec extends Specification {
         CreateSubCategoryRequest request = new CreateSubCategoryRequest(1L, "Groceries")
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
         Category category = new Category(1L, 0, space, "Food", true, Instant.now(), null)
-        SubCategory saved = new SubCategory(10L, 0, 1L, "Groceries", true, Instant.now(), null)
+        SubCategory saved = new SubCategory(10L, 0, category, "Groceries", true, Instant.now(), null)
 
         categoryRepository.findById(1L) >> category
         subCategoryRepository.save(_) >> saved

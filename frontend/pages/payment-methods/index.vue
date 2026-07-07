@@ -20,6 +20,8 @@ const searchVisible = shallowRef(false)
 
 const isAddEditDialogVisible = shallowRef(false)
 const isDeleteDialogVisible = shallowRef(false)
+const isStatusDialogVisible = shallowRef(false)
+const isTogglingStatus = shallowRef(false)
 
 const selectedPaymentMethod = shallowRef<PaymentMethodResponse | null>(null)
 
@@ -96,18 +98,52 @@ async function onDeleteConfirm(confirmed: boolean) {
   try {
     await $fetch(`/api/payment-methods/${selectedPaymentMethod.value.id}`, { method: 'DELETE' })
 
-    const idx = paymentMethods.value.findIndex(pm => pm.id === selectedPaymentMethod.value!.id)
+    paymentMethods.value = paymentMethods.value.filter(pm => pm.id !== selectedPaymentMethod.value!.id)
 
-    if (idx >= 0)
-      paymentMethods.value[idx] = { ...paymentMethods.value[idx], active: false }
-
-    showSuccess('Meio de pagamento desativado com sucesso.')
+    showSuccess('Meio de pagamento excluído com sucesso.')
   }
   catch (e) {
     showError(e)
   }
   finally {
     isDeleting.value = false
+    selectedPaymentMethod.value = null
+  }
+}
+
+function openToggleStatus(paymentMethod: PaymentMethodResponse) {
+  selectedPaymentMethod.value = paymentMethod
+  isStatusDialogVisible.value = true
+}
+
+async function onToggleStatusConfirm(confirmed: boolean) {
+  if (!confirmed || !selectedPaymentMethod.value)
+    return
+
+  const target = selectedPaymentMethod.value
+  const nextActive = !target.active
+
+  isTogglingStatus.value = true
+  clearError()
+
+  try {
+    const updated = await $fetch<PaymentMethodResponse>(`/api/payment-methods/${target.id}/status`, {
+      method: 'PATCH',
+      body: { active: nextActive },
+    })
+
+    const idx = paymentMethods.value.findIndex(pm => pm.id === target.id)
+
+    if (idx >= 0)
+      paymentMethods.value[idx] = updated
+
+    showSuccess(nextActive ? 'Meio de pagamento ativado com sucesso.' : 'Meio de pagamento inativado com sucesso.')
+  }
+  catch (e) {
+    showError(e)
+  }
+  finally {
+    isTogglingStatus.value = false
     selectedPaymentMethod.value = null
   }
 }
@@ -262,13 +298,25 @@ function toggleSearch() {
                   icon
                   variant="text"
                   size="small"
+                  :color="paymentMethod.active ? 'secondary' : 'success'"
+                  @click="openToggleStatus(paymentMethod)"
+                >
+                  <VIcon :icon="paymentMethod.active ? 'tabler-toggle-right' : 'tabler-toggle-left'" />
+                  <VTooltip activator="parent">
+                    {{ paymentMethod.active ? 'Inativar' : 'Ativar' }}
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
                   color="error"
-                  :disabled="!paymentMethod.active"
                   @click="openDelete(paymentMethod)"
                 >
                   <VIcon icon="tabler-trash" />
                   <VTooltip activator="parent">
-                    {{ paymentMethod.active ? 'Excluir' : 'Já inativo' }}
+                    Excluir definitivamente
                   </VTooltip>
                 </VBtn>
               </td>
@@ -304,10 +352,22 @@ function toggleSearch() {
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
       :auto-result="false"
-      confirmation-question="Tem certeza que deseja excluir este meio de pagamento?"
+      confirm-color="error"
+      confirmation-question="Tem certeza que deseja excluir definitivamente este meio de pagamento? Esta ação não pode ser desfeita."
       cancel-title="Ação cancelada"
       cancel-msg="O meio de pagamento não foi excluído."
       @confirm="onDeleteConfirm"
+    />
+
+    <ConfirmDialog
+      v-model:is-dialog-visible="isStatusDialogVisible"
+      :auto-result="false"
+      :confirmation-question="selectedPaymentMethod?.active
+        ? 'Tem certeza que deseja inativar este meio de pagamento?'
+        : 'Tem certeza que deseja ativar este meio de pagamento?'"
+      cancel-title="Ação cancelada"
+      cancel-msg="O status do meio de pagamento não foi alterado."
+      @confirm="onToggleStatusConfirm"
     />
   </div>
 </template>

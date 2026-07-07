@@ -2,6 +2,8 @@ package com.devhouse.financial_plan.application.category
 
 import com.devhouse.financial_plan.application.category.dto.SubCategoryResponse
 import com.devhouse.financial_plan.application.category.dto.UpdateSubCategoryRequest
+import com.devhouse.financial_plan.domain.Category
+import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SubCategory
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository
@@ -14,11 +16,16 @@ class UpdateSubCategoryServiceSpec extends Specification {
     SubCategoryRepository subCategoryRepository = Mock()
     UpdateSubCategoryService service = new UpdateSubCategoryService(subCategoryRepository)
 
+    private Category buildCategory() {
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        new Category(1L, 0, space, "Food", true, Instant.now(), null)
+    }
+
     def "execute renames an existing subcategory"() {
         given:
-        SubCategory subCategory = new SubCategory(10L, 0, 1L, "Groceries", true, Instant.now(), null)
+        SubCategory subCategory = new SubCategory(10L, 0, buildCategory(), "Groceries", true, Instant.now(), null)
         UpdateSubCategoryRequest request = new UpdateSubCategoryRequest(0, "Supermarket")
-        SubCategory updated = new SubCategory(10L, 0, 1L, "Supermarket", true, Instant.now(), Instant.now())
+        SubCategory updated = new SubCategory(10L, 0, buildCategory(), "Supermarket", true, Instant.now(), Instant.now())
 
         subCategoryRepository.findById(10L) >> subCategory
         subCategoryRepository.update(_) >> updated
@@ -33,7 +40,7 @@ class UpdateSubCategoryServiceSpec extends Specification {
 
     def "execute throws DomainException when new name is blank"() {
         given:
-        SubCategory subCategory = new SubCategory(10L, 0, 1L, "Groceries", true, Instant.now(), null)
+        SubCategory subCategory = new SubCategory(10L, 0, buildCategory(), "Groceries", true, Instant.now(), null)
         UpdateSubCategoryRequest request = new UpdateSubCategoryRequest(0, "")
 
         subCategoryRepository.findById(10L) >> subCategory

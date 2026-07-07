@@ -1,11 +1,27 @@
 package com.devhouse.financial_plan.infrastructure.repository;
 
+import com.devhouse.financial_plan.domain.BankAccount;
+import com.devhouse.financial_plan.domain.Category;
+import com.devhouse.financial_plan.domain.PaymentMethod;
+import com.devhouse.financial_plan.domain.Space;
+import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.Transaction;
+import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.BankAccountEntityJpa;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.CategoryEntityJpa;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaBankAccountRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaCategoryRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaPaymentMethodRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaSubCategoryRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaTransactionRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaUserRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.PaymentMethodEntityJpa;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.SpaceEntityJpa;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.SubCategoryEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.TransactionEntityJpa;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.UserEntityJpa;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
@@ -20,15 +36,28 @@ import java.util.List;
 public class TransactionRepositoryImpl implements TransactionRepository {
 
     private final JpaTransactionRepository jpaTransactionRepository;
+    private final JpaUserRepository jpaUserRepository;
+    private final JpaBankAccountRepository jpaBankAccountRepository;
+    private final JpaCategoryRepository jpaCategoryRepository;
+    private final JpaSubCategoryRepository jpaSubCategoryRepository;
+    private final JpaPaymentMethodRepository jpaPaymentMethodRepository;
 
-    public TransactionRepositoryImpl(JpaTransactionRepository jpaTransactionRepository) {
+    public TransactionRepositoryImpl(JpaTransactionRepository jpaTransactionRepository, JpaUserRepository jpaUserRepository,
+                                      JpaBankAccountRepository jpaBankAccountRepository, JpaCategoryRepository jpaCategoryRepository,
+                                      JpaSubCategoryRepository jpaSubCategoryRepository, JpaPaymentMethodRepository jpaPaymentMethodRepository) {
         this.jpaTransactionRepository = jpaTransactionRepository;
+        this.jpaUserRepository = jpaUserRepository;
+        this.jpaBankAccountRepository = jpaBankAccountRepository;
+        this.jpaCategoryRepository = jpaCategoryRepository;
+        this.jpaSubCategoryRepository = jpaSubCategoryRepository;
+        this.jpaPaymentMethodRepository = jpaPaymentMethodRepository;
     }
 
     @Override
     public Transaction save(Transaction transaction) {
         TransactionEntityJpa entity = new TransactionEntityJpa();
         applyFields(transaction, entity);
+        entity.setCreatedAt(transaction.getCreatedDate());
         TransactionEntityJpa saved = jpaTransactionRepository.save(entity);
         return toDomain(saved);
     }
@@ -36,15 +65,7 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     @Override
     public Transaction update(Transaction transaction) {
         TransactionEntityJpa entity = jpaTransactionRepository.findById(transaction.getId()).orElseThrow();
-        entity.setType(transaction.getType());
-        entity.setBankAccountId(transaction.getBankAccountId());
-        entity.setDestinationBankAccountId(transaction.getDestinationBankAccountId());
-        entity.setCategoryId(transaction.getCategoryId());
-        entity.setSubCategoryId(transaction.getSubCategoryId());
-        entity.setPaymentMethodId(transaction.getPaymentMethodId());
-        entity.setAmount(transaction.getAmount());
-        entity.setTransactionDate(transaction.getTransactionDate());
-        entity.setDescription(transaction.getDescription());
+        applyFields(transaction, entity);
         TransactionEntityJpa updated = jpaTransactionRepository.saveAndFlush(entity);
         return toDomain(updated);
     }
@@ -71,26 +92,46 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         jpaTransactionRepository.deleteById(id);
     }
 
+    @Override
+    public boolean existsByBankAccountId(Long bankAccountId) {
+        return jpaTransactionRepository.existsByBankAccountIdOrDestinationBankAccountId(bankAccountId, bankAccountId);
+    }
+
+    @Override
+    public boolean existsByCategoryId(Long categoryId) {
+        return jpaTransactionRepository.existsByCategoryId(categoryId);
+    }
+
+    @Override
+    public boolean existsBySubCategoryId(Long subCategoryId) {
+        return jpaTransactionRepository.existsBySubCategoryId(subCategoryId);
+    }
+
+    @Override
+    public boolean existsByPaymentMethodId(Long paymentMethodId) {
+        return jpaTransactionRepository.existsByPaymentMethodId(paymentMethodId);
+    }
+
     private Specification<TransactionEntityJpa> buildSpecification(Long spaceId, Long userId, Long bankAccountId, Long categoryId,
                                                                      Long subCategoryId, Long paymentMethodId,
                                                                      TransactionType type, LocalDate from, LocalDate to) {
         return (root, query, criteriaBuilder) -> {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
-            predicates.add(root.get("bankAccountId").in(bankAccountIdsInSpace(spaceId, query, criteriaBuilder)));
+            predicates.add(root.get("bankAccount").get("id").in(bankAccountIdsInSpace(spaceId, query, criteriaBuilder)));
             if (userId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("userId"), userId));
+                predicates.add(criteriaBuilder.equal(root.get("user").get("id"), userId));
             }
             if (bankAccountId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("bankAccountId"), bankAccountId));
+                predicates.add(criteriaBuilder.equal(root.get("bankAccount").get("id"), bankAccountId));
             }
             if (categoryId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("categoryId"), categoryId));
+                predicates.add(criteriaBuilder.equal(root.get("category").get("id"), categoryId));
             }
             if (subCategoryId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("subCategoryId"), subCategoryId));
+                predicates.add(criteriaBuilder.equal(root.get("subCategory").get("id"), subCategoryId));
             }
             if (paymentMethodId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("paymentMethodId"), paymentMethodId));
+                predicates.add(criteriaBuilder.equal(root.get("paymentMethod").get("id"), paymentMethodId));
             }
             if (type != null) {
                 predicates.add(criteriaBuilder.equal(root.get("type"), type));
@@ -110,28 +151,77 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         Subquery<Long> subquery = query.subquery(Long.class);
         jakarta.persistence.criteria.Root<BankAccountEntityJpa> bankAccountRoot = subquery.from(BankAccountEntityJpa.class);
         subquery.select(bankAccountRoot.get("id"));
-        subquery.where(criteriaBuilder.equal(bankAccountRoot.get("spaceId"), spaceId));
+        subquery.where(criteriaBuilder.equal(bankAccountRoot.get("space").get("id"), spaceId));
         return subquery;
     }
 
     private void applyFields(Transaction transaction, TransactionEntityJpa entity) {
         entity.setType(transaction.getType());
-        entity.setUserId(transaction.getUserId());
-        entity.setBankAccountId(transaction.getBankAccountId());
-        entity.setDestinationBankAccountId(transaction.getDestinationBankAccountId());
-        entity.setCategoryId(transaction.getCategoryId());
-        entity.setSubCategoryId(transaction.getSubCategoryId());
-        entity.setPaymentMethodId(transaction.getPaymentMethodId());
+        entity.setUser(jpaUserRepository.getReferenceById(transaction.getUser().getId()));
+        entity.setBankAccount(jpaBankAccountRepository.getReferenceById(transaction.getBankAccount().getId()));
+        entity.setDestinationBankAccount(transaction.getDestinationBankAccount() != null
+                ? jpaBankAccountRepository.getReferenceById(transaction.getDestinationBankAccount().getId()) : null);
+        entity.setCategory(transaction.getCategory() != null
+                ? jpaCategoryRepository.getReferenceById(transaction.getCategory().getId()) : null);
+        entity.setSubCategory(transaction.getSubCategory() != null
+                ? jpaSubCategoryRepository.getReferenceById(transaction.getSubCategory().getId()) : null);
+        entity.setPaymentMethod(transaction.getPaymentMethod() != null
+                ? jpaPaymentMethodRepository.getReferenceById(transaction.getPaymentMethod().getId()) : null);
         entity.setAmount(transaction.getAmount());
         entity.setTransactionDate(transaction.getTransactionDate());
         entity.setDescription(transaction.getDescription());
-        entity.setCreatedAt(transaction.getCreatedDate());
     }
 
     private Transaction toDomain(TransactionEntityJpa entity) {
-        return new Transaction(entity.getId(), entity.getVersion(), entity.getType(), entity.getUserId(),
-                entity.getBankAccountId(), entity.getDestinationBankAccountId(), entity.getCategoryId(),
-                entity.getSubCategoryId(), entity.getPaymentMethodId(), entity.getAmount(),
+        User user = buildUser(entity.getUser());
+        BankAccount bankAccount = buildBankAccount(entity.getBankAccount());
+        BankAccount destinationBankAccount = entity.getDestinationBankAccount() != null ? buildBankAccount(entity.getDestinationBankAccount()) : null;
+        Category category = entity.getCategory() != null ? buildCategory(entity.getCategory()) : null;
+        SubCategory subCategory = entity.getSubCategory() != null ? buildSubCategory(entity.getSubCategory()) : null;
+        PaymentMethod paymentMethod = entity.getPaymentMethod() != null ? buildPaymentMethod(entity.getPaymentMethod()) : null;
+        return new Transaction(entity.getId(), entity.getVersion(), entity.getType(), user, bankAccount,
+                destinationBankAccount, category, subCategory, paymentMethod, entity.getAmount(),
                 entity.getTransactionDate(), entity.getDescription(), entity.getCreatedAt(), null);
+    }
+
+    private User buildUser(UserEntityJpa entity) {
+        if (entity == null) {
+            return null;
+        }
+        return new User(entity.getId(), entity.getVersion(), entity.getAuth0Sub(), entity.getName(), entity.getNickname(),
+                entity.getProfilePhoto(), entity.getObservation(), entity.getBirthdate(), entity.getEmail(),
+                entity.getPhoneNumber(), entity.isActive(), entity.getGenre(), entity.getMaritalStatus(),
+                entity.getCreatedAt(), entity.getUpdatedAt(), entity.isMasterAdmin());
+    }
+
+    private BankAccount buildBankAccount(BankAccountEntityJpa entity) {
+        if (entity == null) {
+            return null;
+        }
+        Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
+        return new BankAccount(entity.getId(), entity.getVersion(), space, entity.getName(), entity.getBankName(),
+                entity.getBalance(), entity.isActive(), entity.getCreatedAt(), null);
+    }
+
+    private Category buildCategory(CategoryEntityJpa entity) {
+        Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
+        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
+                entity.getCreatedAt(), entity.getUpdatedAt());
+    }
+
+    private SubCategory buildSubCategory(SubCategoryEntityJpa entity) {
+        Category category = entity.getCategory() != null ? buildCategory(entity.getCategory()) : null;
+        return new SubCategory(entity.getId(), entity.getVersion(), category, entity.getName(), entity.isActive(), null, null);
+    }
+
+    private PaymentMethod buildPaymentMethod(PaymentMethodEntityJpa entity) {
+        Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
+        return new PaymentMethod(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
+                entity.getCreatedAt(), entity.getUpdatedAt());
+    }
+
+    private Space buildSpace(SpaceEntityJpa entity) {
+        return new Space(entity.getId(), entity.getVersion(), entity.getName(), entity.getDescription(),
+                entity.getCreatedAt(), entity.getUpdatedAt());
     }
 }

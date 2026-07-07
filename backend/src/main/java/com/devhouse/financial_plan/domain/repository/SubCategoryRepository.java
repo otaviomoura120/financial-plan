@@ -10,4 +10,5 @@ public interface SubCategoryRepository {
     SubCategory findById(Long id);
     List<SubCategory> findByCategoryId(Long categoryId);
     void delete(Long id);
+    boolean existsByCategoryId(Long categoryId);
 }

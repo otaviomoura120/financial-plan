@@ -16,18 +16,26 @@ public class CategoryController {
 
     private final CreateCategoryService createCategoryService;
     private final UpdateCategoryService updateCategoryService;
+    private final UpdateCategoryStatusService updateCategoryStatusService;
     private final DeleteCategoryService deleteCategoryService;
     private final CreateSubCategoryService createSubCategoryService;
     private final UpdateSubCategoryService updateSubCategoryService;
+    private final UpdateSubCategoryStatusService updateSubCategoryStatusService;
     private final DeleteSubCategoryService deleteSubCategoryService;
     private final ListCategoriesService listCategoriesService;
 
-    public CategoryController(CreateCategoryService createCategoryService, UpdateCategoryService updateCategoryService, DeleteCategoryService deleteCategoryService, CreateSubCategoryService createSubCategoryService, UpdateSubCategoryService updateSubCategoryService, DeleteSubCategoryService deleteSubCategoryService, ListCategoriesService listCategoriesService) {
+    public CategoryController(CreateCategoryService createCategoryService, UpdateCategoryService updateCategoryService,
+                               UpdateCategoryStatusService updateCategoryStatusService, DeleteCategoryService deleteCategoryService,
+                               CreateSubCategoryService createSubCategoryService, UpdateSubCategoryService updateSubCategoryService,
+                               UpdateSubCategoryStatusService updateSubCategoryStatusService, DeleteSubCategoryService deleteSubCategoryService,
+                               ListCategoriesService listCategoriesService) {
         this.createCategoryService = createCategoryService;
         this.updateCategoryService = updateCategoryService;
+        this.updateCategoryStatusService = updateCategoryStatusService;
         this.deleteCategoryService = deleteCategoryService;
         this.createSubCategoryService = createSubCategoryService;
         this.updateSubCategoryService = updateSubCategoryService;
+        this.updateSubCategoryStatusService = updateSubCategoryStatusService;
         this.deleteSubCategoryService = deleteSubCategoryService;
         this.listCategoriesService = listCategoriesService;
     }
@@ -51,6 +59,12 @@ public class CategoryController {
         return updateCategoryService.execute(id, body);
     }
 
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public CategoryResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateCategoryStatusService.execute(id, Boolean.TRUE.equals(body.active()));
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
@@ -69,6 +83,12 @@ public class CategoryController {
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
     public SubCategoryResponse updateSubCategory(@PathVariable Long id, @RequestBody UpdateSubCategoryRequest body, Authentication authentication, HttpServletRequest request) {
         return updateSubCategoryService.execute(id, body);
+    }
+
+    @PatchMapping("/subcategories/{id}/status")
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public SubCategoryResponse updateSubCategoryStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateSubCategoryStatusService.execute(id, Boolean.TRUE.equals(body.active()));
     }
 
     @DeleteMapping("/subcategories/{id}")

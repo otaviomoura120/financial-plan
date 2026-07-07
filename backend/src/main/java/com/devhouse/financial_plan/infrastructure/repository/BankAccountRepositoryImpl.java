@@ -63,7 +63,7 @@ public class BankAccountRepositoryImpl implements BankAccountRepository {
     }
 
     private void applyFields(BankAccount bankAccount, BankAccountEntityJpa entity) {
-        entity.setSpaceId(bankAccount.getSpace().getId());
+        entity.setSpace(jpaSpaceRepository.getReferenceById(bankAccount.getSpace().getId()));
         entity.setName(bankAccount.getName());
         entity.setBankName(bankAccount.getBankName());
         entity.setBalance(bankAccount.getBalance());
@@ -72,20 +72,13 @@ public class BankAccountRepositoryImpl implements BankAccountRepository {
     }
 
     private BankAccount toDomain(BankAccountEntityJpa entity) {
-        Space space = resolveSpace(entity.getSpaceId());
+        Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
         return new BankAccount(entity.getId(), entity.getVersion(), space, entity.getName(),
                 entity.getBankName(), entity.getBalance(), entity.isActive(), entity.getCreatedAt(), null);
     }
 
-    private Space resolveSpace(Long spaceId) {
-        if (spaceId == null) {
-            return null;
-        }
-        SpaceEntityJpa spaceEntity = jpaSpaceRepository.findById(spaceId).orElse(null);
-        if (spaceEntity == null) {
-            return null;
-        }
-        return new Space(spaceEntity.getId(), spaceEntity.getVersion(), spaceEntity.getName(),
-                spaceEntity.getDescription(), spaceEntity.getCreatedAt(), spaceEntity.getUpdatedAt());
+    private Space buildSpace(SpaceEntityJpa entity) {
+        return new Space(entity.getId(), entity.getVersion(), entity.getName(),
+                entity.getDescription(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 }

@@ -46,6 +46,19 @@ class CreateTransactionServiceSpec extends Specification {
         new BankAccount(id, 0, space, "Account " + id, "BankCorp", balance, true, Instant.now(), null)
     }
 
+    private User buildUser(Long id) {
+        new User(id, 0, "auth0|" + id, "User " + id, null, null, null, null, "user${id}@test.com", null, true,
+                null, null, Instant.now(), null, false)
+    }
+
+    private Category buildCategoryObj(Long id) {
+        id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
+    }
+
+    private PaymentMethod buildPaymentMethodObj(Long id) {
+        id == null ? null : new PaymentMethod(id, 0, null, "Method " + id, true, Instant.now(), null)
+    }
+
     def "execute creates INCOME transaction and credits the bank account"() {
         given:
         userRepository.findById(1L) >> Mock(User)
@@ -54,7 +67,8 @@ class CreateTransactionServiceSpec extends Specification {
         categoryRepository.findById(10L) >> Mock(Category)
         paymentMethodRepository.findById(20L) >> Mock(PaymentMethod)
         CreateTransactionRequest request = buildRequest(TransactionType.INCOME, 1L, null, 10L, null, 20L)
-        Transaction saved = new Transaction(5L, 0, TransactionType.INCOME, 1L, 1L, null, 10L, null, 20L,
+        Transaction saved = new Transaction(5L, 0, TransactionType.INCOME, buildUser(1L), account, null,
+                buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
                 new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
         transactionRepository.save(_) >> saved
 
@@ -75,7 +89,8 @@ class CreateTransactionServiceSpec extends Specification {
         categoryRepository.findById(10L) >> Mock(Category)
         paymentMethodRepository.findById(20L) >> Mock(PaymentMethod)
         CreateTransactionRequest request = buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null, 20L)
-        Transaction saved = new Transaction(6L, 0, TransactionType.EXPENSE, 1L, 1L, null, 10L, null, 20L,
+        Transaction saved = new Transaction(6L, 0, TransactionType.EXPENSE, buildUser(1L), account, null,
+                buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
                 new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
         transactionRepository.save(_) >> saved
 
@@ -96,8 +111,8 @@ class CreateTransactionServiceSpec extends Specification {
         bankAccountRepository.findById(1L) >> origin
         bankAccountRepository.findById(2L) >> destination
         CreateTransactionRequest request = buildRequest(TransactionType.TRANSFER, 1L, 2L, null, null, null)
-        Transaction saved = new Transaction(7L, 0, TransactionType.TRANSFER, 1L, 1L, 2L, null, null, null,
-                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
+        Transaction saved = new Transaction(7L, 0, TransactionType.TRANSFER, buildUser(1L), origin, destination,
+                null, null, null, new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
         transactionRepository.save(_) >> saved
 
         when:
@@ -210,7 +225,7 @@ class CreateTransactionServiceSpec extends Specification {
     def "execute throws DomainException for TRANSFER when destination equals origin bank account"() {
         given:
         userRepository.findById(1L) >> Mock(User)
-        bankAccountRepository.findById(1L) >> Mock(BankAccount)
+        bankAccountRepository.findById(1L) >> buildAccount(1L, BigDecimal.ZERO)
         CreateTransactionRequest request = buildRequest(TransactionType.TRANSFER, 1L, 1L, null, null, null)
 
         when:

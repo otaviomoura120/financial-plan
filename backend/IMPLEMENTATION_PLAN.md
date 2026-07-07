@@ -682,3 +682,43 @@ Adicionar cards de `currentBalance`/`projectedBalance` e duas listas (faturas pe
    - Editar o valor de uma `BillInstance` pendente, marcar como paga → conferir débito na conta escolhida; usar "Desfazer Pagamento" → confirmar reversão do saldo e retorno a PENDING.
    - Editar a agenda (`recurring`/`startDate`) de uma `Bill` recorrente já em andamento → confirmar que instâncias já geradas (pendentes ou pagas) não mudam, só as futuras.
    - `POST /reports` no período → conferir que `projectedBalance` bate com `currentBalance - pendências (fatura + contas) com vencimento dentro do período filtrado`.
+
+---
+
+# Exclusão real + Ativar/Inativar (BankAccount, Category, SubCategory, PaymentMethod)
+
+## Contexto
+
+Nas telas já entregues (F1-F3), "Excluir" sempre foi soft delete disfarçado: `Delete*Service` chamava `entity.deactivate()` + `repository.update(entity)`, nunca `repository.delete(id)` (que já existia nas interfaces/impls, só estava morto). Pedido do usuário: separar em duas ações — (a) ativar/inativar nos dois sentidos, (b) excluir de fato, validando dependências (FK) antes e retornando ao front qual dependência bloqueia. Decisão validada: a exclusão funciona independente do status atual — a única trava é a checagem de FK.
+
+Como pré-requisito, um levantamento do domínio mostrou que `Transaction` (6 campos) e `SubCategory` (`categoryId`) fugiam do padrão majoritário do projeto (objeto de domínio + FK física real via `@ManyToOne`, já usado em `Category`, `PaymentMethod`, `Role`, `SpaceMember` etc.) — guardavam só `Long` cru, sem objeto nem FK física. `BankAccount.space` também divergia (objeto no domínio, mas `Long spaceId` + query manual na JPA). Corrigido nos grupos REF1-REF4 abaixo como base para os grupos DEL1-DEL4, mantendo o contrato JSON da API inalterado (só a representação interna em domain/JPA mudou).
+
+## Parte 1 — Backend: referências por objeto (REF)
+
+- [x] **REF1** — `BankAccount.space`: `Long spaceId` → `@ManyToOne SpaceEntityJpa space` (FK física real), removendo a resolução manual (`resolveSpace`). Ajustada também a subquery `bankAccountIdsInSpace` em `TransactionRepositoryImpl` (Criteria API não faz travessia automática de propriedade aninhada como o Spring Data — precisa de `root.get("space").get("id")` explícito).
+- [x] **REF2** — `SubCategory.categoryId` (Long) → `SubCategory.category` (`Category`, objeto + FK física real). `SubCategoryRepositoryImpl` builda `Category`/`Space` via helpers privados (padrão já usado em `CategoryRepositoryImpl`). `CreateSubCategoryService`/`ListCategoriesService`/`UpdateSubCategoryService` ajustados; contrato JSON de `SubCategoryResponse` inalterado.
+- [x] **REF3** — `Transaction`: `userId`/`bankAccountId`/`destinationBankAccountId` → `User`/`BankAccount`/`BankAccount` (objetos + FK física real, dois `@ManyToOne` distintos para `BankAccountEntityJpa`). `CreateTransactionService`/`UpdateTransactionService` reaproveitam os objetos já resolvidos para validação em vez de descartá-los. `TransactionBalanceEffectService` continua buscando fresh via repository antes de `credit()`/`debit()` (preserva lock otimista).
+- [x] **REF4** — `Transaction`: `categoryId`/`subCategoryId`/`paymentMethodId` → `Category`/`SubCategory`/`PaymentMethod` (mesma mecânica). `buildSpecification` em `TransactionRepositoryImpl` ajustado para os novos paths (`root.get("category").get("id")` etc.).
+- [x] **REF-GATE** — `./gradlew test` verde (165 testes) após REF1-REF4.
+
+## Parte 2 — Backend: exclusão real (hard delete) + ativar/inativar (DEL)
+
+- [x] **DEL1** — `TransactionRepository`/`SubCategoryRepository` ganham métodos `existsBy*` (checagem de FK na aplicação, já que não há FK física entre `transactions`/`sub_categories` e as tabelas pai). Confirmado que os métodos derivados do Spring Data (`existsByCategoryId` etc.) funcionam sem alteração de nome mesmo depois de REF2-REF4 trocarem `Long` por associação, graças à travessia de propriedade aninhada.
+- [x] **DEL2** — `BankAccount.activate()` + `UpdateBankAccountStatusService` (`PATCH /bank-accounts/{id}/status`) + `DeleteBankAccountService` reescrito (hard delete + `existsByBankAccountId`). Specs + `APP_OVERVIEW.md` + `seed.sql`.
+- [x] **DEL3** — Mesmo padrão para `PaymentMethod` (`PATCH /payment-methods/{id}/status`, `existsByPaymentMethodId`).
+- [x] **DEL4** — Mesmo padrão para `Category`+`SubCategory` (`PATCH /categories/{id}/status`, `PATCH /categories/subcategories/{id}/status`). `DeleteCategoryService` checa primeiro subcategorias vinculadas (`existsByCategoryId` do `SubCategoryRepository`), depois transações.
+- [x] **DEL-GATE** — `./gradlew test` verde (192 testes, incluindo `ArchitectureTest`).
+
+## Parte 3 — Frontend
+
+- [x] **FDEL0** — Dois bugs pré-existentes corrigidos na cadeia de propagação de erro (ambos necessários — descobertos em duas rodadas, o segundo só apareceu ao testar exclusão com FK de verdade):
+  1. `useApiError.ts`/`useSnackbar.ts` só extraíam `data.message` (objeto); como `GlobalHandlerException` devolve `DomainException` como string crua, a mensagem nunca chegava ao client. Ajustado para tratar `typeof data === 'string'`.
+  2. As rotas Nitro (`server/api/**/[id].delete.ts` e as novas `.../status.patch.ts`) faziam só `return $fetch(...)` sem `try/catch` — quando o backend respondia 422, o erro do `$fetch` do lado servidor (ofetch) vazava sem tratamento e o Nitro devolvia pro browser uma mensagem genérica tipo `[DELETE] "http://localhost:8080/categories/2": 422`, perdendo o texto real do `DomainException`. Corrigido reaproveitando o padrão já existente em `server/api/invites/[token]/accept.post.ts` — `try/catch` + `throw createError({statusCode, statusMessage: fetchError.data, data: fetchError.data})` — aplicado nas 4 rotas `[id].delete.ts` (bank-accounts, payment-methods, categories, categories/subcategories) e nas 4 novas `.../status.patch.ts`.
+- [x] **FDEL1** — `ConfirmDialog.vue` ganhou prop opcional `confirmColor` para a variante destrutiva (excluir).
+- [x] **FDEL2** — Payment Methods: `server/api/payment-methods/[id]/status.patch.ts` novo; botão de toggle ativar/inativar sempre habilitado; botão excluir sem `disabled`, `ConfirmDialog` destrutivo, remove item da lista no sucesso.
+- [x] **FDEL3** — Mesmo padrão para Bank Accounts.
+- [x] **FDEL4** — Mesmo padrão para Categories (`pages/categories/index.vue`) e SubCategories (`ManageSubCategoriesDialog.vue`), nos dois níveis.
+
+Docs atualizadas: `backend/docs/APP_OVERVIEW.md`, `backend/docs/seed.sql`, `frontend/docs/payment-methods.md`, `frontend/docs/bank-accounts.md`, `frontend/docs/categories.md`.
+
+**Pendente de verificação manual (ambiente sem MySQL/Docker disponível nesta sessão):** o roteiro end-to-end contra um banco real (criar registros, `PATCH .../status`, `DELETE` com e sem dependência, conferir 422 com mensagem específica, testar as 3 páginas no navegador) não pôde ser executado aqui — só a suíte automatizada (specs Groovy/Spock com repositórios mockados) e `eslint` no frontend foram validados. Rodar o roteiro descrito no início deste arquivo ("Verificação end-to-end") antes de considerar esta seção 100% fechada.

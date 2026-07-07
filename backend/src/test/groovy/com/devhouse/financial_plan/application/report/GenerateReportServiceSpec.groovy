@@ -2,7 +2,12 @@ package com.devhouse.financial_plan.application.report
 
 import com.devhouse.financial_plan.application.report.dto.ReportFilterRequest
 import com.devhouse.financial_plan.application.report.dto.ReportResponse
+import com.devhouse.financial_plan.domain.BankAccount
+import com.devhouse.financial_plan.domain.Category
+import com.devhouse.financial_plan.domain.PaymentMethod
+import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
+import com.devhouse.financial_plan.domain.User
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.TransactionRepository
@@ -16,11 +21,22 @@ class GenerateReportServiceSpec extends Specification {
     TransactionRepository transactionRepository = Mock()
     GenerateReportService service = new GenerateReportService(transactionRepository)
 
+    private BankAccount buildAccount(Long id) {
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        new BankAccount(id, 0, space, "Account " + id, "BankCorp", BigDecimal.ZERO, true, Instant.now(), null)
+    }
+
+    private User buildUser(Long id) {
+        new User(id, 0, "auth0|" + id, "User " + id, null, null, null, null, "user${id}@test.com", null, true,
+                null, null, Instant.now(), null, false)
+    }
+
     private Transaction buildTransaction(TransactionType type, BigDecimal amount, Long destinationBankAccountId = null) {
-        Long categoryId = TransactionType.TRANSFER.equals(type) ? null : 10L
-        Long paymentMethodId = TransactionType.TRANSFER.equals(type) ? null : 20L
-        new Transaction(1L, 0, type, 1L, 1L, destinationBankAccountId, categoryId, null, paymentMethodId,
-                amount, LocalDate.now(), "desc", Instant.now(), null)
+        Category category = TransactionType.TRANSFER.equals(type) ? null : new Category(10L, 0, null, "Food", true, Instant.now(), null)
+        PaymentMethod paymentMethod = TransactionType.TRANSFER.equals(type) ? null : new PaymentMethod(20L, 0, null, "Cash", true, Instant.now(), null)
+        new Transaction(1L, 0, type, buildUser(1L), buildAccount(1L),
+                destinationBankAccountId != null ? buildAccount(destinationBankAccountId) : null,
+                category, null, paymentMethod, amount, LocalDate.now(), "desc", Instant.now(), null)
     }
 
     def "execute forwards every filter field to the repository, in the expected order"() {

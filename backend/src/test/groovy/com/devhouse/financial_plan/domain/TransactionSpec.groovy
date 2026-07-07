@@ -9,10 +9,28 @@ import java.time.LocalDate
 
 class TransactionSpec extends Specification {
 
+    private User buildUser(Long id) {
+        new User(id, 0, "auth0|" + id, "User " + id, null, null, null, null, "user${id}@test.com", null, true,
+                null, null, Instant.now(), null, false)
+    }
+
+    private BankAccount buildBankAccount(Long id) {
+        id == null ? null : new BankAccount(id, 0, null, "Account " + id, null, BigDecimal.ZERO, true, Instant.now(), null)
+    }
+
+    private Category buildCategory(Long id) {
+        id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
+    }
+
+    private PaymentMethod buildPaymentMethod(Long id) {
+        id == null ? null : new PaymentMethod(id, 0, null, "Method " + id, true, Instant.now(), null)
+    }
+
     private Transaction buildTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId,
                                           Long categoryId, Long paymentMethodId) {
-        new Transaction(null, 0, type, 1L, bankAccountId, destinationBankAccountId, categoryId, null,
-                paymentMethodId, new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
+        new Transaction(null, 0, type, buildUser(1L), buildBankAccount(bankAccountId), buildBankAccount(destinationBankAccountId),
+                buildCategory(categoryId), null, buildPaymentMethod(paymentMethodId), new BigDecimal("100.00"),
+                LocalDate.now(), "desc", Instant.now(), null)
     }
 
     def "validate passes for INCOME with category and payment method"() {

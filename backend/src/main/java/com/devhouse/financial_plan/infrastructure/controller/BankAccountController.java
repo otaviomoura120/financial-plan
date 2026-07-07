@@ -4,9 +4,11 @@ import com.devhouse.financial_plan.application.bankaccount.CreateBankAccountServ
 import com.devhouse.financial_plan.application.bankaccount.DeleteBankAccountService;
 import com.devhouse.financial_plan.application.bankaccount.ListBankAccountsService;
 import com.devhouse.financial_plan.application.bankaccount.UpdateBankAccountService;
+import com.devhouse.financial_plan.application.bankaccount.UpdateBankAccountStatusService;
 import com.devhouse.financial_plan.application.bankaccount.dto.BankAccountResponse;
 import com.devhouse.financial_plan.application.bankaccount.dto.CreateBankAccountRequest;
 import com.devhouse.financial_plan.application.bankaccount.dto.UpdateBankAccountRequest;
+import com.devhouse.financial_plan.application.bankaccount.dto.UpdateStatusRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,12 +23,16 @@ public class BankAccountController {
 
     private final CreateBankAccountService createBankAccountService;
     private final UpdateBankAccountService updateBankAccountService;
+    private final UpdateBankAccountStatusService updateBankAccountStatusService;
     private final DeleteBankAccountService deleteBankAccountService;
     private final ListBankAccountsService listBankAccountsService;
 
-    public BankAccountController(CreateBankAccountService createBankAccountService, UpdateBankAccountService updateBankAccountService, DeleteBankAccountService deleteBankAccountService, ListBankAccountsService listBankAccountsService) {
+    public BankAccountController(CreateBankAccountService createBankAccountService, UpdateBankAccountService updateBankAccountService,
+                                  UpdateBankAccountStatusService updateBankAccountStatusService, DeleteBankAccountService deleteBankAccountService,
+                                  ListBankAccountsService listBankAccountsService) {
         this.createBankAccountService = createBankAccountService;
         this.updateBankAccountService = updateBankAccountService;
+        this.updateBankAccountStatusService = updateBankAccountStatusService;
         this.deleteBankAccountService = deleteBankAccountService;
         this.listBankAccountsService = listBankAccountsService;
     }
@@ -48,6 +54,12 @@ public class BankAccountController {
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
     public BankAccountResponse update(@PathVariable Long id, @RequestBody UpdateBankAccountRequest body, Authentication authentication, HttpServletRequest request) {
         return updateBankAccountService.execute(id, body);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public BankAccountResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateBankAccountStatusService.execute(id, Boolean.TRUE.equals(body.active()));
     }
 
     @DeleteMapping("/{id}")

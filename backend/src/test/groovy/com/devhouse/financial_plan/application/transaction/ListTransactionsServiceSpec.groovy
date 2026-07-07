@@ -1,7 +1,12 @@
 package com.devhouse.financial_plan.application.transaction
 
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse
+import com.devhouse.financial_plan.domain.BankAccount
+import com.devhouse.financial_plan.domain.Category
+import com.devhouse.financial_plan.domain.PaymentMethod
+import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
+import com.devhouse.financial_plan.domain.User
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.repository.TransactionRepository
 import spock.lang.Specification
@@ -14,9 +19,21 @@ class ListTransactionsServiceSpec extends Specification {
     TransactionRepository transactionRepository = Mock()
     ListTransactionsService service = new ListTransactionsService(transactionRepository)
 
+    private BankAccount buildAccount(Long id) {
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        new BankAccount(id, 0, space, "Account " + id, "BankCorp", BigDecimal.ZERO, true, Instant.now(), null)
+    }
+
+    private User buildUser(Long id) {
+        new User(id, 0, "auth0|" + id, "User " + id, null, null, null, null, "user${id}@test.com", null, true,
+                null, null, Instant.now(), null, false)
+    }
+
     def "execute forwards spaceId and optional filters to the repository"() {
         given:
-        Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, 1L, 1L, null, 10L, null, 20L,
+        Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L), buildAccount(1L), null,
+                new Category(10L, 0, null, "Food", true, Instant.now(), null), null,
+                new PaymentMethod(20L, 0, null, "Cash", true, Instant.now(), null),
                 new BigDecimal("100.00"), LocalDate.of(2026, 1, 15), "desc", Instant.now(), null)
         transactionRepository.findByFilter(1L, null, null, null, null, null, null,
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)) >> [transaction]

@@ -11,16 +11,17 @@ public class SubCategoryEntityJpa {
     private Long id;
     @Version
     private Integer version;
-    @Column(name = "category_id")
-    private Long categoryId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private CategoryEntityJpa category;
     private String name;
     private boolean active;
 
     public Long getId() { return id; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public CategoryEntityJpa getCategory() { return category; }
+    public void setCategory(CategoryEntityJpa category) { this.category = category; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public boolean isActive() { return active; }

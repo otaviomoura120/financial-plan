@@ -14,28 +14,28 @@ public class Transaction {
     private Long id;
     private Integer version;
     private TransactionType type;
-    private Long userId;
-    private Long bankAccountId;
-    private Long destinationBankAccountId;
-    private Long categoryId;
-    private Long subCategoryId;
-    private Long paymentMethodId;
+    private User user;
+    private BankAccount bankAccount;
+    private BankAccount destinationBankAccount;
+    private Category category;
+    private SubCategory subCategory;
+    private PaymentMethod paymentMethod;
     private BigDecimal amount;
     private LocalDate transactionDate;
     private String description;
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public Transaction(Long id, Integer version, TransactionType type, Long userId, Long bankAccountId, Long destinationBankAccountId, Long categoryId, Long subCategoryId, Long paymentMethodId, BigDecimal amount, LocalDate transactionDate, String description, Instant createdDate, Instant updatedDate) {
+    public Transaction(Long id, Integer version, TransactionType type, User user, BankAccount bankAccount, BankAccount destinationBankAccount, Category category, SubCategory subCategory, PaymentMethod paymentMethod, BigDecimal amount, LocalDate transactionDate, String description, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
         this.type = type;
-        this.userId = userId;
-        this.bankAccountId = bankAccountId;
-        this.destinationBankAccountId = destinationBankAccountId;
-        this.categoryId = categoryId;
-        this.subCategoryId = subCategoryId;
-        this.paymentMethodId = paymentMethodId;
+        this.user = user;
+        this.bankAccount = bankAccount;
+        this.destinationBankAccount = destinationBankAccount;
+        this.category = category;
+        this.subCategory = subCategory;
+        this.paymentMethod = paymentMethod;
         this.amount = amount;
         this.transactionDate = transactionDate;
         this.description = description;
@@ -47,10 +47,10 @@ public class Transaction {
         if (type == null) {
             throw new DomainException("Transaction type is required");
         }
-        if (userId == null) {
+        if (user == null) {
             throw new DomainException("User is required");
         }
-        if (bankAccountId == null) {
+        if (bankAccount == null) {
             throw new DomainException("Bank account is required");
         }
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
@@ -60,30 +60,30 @@ public class Transaction {
             throw new DomainException("Transaction date is required");
         }
         if (isTransfer()) {
-            if (destinationBankAccountId == null) {
+            if (destinationBankAccount == null) {
                 throw new DomainException("Destination bank account is required for a transfer");
             }
-            if (destinationBankAccountId.equals(bankAccountId)) {
+            if (destinationBankAccount.getId().equals(bankAccount.getId())) {
                 throw new DomainException("Destination bank account must be different from the origin bank account");
             }
         } else {
-            if (categoryId == null) {
+            if (category == null) {
                 throw new DomainException("Category is required");
             }
-            if (paymentMethodId == null) {
+            if (paymentMethod == null) {
                 throw new DomainException("Payment method is required");
             }
         }
     }
 
-    public void update(TransactionType type, Long bankAccountId, Long destinationBankAccountId, Long categoryId, Long subCategoryId,
-                       Long paymentMethodId, BigDecimal amount, LocalDate transactionDate, String description) {
+    public void update(TransactionType type, BankAccount bankAccount, BankAccount destinationBankAccount, Category category, SubCategory subCategory,
+                       PaymentMethod paymentMethod, BigDecimal amount, LocalDate transactionDate, String description) {
         this.type = type;
-        this.bankAccountId = bankAccountId;
-        this.destinationBankAccountId = destinationBankAccountId;
-        this.categoryId = categoryId;
-        this.subCategoryId = subCategoryId;
-        this.paymentMethodId = paymentMethodId;
+        this.bankAccount = bankAccount;
+        this.destinationBankAccount = destinationBankAccount;
+        this.category = category;
+        this.subCategory = subCategory;
+        this.paymentMethod = paymentMethod;
         this.amount = amount;
         this.transactionDate = transactionDate;
         this.description = description;
@@ -115,18 +115,18 @@ public class Transaction {
 
     public TransactionType getType() { return type; }
     public void setType(TransactionType type) { this.type = type; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-    public Long getBankAccountId() { return bankAccountId; }
-    public void setBankAccountId(Long bankAccountId) { this.bankAccountId = bankAccountId; }
-    public Long getDestinationBankAccountId() { return destinationBankAccountId; }
-    public void setDestinationBankAccountId(Long destinationBankAccountId) { this.destinationBankAccountId = destinationBankAccountId; }
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
-    public Long getSubCategoryId() { return subCategoryId; }
-    public void setSubCategoryId(Long subCategoryId) { this.subCategoryId = subCategoryId; }
-    public Long getPaymentMethodId() { return paymentMethodId; }
-    public void setPaymentMethodId(Long paymentMethodId) { this.paymentMethodId = paymentMethodId; }
+    public User getUser() { return user; }
+    public void setUser(User user) { this.user = user; }
+    public BankAccount getBankAccount() { return bankAccount; }
+    public void setBankAccount(BankAccount bankAccount) { this.bankAccount = bankAccount; }
+    public BankAccount getDestinationBankAccount() { return destinationBankAccount; }
+    public void setDestinationBankAccount(BankAccount destinationBankAccount) { this.destinationBankAccount = destinationBankAccount; }
+    public Category getCategory() { return category; }
+    public void setCategory(Category category) { this.category = category; }
+    public SubCategory getSubCategory() { return subCategory; }
+    public void setSubCategory(SubCategory subCategory) { this.subCategory = subCategory; }
+    public PaymentMethod getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public LocalDate getTransactionDate() { return transactionDate; }
