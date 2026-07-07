@@ -431,7 +431,7 @@ Uma compra parcelada em X vezes é modelada como **1 registro por parcela** (X l
 
 ### [Grupo P1] Fundação compartilhada: rastreabilidade de pagamento em Transaction
 
-- [ ] **P1 — `sourceType`/`sourceId` em Transaction + bloqueio de edição/exclusão**
+- [x] **P1 — `sourceType`/`sourceId` em Transaction + bloqueio de edição/exclusão**
 Editar `domain/enums/TransactionSourceType.java` (novo). Editar `domain/Transaction.java`: campos `sourceType`/`sourceId`, `isLinkedToSource()`. Editar `TransactionEntityJpa`/`TransactionRepositoryImpl` (2 colunas nullable). Editar `UpdateTransactionService` e `DeleteTransactionService` para rejeitar (`DomainException`) qualquer transação vinculada — sem cascade, só bloqueio.
 *Depende de:* core T3, T7, T8 (mexe nos arquivos já estabilizados por eles).
 **Testes (obrigatório):** estender `TransactionSpec.groovy` + `UpdateTransactionServiceSpec.groovy` + `DeleteTransactionServiceSpec.groovy` com o cenário "transação vinculada rejeita update/delete".

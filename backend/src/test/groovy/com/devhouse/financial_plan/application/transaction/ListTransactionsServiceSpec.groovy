@@ -34,7 +34,7 @@ class ListTransactionsServiceSpec extends Specification {
         Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L), buildAccount(1L), null,
                 new Category(10L, 0, null, "Food", true, Instant.now(), null), null,
                 new PaymentMethod(20L, 0, null, "Cash", true, Instant.now(), null),
-                new BigDecimal("100.00"), LocalDate.of(2026, 1, 15), "desc", Instant.now(), null)
+                new BigDecimal("100.00"), LocalDate.of(2026, 1, 15), "desc", Instant.now(), null, null, null)
         transactionRepository.findByFilter(1L, null, null, null, null, null, null,
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)) >> [transaction]
 

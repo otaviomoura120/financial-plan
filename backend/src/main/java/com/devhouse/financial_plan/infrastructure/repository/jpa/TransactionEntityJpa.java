@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.repository.jpa;
 
+import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import jakarta.persistence.*;
 
@@ -42,6 +43,11 @@ public class TransactionEntityJpa {
     private String description;
     @Column(name = "created_at")
     private Instant createdAt;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type")
+    private TransactionSourceType sourceType;
+    @Column(name = "source_id")
+    private Long sourceId;
 
     public Long getId() { return id; }
     public Integer getVersion() { return version; }
@@ -68,4 +74,8 @@ public class TransactionEntityJpa {
     public void setDescription(String description) { this.description = description; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public TransactionSourceType getSourceType() { return sourceType; }
+    public void setSourceType(TransactionSourceType sourceType) { this.sourceType = sourceType; }
+    public Long getSourceId() { return sourceId; }
+    public void setSourceId(Long sourceId) { this.sourceId = sourceId; }
 }

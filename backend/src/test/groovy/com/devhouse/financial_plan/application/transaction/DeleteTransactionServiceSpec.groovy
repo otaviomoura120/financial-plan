@@ -6,6 +6,7 @@ import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
+import com.devhouse.financial_plan.domain.enums.TransactionSourceType
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository
@@ -45,7 +46,7 @@ class DeleteTransactionServiceSpec extends Specification {
         given:
         Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L),
                 buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
-                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
+                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
         transactionRepository.findById(1L) >> transaction
         BankAccount account = buildAccount(1L, new BigDecimal("400.00"))
         bankAccountRepository.findById(1L) >> account
@@ -63,7 +64,7 @@ class DeleteTransactionServiceSpec extends Specification {
         given:
         Transaction transaction = new Transaction(2L, 0, TransactionType.TRANSFER, buildUser(1L),
                 buildAccount(1L, BigDecimal.ZERO), buildAccount(2L, BigDecimal.ZERO), null, null, null,
-                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
+                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
         transactionRepository.findById(2L) >> transaction
         BankAccount origin = buildAccount(1L, new BigDecimal("400.00"))
         BankAccount destination = buildAccount(2L, new BigDecimal("300.00"))
@@ -85,6 +86,23 @@ class DeleteTransactionServiceSpec extends Specification {
 
         when:
         service.execute(99L)
+
+        then:
+        thrown(DomainException)
+        0 * bankAccountRepository.update(_)
+        0 * transactionRepository.delete(_)
+    }
+
+    def "execute throws DomainException when transaction is linked to a source (bill/invoice payment)"() {
+        given:
+        Transaction transaction = new Transaction(3L, 0, TransactionType.EXPENSE, buildUser(1L),
+                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
+                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null,
+                TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 50L)
+        transactionRepository.findById(3L) >> transaction
+
+        when:
+        service.execute(3L)
 
         then:
         thrown(DomainException)

@@ -170,6 +170,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         entity.setAmount(transaction.getAmount());
         entity.setTransactionDate(transaction.getTransactionDate());
         entity.setDescription(transaction.getDescription());
+        entity.setSourceType(transaction.getSourceType());
+        entity.setSourceId(transaction.getSourceId());
     }
 
     private Transaction toDomain(TransactionEntityJpa entity) {
@@ -181,7 +183,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         PaymentMethod paymentMethod = entity.getPaymentMethod() != null ? buildPaymentMethod(entity.getPaymentMethod()) : null;
         return new Transaction(entity.getId(), entity.getVersion(), entity.getType(), user, bankAccount,
                 destinationBankAccount, category, subCategory, paymentMethod, entity.getAmount(),
-                entity.getTransactionDate(), entity.getDescription(), entity.getCreatedAt(), null);
+                entity.getTransactionDate(), entity.getDescription(), entity.getCreatedAt(), null,
+                entity.getSourceType(), entity.getSourceId());
     }
 
     private User buildUser(UserEntityJpa entity) {

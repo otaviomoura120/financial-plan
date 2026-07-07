@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.domain;
 
+import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -25,8 +26,10 @@ public class Transaction {
     private String description;
     private final Instant createdDate;
     private Instant updatedDate;
+    private TransactionSourceType sourceType;
+    private Long sourceId;
 
-    public Transaction(Long id, Integer version, TransactionType type, User user, BankAccount bankAccount, BankAccount destinationBankAccount, Category category, SubCategory subCategory, PaymentMethod paymentMethod, BigDecimal amount, LocalDate transactionDate, String description, Instant createdDate, Instant updatedDate) {
+    public Transaction(Long id, Integer version, TransactionType type, User user, BankAccount bankAccount, BankAccount destinationBankAccount, Category category, SubCategory subCategory, PaymentMethod paymentMethod, BigDecimal amount, LocalDate transactionDate, String description, Instant createdDate, Instant updatedDate, TransactionSourceType sourceType, Long sourceId) {
         this.id = id;
         this.version = version;
         this.type = type;
@@ -41,6 +44,8 @@ public class Transaction {
         this.description = description;
         this.createdDate = createdDate;
         this.updatedDate = updatedDate;
+        this.sourceType = sourceType;
+        this.sourceId = sourceId;
     }
 
     public void validate() {
@@ -102,6 +107,10 @@ public class Transaction {
         return TransactionType.TRANSFER.equals(type);
     }
 
+    public boolean isLinkedToSource() {
+        return sourceType != null;
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -136,4 +145,8 @@ public class Transaction {
     public Instant getCreatedDate() { return createdDate; }
     public Instant getUpdatedDate() { return updatedDate; }
     public void setUpdatedDate(Instant updatedDate) { this.updatedDate = updatedDate; }
+    public TransactionSourceType getSourceType() { return sourceType; }
+    public void setSourceType(TransactionSourceType sourceType) { this.sourceType = sourceType; }
+    public Long getSourceId() { return sourceId; }
+    public void setSourceId(Long sourceId) { this.sourceId = sourceId; }
 }

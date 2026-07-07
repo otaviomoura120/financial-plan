@@ -61,8 +61,11 @@ The **central entity** of the system. Represents a single financial event:
 - `transactionDate`: `LocalDate` of when it happened
 - Links: `userId`, `bankAccountId`, `destinationBankAccountId`, `categoryId`, `subCategoryId`, `paymentMethodId`
 - `description`: optional notes
+- `sourceType` / `sourceId`: optional traceability of an external origin (`TransactionSourceType`: `CREDIT_CARD_INVOICE_PAYMENT`, `BILL_INSTANCE_PAYMENT`). Both are `null` for a transaction created directly through `POST /transactions`; they are only populated when a transaction is generated automatically by paying a credit card invoice or a bill instance (credit card/bills modules)
 
 For `INCOME`/`EXPENSE`, `categoryId` and `paymentMethodId` are required and `destinationBankAccountId` must be null. For `TRANSFER`, `destinationBankAccountId` is required and must differ from `bankAccountId`; `categoryId`/`paymentMethodId` are not required. `TRANSFER` moves money between two bank accounts within the same space and is excluded from `totalIncome`/`totalExpense`/`balance` in Reports (see below), though it still appears in the transaction list.
+
+`Transaction.isLinkedToSource()` returns `true` when `sourceType` is set. `UpdateTransactionService`/`DeleteTransactionService` reject (`DomainException`, HTTP 422) any edit or delete attempt on a linked transaction through the regular `/transactions` endpoints — reverting the balance effect of that kind of transaction is only allowed through a dedicated "undo payment" action in the module that created it (no cascade from the generic Transaction flow).
 
 ### EndpointPermission & RoleEndpointPermission
 `EndpointPermission` defines one access rule for an HTTP endpoint or a frontend page:

@@ -69,7 +69,7 @@ class CreateTransactionServiceSpec extends Specification {
         CreateTransactionRequest request = buildRequest(TransactionType.INCOME, 1L, null, 10L, null, 20L)
         Transaction saved = new Transaction(5L, 0, TransactionType.INCOME, buildUser(1L), account, null,
                 buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
-                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
+                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
         transactionRepository.save(_) >> saved
 
         when:
@@ -91,7 +91,7 @@ class CreateTransactionServiceSpec extends Specification {
         CreateTransactionRequest request = buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null, 20L)
         Transaction saved = new Transaction(6L, 0, TransactionType.EXPENSE, buildUser(1L), account, null,
                 buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
-                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
+                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
         transactionRepository.save(_) >> saved
 
         when:
@@ -112,7 +112,7 @@ class CreateTransactionServiceSpec extends Specification {
         bankAccountRepository.findById(2L) >> destination
         CreateTransactionRequest request = buildRequest(TransactionType.TRANSFER, 1L, 2L, null, null, null)
         Transaction saved = new Transaction(7L, 0, TransactionType.TRANSFER, buildUser(1L), origin, destination,
-                null, null, null, new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
+                null, null, null, new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
         transactionRepository.save(_) >> saved
 
         when:

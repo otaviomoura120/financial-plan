@@ -8,6 +8,7 @@ import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
+import com.devhouse.financial_plan.domain.enums.TransactionSourceType
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository
@@ -57,7 +58,7 @@ class UpdateTransactionServiceSpec extends Specification {
         new Transaction(1L, 0, type, buildUser(1L), buildAccount(bankAccountId, BigDecimal.ZERO),
                 destinationBankAccountId != null ? buildAccount(destinationBankAccountId, BigDecimal.ZERO) : null,
                 buildCategoryObj(categoryId), null, buildPaymentMethodObj(paymentMethodId),
-                amount, LocalDate.now(), "desc", Instant.now(), null)
+                amount, LocalDate.now(), "desc", Instant.now(), null, null, null)
     }
 
     def "execute reverts old amount and applies new amount on the same EXPENSE account"() {
@@ -154,6 +155,25 @@ class UpdateTransactionServiceSpec extends Specification {
         bankAccountRepository.findById(1L) >> null
         UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null, 20L,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
+
+        when:
+        service.execute(1L, request)
+
+        then:
+        thrown(DomainException)
+        0 * bankAccountRepository.update(_)
+        0 * transactionRepository.update(_)
+    }
+
+    def "execute throws DomainException when transaction is linked to a source (bill/invoice payment)"() {
+        given:
+        Transaction existing = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L),
+                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
+                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null,
+                TransactionSourceType.BILL_INSTANCE_PAYMENT, 50L)
+        transactionRepository.findById(1L) >> existing
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null, 20L,
+                new BigDecimal("150.00"), LocalDate.now(), "desc")
 
         when:
         service.execute(1L, request)

@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.domain
 
+import com.devhouse.financial_plan.domain.enums.TransactionSourceType
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import spock.lang.Specification
@@ -30,7 +31,7 @@ class TransactionSpec extends Specification {
                                           Long categoryId, Long paymentMethodId) {
         new Transaction(null, 0, type, buildUser(1L), buildBankAccount(bankAccountId), buildBankAccount(destinationBankAccountId),
                 buildCategory(categoryId), null, buildPaymentMethod(paymentMethodId), new BigDecimal("100.00"),
-                LocalDate.now(), "desc", Instant.now(), null)
+                LocalDate.now(), "desc", Instant.now(), null, null, null)
     }
 
     def "validate passes for INCOME with category and payment method"() {
@@ -126,5 +127,25 @@ class TransactionSpec extends Specification {
         income.isIncome() && !income.isExpense() && !income.isTransfer()
         expense.isExpense() && !expense.isIncome() && !expense.isTransfer()
         transfer.isTransfer() && !transfer.isIncome() && !transfer.isExpense()
+    }
+
+    def "isLinkedToSource is false when sourceType is not set"() {
+        given:
+        Transaction transaction = buildTransaction(TransactionType.EXPENSE, 1L, null, 10L, 20L)
+
+        expect:
+        !transaction.isLinkedToSource()
+    }
+
+    def "isLinkedToSource is true when sourceType is set"() {
+        given:
+        Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L), buildBankAccount(1L), null,
+                buildCategory(10L), null, buildPaymentMethod(20L), new BigDecimal("100.00"), LocalDate.now(), "desc",
+                Instant.now(), null, TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 99L)
+
+        expect:
+        transaction.isLinkedToSource()
+        transaction.getSourceType() == TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT
+        transaction.getSourceId() == 99L
     }
 }

@@ -36,7 +36,7 @@ class GenerateReportServiceSpec extends Specification {
         PaymentMethod paymentMethod = TransactionType.TRANSFER.equals(type) ? null : new PaymentMethod(20L, 0, null, "Cash", true, Instant.now(), null)
         new Transaction(1L, 0, type, buildUser(1L), buildAccount(1L),
                 destinationBankAccountId != null ? buildAccount(destinationBankAccountId) : null,
-                category, null, paymentMethod, amount, LocalDate.now(), "desc", Instant.now(), null)
+                category, null, paymentMethod, amount, LocalDate.now(), "desc", Instant.now(), null, null, null)
     }
 
     def "execute forwards every filter field to the repository, in the expected order"() {

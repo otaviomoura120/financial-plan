@@ -42,7 +42,7 @@ class TransactionBalanceEffectServiceSpec extends Specification {
         new Transaction(1L, 0, type, buildUser(1L), buildAccount(bankAccountId, BigDecimal.ZERO),
                 destinationBankAccountId != null ? buildAccount(destinationBankAccountId, BigDecimal.ZERO) : null,
                 buildCategoryObj(categoryId), null, buildPaymentMethodObj(paymentMethodId),
-                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null)
+                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
     }
 
     def "apply credits the bank account for INCOME"() {

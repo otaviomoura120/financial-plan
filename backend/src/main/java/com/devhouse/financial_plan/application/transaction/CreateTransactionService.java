@@ -62,7 +62,7 @@ public class CreateTransactionService {
 
         Transaction transaction = new Transaction(null, 0, request.type(), user, bankAccount, destinationBankAccount,
                 category, subCategory, paymentMethod, request.amount(), request.transactionDate(),
-                request.description(), Instant.now(), null);
+                request.description(), Instant.now(), null, null, null);
         transaction.validate();
         balanceEffectService.apply(transaction);
         Transaction saved = transactionRepository.save(transaction);
