@@ -442,7 +442,7 @@ Editar `domain/enums/TransactionSourceType.java` (novo). Editar `domain/Transact
 
 ### [Grupo CC1] Domínio e persistência: CreditCard + CreditCardInvoiceCycle
 
-- [ ] **CC1 — CreditCard + CreditCardInvoiceCycle: domain + persistência**
+- [x] **CC1 — CreditCard + CreditCardInvoiceCycle: domain + persistência**
 Criar `domain/CreditCard.java`, `domain/CreditCardInvoiceCycle.java` (calculadora pura), `domain/repository/CreditCardRepository.java` (`save/update/findById/findBySpaceId/delete`), `CreditCardEntityJpa`, `JpaCreditCardRepository`, `CreditCardRepositoryImpl` (padrão `BankAccountRepositoryImpl`, tenancy direta).
 *Depende de:* nenhuma.
 **Testes (obrigatório):** `CreditCardSpec.groovy` (validate) + `CreditCardInvoiceCycleSpec.groovy` (resolveReferenceMonth/resolveDueDate cobrindo closingDay antes/depois de dueDay, e clamp de mês curto).

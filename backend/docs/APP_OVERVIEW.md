@@ -79,6 +79,19 @@ For `INCOME`/`EXPENSE`, `categoryId` and `paymentMethodId` are required and `des
 ### GroupMenu / GroupMenuChildren
 Hierarchical UI navigation menu. The menu structure is served to the frontend filtered by the authenticated user's permissions, so each user sees only the sections they can access.
 
+### CreditCard
+First entity of the new **credit card module** (in progress). Tenancy is direct, same pattern as `BankAccount`/`PaymentMethod`:
+- `name`, `limit` (informative only — never blocks a purchase, same philosophy as `BankAccount`'s negative balance), `closingDay`/`dueDay` (1-31, day-of-month of the invoice's closing and due date), `active`
+- `validate()` requires `name`, `space`, a positive `limit`, and `closingDay`/`dueDay` within 1-31
+- `update(name, limit, closingDay, dueDay)` and `deactivate()`; optimistic locking via `setVersion`
+
+`CreditCardInvoiceCycle` is a stateless calculator (no repository, no persisted state) used to derive which monthly invoice a purchase belongs to and when that invoice is due:
+- `resolveClosingDate(YearMonth, closingDay)` — the closing date within that month, clamped to the month's last day (handles `closingDay=31` in a 28/30-day month)
+- `resolveReferenceMonth(purchaseDate, closingDay)` — first day of the invoice month a purchase falls into: the purchase's own month if made on or before that month's closing date, otherwise the next month
+- `resolveDueDate(referenceMonth, closingDay, dueDay)` — if `dueDay <= closingDay` the due date falls in the month **after** `referenceMonth` (the due date always trails the closing date by construction), otherwise within `referenceMonth` itself; always clamped to the resulting month's length
+
+No persistence or CRUD is exposed yet — `CreditCardRepository`/`CreditCardRepositoryImpl` only provide `save/update/findById/findBySpaceId/delete`, wired the same way as `BankAccountRepositoryImpl`. Services, controller, `@PreAuthorize` and `seed.sql` entries come next (see `IMPLEMENTATION_PLAN.md`, group CC2).
+
 ---
 
 ## Key Flows
