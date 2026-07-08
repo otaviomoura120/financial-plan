@@ -36,7 +36,7 @@ interface CategoryOption {
 
 interface Props {
   isDialogVisible: boolean
-  creditCardId: number
+  creditCardId: number | null
   transaction?: CreditCardTransactionResponse | null
   categories: CategoryOption[]
 }
@@ -129,7 +129,7 @@ watch(
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid)
+  if (!valid || (!isEditMode.value && props.creditCardId === null))
     return
 
   isLoading.value = true

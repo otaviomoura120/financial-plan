@@ -11,7 +11,6 @@ interface CreditCardResponse {
   createdDate: string
 }
 
-const router = useRouter()
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
@@ -28,6 +27,8 @@ const searchVisible = shallowRef(false)
 
 const isAddEditDialogVisible = shallowRef(false)
 const isDeleteDialogVisible = shallowRef(false)
+const isTransactionsDialogVisible = shallowRef(false)
+const isInvoicesDialogVisible = shallowRef(false)
 
 const selectedCreditCard = shallowRef<CreditCardResponse | null>(null)
 
@@ -134,12 +135,14 @@ function formatLimit(limit: number) {
   return currencyFormatter.format(limit)
 }
 
-function goToTransactions(creditCard: CreditCardResponse) {
-  router.push(`/credit-cards/${creditCard.id}/transactions`)
+function openTransactions(creditCard: CreditCardResponse) {
+  selectedCreditCard.value = creditCard
+  isTransactionsDialogVisible.value = true
 }
 
-function goToInvoices(creditCard: CreditCardResponse) {
-  router.push(`/credit-cards/${creditCard.id}/invoices`)
+function openInvoices(creditCard: CreditCardResponse) {
+  selectedCreditCard.value = creditCard
+  isInvoicesDialogVisible.value = true
 }
 </script>
 
@@ -274,7 +277,7 @@ function goToInvoices(creditCard: CreditCardResponse) {
                   variant="text"
                   size="small"
                   color="default"
-                  @click="goToTransactions(creditCard)"
+                  @click="openTransactions(creditCard)"
                 >
                   <VIcon icon="tabler-receipt" />
                   <VTooltip activator="parent">
@@ -287,7 +290,7 @@ function goToInvoices(creditCard: CreditCardResponse) {
                   variant="text"
                   size="small"
                   color="default"
-                  @click="goToInvoices(creditCard)"
+                  @click="openInvoices(creditCard)"
                 >
                   <VIcon icon="tabler-file-invoice" />
                   <VTooltip activator="parent">
@@ -358,6 +361,16 @@ function goToInvoices(creditCard: CreditCardResponse) {
       cancel-title="Ação cancelada"
       cancel-msg="O cartão de crédito não foi excluído."
       @confirm="onDeleteConfirm"
+    />
+
+    <CreditCardTransactionsDialog
+      v-model:is-dialog-visible="isTransactionsDialogVisible"
+      :credit-card-id="selectedCreditCard?.id ?? null"
+    />
+
+    <CreditCardInvoicesDialog
+      v-model:is-dialog-visible="isInvoicesDialogVisible"
+      :credit-card-id="selectedCreditCard?.id ?? null"
     />
   </div>
 </template>

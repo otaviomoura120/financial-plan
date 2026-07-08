@@ -18,8 +18,8 @@ public class ListCreditCardTransactionsService {
     }
 
     public List<CreditCardTransactionResponse> execute(Long spaceId, Long creditCardId, Long categoryId,
-                                                         Long subCategoryId, LocalDate from, LocalDate to) {
-        return creditCardTransactionRepository.findByFilter(spaceId, creditCardId, categoryId, subCategoryId, from, to).stream()
+                                                         Long subCategoryId, LocalDate from, LocalDate to, LocalDate referenceMonth) {
+        return creditCardTransactionRepository.findByFilter(spaceId, creditCardId, categoryId, subCategoryId, from, to, referenceMonth).stream()
                 .map(this::toResponse)
                 .toList();
     }

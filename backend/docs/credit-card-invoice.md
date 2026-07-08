@@ -19,6 +19,8 @@ This means:
 
 Since an invoice group can only exist when at least one `CreditCardTransaction` exists for that month, there is no "phantom empty invoice" case to filter out.
 
+To let the frontend list the actual transactions composing one invoice (rather than just the aggregate row above), `GET /credit-card-transactions` accepts an optional `referenceMonth` query param — an exact-match filter added to `CreditCardTransactionRepository.findByFilter`/`buildSpecification`, alongside the existing `spaceId`/`creditCardId`/`categoryId`/`subCategoryId`/`from`/`to` filters. It reuses the same `(creditCardId, referenceMonth)` join key this section's grouping already relies on, but goes through the spaceId-scoped `findByFilter` specification instead of the unscoped `findByCreditCardIdAndReferenceMonth` used internally here and by `PayCreditCardInvoiceService`/`UndoCreditCardInvoicePaymentService` (which stays untouched).
+
 ## Paying an invoice — `PayCreditCardInvoiceService`
 
 `POST /credit-cards/{id}/invoices/{referenceMonth}/pay` — body: `{bankAccountId, categoryId, paymentMethodId, paidDate}`.

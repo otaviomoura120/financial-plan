@@ -76,8 +76,8 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     }
 
     @Override
-    public List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, LocalDate from, LocalDate to) {
-        Specification<CreditCardTransactionEntityJpa> specification = buildSpecification(spaceId, creditCardId, categoryId, subCategoryId, from, to);
+    public List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, LocalDate from, LocalDate to, LocalDate referenceMonth) {
+        Specification<CreditCardTransactionEntityJpa> specification = buildSpecification(spaceId, creditCardId, categoryId, subCategoryId, from, to, referenceMonth);
         return jpaCreditCardTransactionRepository.findAll(specification).stream()
                 .map(this::toDomain)
                 .toList();
@@ -110,7 +110,8 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     }
 
     private Specification<CreditCardTransactionEntityJpa> buildSpecification(Long spaceId, Long creditCardId, Long categoryId,
-                                                                              Long subCategoryId, LocalDate from, LocalDate to) {
+                                                                              Long subCategoryId, LocalDate from, LocalDate to,
+                                                                              LocalDate referenceMonth) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(root.get("creditCard").get("id").in(creditCardIdsInSpace(spaceId, query, criteriaBuilder)));
@@ -128,6 +129,9 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
             }
             if (to != null) {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("purchaseDate"), to));
+            }
+            if (referenceMonth != null) {
+                predicates.add(criteriaBuilder.equal(root.get("referenceMonth"), referenceMonth));
             }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };

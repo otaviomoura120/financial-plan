@@ -52,8 +52,9 @@ public class CreditCardTransactionController {
                                                       @RequestParam(required = false) Long subCategoryId,
                                                       @RequestParam(required = false) LocalDate from,
                                                       @RequestParam(required = false) LocalDate to,
+                                                      @RequestParam(required = false) LocalDate referenceMonth,
                                                       Authentication authentication, HttpServletRequest request) {
-        return listCreditCardTransactionsService.execute(spaceId, creditCardId, categoryId, subCategoryId, from, to);
+        return listCreditCardTransactionsService.execute(spaceId, creditCardId, categoryId, subCategoryId, from, to, referenceMonth);
     }
 
     @GetMapping("/installment-groups/{installmentGroupId}")

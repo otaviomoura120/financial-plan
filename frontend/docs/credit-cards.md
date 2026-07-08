@@ -25,7 +25,7 @@ All already implemented with `@PreAuthorize`.
 | POST | `/credit-cards` | `{ spaceId, name, limit, closingDay, dueDay }` | `CreditCardResponse` |
 | PUT | `/credit-cards/{id}` | `{ version, name, limit, closingDay, dueDay }` | `CreditCardResponse` |
 | DELETE | `/credit-cards/{id}` | — | `204` (soft-deactivate) |
-| GET | `/credit-card-transactions` | `spaceId, creditCardId?, categoryId?, subCategoryId?, from?, to?` (query) | `CreditCardTransactionResponse[]` |
+| GET | `/credit-card-transactions` | `spaceId, creditCardId?, categoryId?, subCategoryId?, from?, to?, referenceMonth?` (query) | `CreditCardTransactionResponse[]` |
 | GET | `/credit-card-transactions/installment-groups/{installmentGroupId}` | — | `CreditCardTransactionResponse[]` (sorted by `installmentNumber`) |
 | POST | `/credit-card-transactions/installment-groups/{id}/anticipate` | `{ targetReferenceMonth, installmentsToAnticipate }` | `CreditCardTransactionResponse[]` |
 | POST | `/credit-card-transactions` | `{ creditCardId, userId, categoryId, subCategoryId, amount, purchaseDate, description, totalInstallments }` | `CreditCardTransactionResponse` |
@@ -44,13 +44,20 @@ All already implemented with `@PreAuthorize`.
 Note: `categoryId` is **required** in `PayCreditCardInvoiceRequest` (no fallback to a default
 category — unlike `PayBillInstanceRequest`, see `bills.md`).
 
+`referenceMonth` on `GET /credit-card-transactions` is an exact-match filter (not a range) added
+so the frontend can fetch exactly the transactions belonging to one invoice — this is the same
+join key (`creditCardId` + `referenceMonth`) that `ListCreditCardInvoicesService` already used
+internally via `findByCreditCardIdAndReferenceMonth` to group transactions into invoices; the new
+param just reuses the spaceId-scoped `findByFilter` specification instead.
+
 ## Frontend — file map
 
 | File | Purpose |
 |---|---|
-| `pages/credit-cards/index.vue` | Card CRUD table (FCC1) — links to lançamentos/fatura per card |
-| `pages/credit-cards/[id]/transactions.vue` | Lançamentos of a single card, filtered by period (FCC2) |
-| `pages/credit-cards/[id]/invoices.vue` | Invoice list, payment and undo-payment for a single card (FCC3) |
+| `pages/credit-cards/index.vue` | Card CRUD table (FCC1) — opens lançamentos/fatura per card as modals |
+| `components/dialogs/CreditCardTransactionsDialog.vue` | Lançamentos of a single card, filtered by period (FCC2) — near-fullscreen modal, replaces the old `pages/credit-cards/[id]/transactions.vue` route |
+| `components/dialogs/CreditCardInvoicesDialog.vue` | Invoice list, payment and undo-payment for a single card (FCC3) — near-fullscreen modal, replaces the old `pages/credit-cards/[id]/invoices.vue` route |
+| `components/dialogs/InvoiceTransactionsDialog.vue` | Read-only listing of every `CreditCardTransaction` belonging to one invoice (`creditCardId` + `referenceMonth`), sorted ascending by `purchaseDate` — opened from a row action inside `CreditCardInvoicesDialog` |
 | `components/dialogs/AddEditCreditCardDialog.vue` | Create/edit dialog for `CreditCard` |
 | `components/dialogs/AddEditCreditCardTransactionDialog.vue` | Create/edit dialog for `CreditCardTransaction`, with an installments field only shown when creating |
 | `components/dialogs/AnticipateInstallmentsDialog.vue` | Anticipates the last N installments of a group into the current open invoice |
@@ -60,19 +67,23 @@ category — unlike `PayBillInstanceRequest`, see `bills.md`).
 | `server/api/credit-card-transactions/*` | Transaction CRUD + installment-group + anticipate proxy routes |
 | `server/api/credit-cards/invoices/index.get.ts`, `server/api/credit-cards/[id]/invoices/[referenceMonth]/*` | Invoice list/pay/undo-payment proxy routes |
 
-These pages are not in the sidebar (only `/credit-cards` is seeded as a `FRONT_PAGE` /
-`group_menu_children` entry) — they're reached by navigating from a row of the cards table.
+There is no longer a dedicated route for lançamentos/fatura per card — `/credit-cards` (the only
+`FRONT_PAGE` / `group_menu_children` entry for this module) opens both as modals sized to occupy
+~95% of the viewport (`100%` on mobile), so they read as a near-fullscreen view without dropping
+the dialog's rounded corners/backdrop. Both dialogs fetch their data reactively when
+`isDialogVisible` becomes `true`, instead of on route mount.
 
-## Page behavior
+## Page/dialog behavior
 
 ### `/credit-cards` (FCC1)
 Same pattern as Payment Methods/Bank Accounts: search by name, client-side pagination,
 create/edit dialog, delete with `ConfirmDialog` (irreversible, no "Ativar/Inativar" — see the
-gap note above). Row actions: Ver Lançamentos, Ver Fatura, Editar, Excluir.
+gap note above). Row actions: Ver Lançamentos, Ver Fatura, Editar, Excluir — the first two open
+`CreditCardTransactionsDialog`/`CreditCardInvoicesDialog` (see below) instead of navigating.
 
-### `/credit-cards/[id]/transactions` (FCC2)
-Resolves the card's name via `GET /credit-cards?spaceId=` filtered by the route `id`. Period
-filter defaults to the current month. Table shows date, category/subcategory, description,
+### `CreditCardTransactionsDialog` (FCC2)
+Resolves the card's name via `GET /credit-cards?spaceId=` filtered by the `creditCardId` prop.
+Period filter defaults to the current month. Table shows date, category/subcategory, description,
 amount, and an `"N/total"` chip when the row belongs to an installment group (`totalInstallments > 1`),
 plus an "Antecipada" badge when `anticipated`. "Antecipar parcelas" is only shown for rows with
 `installmentNumber < totalInstallments` and opens `AnticipateInstallmentsDialog`, which loads the
@@ -80,11 +91,14 @@ full group via `GET .../installment-groups/{id}` to compute how many future inst
 eligible before calling the anticipate endpoint. Create/edit/delete follow the standard dialog +
 `ConfirmDialog` pattern; a `422` from a paid month surfaces the real backend message.
 
-### `/credit-cards/[id]/invoices` (FCC3)
+### `CreditCardInvoicesDialog` (FCC3)
 Lists months (open/paid) with totals. "Pagar Fatura" opens `PayCreditCardInvoiceDialog` (only for
 open invoices). "Desfazer Pagamento" opens a `ConfirmDialog` with an explicit reversal warning
 (only for paid invoices) and calls the undo-payment endpoint directly (no intermediate fetch of
-the linked `Transaction` — the backend handles the balance reversal).
+the linked `Transaction` — the backend handles the balance reversal). A new "Ver Itens da Fatura"
+row action opens `InvoiceTransactionsDialog`, a normal-sized (non-fullscreen) nested dialog listing
+every transaction of that invoice, read-only, ordered ascending by `purchaseDate` — fetched via
+`GET /credit-card-transactions?...&referenceMonth=` (see the endpoint table above).
 
 ## Manual verification
 
@@ -94,3 +108,8 @@ before and one after closing), launch a 6x installment purchase and confirm 6 ro
 total, anticipate the last 2 installments into the current open invoice, pay an invoice and check
 the debit in `/bank-accounts`, try editing/deleting a transaction from an already-paid month
 (expect rejection), undo the payment and confirm the balance reverts and the invoice reopens.
+
+Also verify: "Ver Lançamentos"/"Ver Fatura" from `/credit-cards` open as near-fullscreen modals
+(not page navigation) on both desktop and a mobile viewport; "Ver Itens da Fatura" on an invoice
+row opens `InvoiceTransactionsDialog` stacked on top of `CreditCardInvoicesDialog` with the
+correct transactions for that `referenceMonth`, sorted by date ascending.
