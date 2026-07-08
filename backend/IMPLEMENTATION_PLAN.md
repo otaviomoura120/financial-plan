@@ -469,7 +469,7 @@ Criar `domain/CreditCardInvoicePayment.java`, `domain/repository/CreditCardInvoi
 
 ### [Grupo CC4] Domínio e persistência: CreditCardTransaction
 
-- [ ] **CC4 — CreditCardTransaction: domain + persistência (isolamento por Space desde o início)**
+- [x] **CC4 — CreditCardTransaction: domain + persistência (isolamento por Space desde o início)**
 Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento — ver spec acima: `referenceMonth`, `installmentGroupId`, `installmentNumber`, `totalInstallments`, `anticipated`, `originalReferenceMonth`), `domain/repository/CreditCardTransactionRepository.java` (`save/update/findById/findByFilter(spaceId, creditCardId, categoryId, subCategoryId, from, to)/findByInstallmentGroupId(String)/delete`), JPA entity, `JpaCreditCardTransactionRepository` (`JpaSpecificationExecutor`), `CreditCardTransactionRepositoryImpl` com filtro por `spaceId` via subquery **já embutido** (aprender com o gap de T9b do core). Índice não-único em `(credit_card_id, reference_month)` para acelerar o agrupamento de fatura (não é único como em `CreditCardInvoicePayment` — várias parcelas, inclusive de compras diferentes ou antecipadas, coexistem na mesma fatura).
 *Depende de:* CC1.
 **Testes (obrigatório):** `CreditCardTransactionSpec.groovy` (incluindo `validate()` dos campos de parcelamento: `totalInstallments` fora de 1-60, `installmentNumber` fora de 1-`totalInstallments`, e o método `anticipateTo`).
