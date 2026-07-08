@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSpaceStore, type Space } from '@/stores/space'
+import { type Space, useSpaceStore } from '@/stores/space'
 
 definePageMeta({ layout: 'onboarding' })
 

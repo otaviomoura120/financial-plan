@@ -17,7 +17,7 @@ export type OnboardingCheckResult =
   | { status: 'multiple_spaces'; user: UserResponse; spaces: SpaceResponse[] }
 
 export default defineEventHandler(async (event): Promise<OnboardingCheckResult> => {
-    // debugger
+  // debugger
   const { accessToken } = await useAuth0(event).getAccessToken()
   const config = useRuntimeConfig(event)
   const baseURL = config.public.apiBaseUrl
@@ -42,9 +42,8 @@ export default defineEventHandler(async (event): Promise<OnboardingCheckResult> 
   if (spaces.length === 0)
     return { status: 'no_spaces', user }
 
-  if (spaces.length === 1) {
+  if (spaces.length === 1)
     return { status: 'one_space', user, spaces }
-  }
 
   return { status: 'multiple_spaces', user, spaces }
 })

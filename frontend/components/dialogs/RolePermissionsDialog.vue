@@ -44,7 +44,7 @@ const groupedPermissions = computed(() => {
 
 watch(
   () => props.isDialogVisible,
-  async (visible) => {
+  async visible => {
     if (visible && props.roleId !== null) {
       await fetchPermissions()
     }
@@ -178,7 +178,10 @@ const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
               :key="group"
             >
               <tr class="group-header-row">
-                <td colspan="4" class="ps-4">
+                <td
+                  colspan="4"
+                  class="ps-4"
+                >
                   <span class="group-label text-primary">{{ group }}</span>
                 </td>
               </tr>
@@ -274,7 +277,6 @@ const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
   padding-block: 10px;
   border-block-end: none;
 }
-
 
 .group-label {
   font-size: 0.6875rem;

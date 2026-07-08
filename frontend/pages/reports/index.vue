@@ -19,11 +19,34 @@ interface TransactionResponse {
   createdDate: string
 }
 
+interface PendingCreditCardInvoiceResponse {
+  creditCardId: number
+  creditCardName: string
+  referenceMonth: string
+  dueDate: string
+  amount: number
+}
+
+interface PendingBillInstanceResponse {
+  billInstanceId: number
+  billId: number
+  billName: string
+  referenceMonth: string
+  dueDate: string
+  amount: number
+}
+
 interface ReportResponse {
   transactions: TransactionResponse[]
   totalIncome: number
   totalExpense: number
   balance: number
+  currentBalance: number
+  pendingCreditCardInvoices: PendingCreditCardInvoiceResponse[]
+  pendingCreditCardTotal: number
+  pendingBillInstances: PendingBillInstanceResponse[]
+  pendingBillTotal: number
+  projectedBalance: number
 }
 
 interface BankAccountResponse {
@@ -300,6 +323,12 @@ function formatDate(isoDate: string) {
 
   return `${day}/${month}/${year}`
 }
+
+function formatReferenceMonth(isoDate: string) {
+  const [year, month] = isoDate.split('-')
+
+  return `${month}/${year}`
+}
 </script>
 
 <template>
@@ -462,6 +491,122 @@ function formatDate(isoDate: string) {
             icon="tabler-scale"
             :stats="currencyFormatter.format(report.balance)"
           />
+        </VCol>
+      </VRow>
+
+      <VRow>
+        <VCol
+          cols="12"
+          md="6"
+        >
+          <CardStatisticsVerticalSimple
+            title="Saldo Atual"
+            :color="report.currentBalance >= 0 ? 'primary' : 'error'"
+            icon="tabler-wallet"
+            :stats="currencyFormatter.format(report.currentBalance)"
+          />
+        </VCol>
+
+        <VCol
+          cols="12"
+          md="6"
+        >
+          <CardStatisticsVerticalSimple
+            title="Saldo Previsto"
+            :color="report.projectedBalance >= 0 ? 'success' : 'error'"
+            icon="tabler-trending-up"
+            :stats="currencyFormatter.format(report.projectedBalance)"
+          />
+        </VCol>
+      </VRow>
+
+      <VRow v-if="report.pendingCreditCardInvoices.length > 0 || report.pendingBillInstances.length > 0">
+        <VCol
+          v-if="report.pendingCreditCardInvoices.length > 0"
+          cols="12"
+          md="6"
+        >
+          <VCard title="Faturas Pendentes">
+            <div style="overflow-x: auto">
+              <VTable>
+                <thead style="white-space: nowrap">
+                  <tr>
+                    <th>Cartão</th>
+                    <th>Mês</th>
+                    <th>Vencimento</th>
+                    <th class="text-right">
+                      Valor
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="invoice in report.pendingCreditCardInvoices"
+                    :key="`${invoice.creditCardId}-${invoice.referenceMonth}`"
+                  >
+                    <td>{{ invoice.creditCardName }}</td>
+                    <td class="text-disabled">
+                      {{ formatReferenceMonth(invoice.referenceMonth) }}
+                    </td>
+                    <td class="text-disabled">
+                      {{ formatDate(invoice.dueDate) }}
+                    </td>
+                    <td class="text-right">
+                      {{ currencyFormatter.format(invoice.amount) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </VTable>
+            </div>
+            <VCardText class="d-flex justify-space-between text-body-1 font-weight-medium">
+              <span>Total</span>
+              <span>{{ currencyFormatter.format(report.pendingCreditCardTotal) }}</span>
+            </VCardText>
+          </VCard>
+        </VCol>
+
+        <VCol
+          v-if="report.pendingBillInstances.length > 0"
+          cols="12"
+          md="6"
+        >
+          <VCard title="Contas Pendentes">
+            <div style="overflow-x: auto">
+              <VTable>
+                <thead style="white-space: nowrap">
+                  <tr>
+                    <th>Conta</th>
+                    <th>Mês</th>
+                    <th>Vencimento</th>
+                    <th class="text-right">
+                      Valor
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="instance in report.pendingBillInstances"
+                    :key="instance.billInstanceId"
+                  >
+                    <td>{{ instance.billName }}</td>
+                    <td class="text-disabled">
+                      {{ formatReferenceMonth(instance.referenceMonth) }}
+                    </td>
+                    <td class="text-disabled">
+                      {{ formatDate(instance.dueDate) }}
+                    </td>
+                    <td class="text-right">
+                      {{ currencyFormatter.format(instance.amount) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </VTable>
+            </div>
+            <VCardText class="d-flex justify-space-between text-body-1 font-weight-medium">
+              <span>Total</span>
+              <span>{{ currencyFormatter.format(report.pendingBillTotal) }}</span>
+            </VCardText>
+          </VCard>
         </VCol>
       </VRow>
 

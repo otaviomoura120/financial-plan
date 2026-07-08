@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useSpaceStore, type Space } from '@/stores/space'
+import { type Space, useSpaceStore } from '@/stores/space'
 
 const spaceStore = useSpaceStore()
 

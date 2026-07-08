@@ -43,7 +43,7 @@ const requiredRule = (label: string) => [(v: string) => !!v || `${label} é obri
 
 watch(
   () => props.isDialogVisible,
-  (visible) => {
+  visible => {
     if (visible) {
       name.value = props.child?.name ?? ''
       endpoint.value = props.child?.endpoint ?? ''

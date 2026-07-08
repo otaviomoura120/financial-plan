@@ -91,9 +91,8 @@ function openDelete(groupMenu: GroupMenuResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedGroupMenu.value) {
+  if (!confirmed || !selectedGroupMenu.value)
     return
-  }
 
   isDeleting.value = true
   clearError()
@@ -115,24 +114,21 @@ async function onDeleteConfirm(confirmed: boolean) {
 function onGroupMenuSaved(saved: GroupMenuResponse) {
   const idx = groupMenus.value.findIndex(g => g.id === saved.id)
 
-  if (idx >= 0) {
+  if (idx >= 0)
     groupMenus.value[idx] = { ...saved, children: groupMenus.value[idx].children ?? [] }
-  }
-  else {
-    groupMenus.value = [{ ...saved, children: [] }, ...groupMenus.value]
-  }
 
-  if (selectedGroupMenu.value?.id === saved.id) {
+  else
+    groupMenus.value = [{ ...saved, children: [] }, ...groupMenus.value]
+
+  if (selectedGroupMenu.value?.id === saved.id)
     selectedGroupMenu.value = { ...saved, children: selectedGroupMenu.value.children ?? [] }
-  }
 }
 
 function onChildrenUpdated(updated: GroupMenuResponse) {
   const idx = groupMenus.value.findIndex(g => g.id === updated.id)
 
-  if (idx >= 0) {
+  if (idx >= 0)
     groupMenus.value[idx] = updated
-  }
 
   selectedGroupMenu.value = updated
 }
@@ -152,7 +148,10 @@ function formatDate(iso: string) {
   <div>
     <VCard>
       <VCardText class="d-flex align-center flex-wrap gap-4">
-        <h5 class="text-h5 text-truncate" style="min-inline-size: 0">
+        <h5
+          class="text-h5 text-truncate"
+          style="min-inline-size: 0"
+        >
           Group Menus
         </h5>
 
@@ -224,97 +223,107 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <div v-else style="overflow-x: auto">
+      <div
+        v-else
+        style="overflow-x: auto"
+      >
         <VTable>
-        <thead style="white-space: nowrap">
-          <tr>
-            <th style="min-width: 200px">Nome</th>
-            <th style="min-width: 200px">Ícone</th>
-            <th>Itens</th>
-            <th>Criado em</th>
-            <th class="text-center">
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="groupMenu in paginatedGroupMenus"
-            :key="groupMenu.id"
-          >
-            <td class="font-weight-medium">
-              {{ groupMenu.name }}
-            </td>
-            <td>
-              <div class="d-flex align-center gap-2">
-                <VIcon
-                  :icon="groupMenu.icon"
-                  size="18"
-                />
-                <span class="text-disabled text-body-2">{{ groupMenu.icon }}</span>
-              </div>
-            </td>
-            <td>
-              <VChip
-                size="small"
-                variant="tonal"
-                color="primary"
-              >
-                {{ groupMenu.children.length }} {{ groupMenu.children.length === 1 ? 'item' : 'itens' }}
-              </VChip>
-            </td>
-            <td>{{ formatDate(groupMenu.createdAt) }}</td>
-            <td class="text-center" style="white-space: nowrap">
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                @click="openChildren(groupMenu)"
-              >
-                <VIcon icon="tabler-list-details" />
-                <VTooltip activator="parent">
-                  Gerenciar itens
-                </VTooltip>
-              </VBtn>
-
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                @click="openEdit(groupMenu)"
-              >
-                <VIcon icon="tabler-pencil" />
-                <VTooltip activator="parent">
-                  Editar
-                </VTooltip>
-              </VBtn>
-
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                @click="openDelete(groupMenu)"
-              >
-                <VIcon icon="tabler-trash" />
-                <VTooltip activator="parent">
-                  Excluir
-                </VTooltip>
-              </VBtn>
-            </td>
-          </tr>
-
-          <tr v-if="!isLoading && filteredGroupMenus.length === 0">
-            <td
-              colspan="5"
-              class="text-center text-disabled py-8"
+          <thead style="white-space: nowrap">
+            <tr>
+              <th style="min-width: 200px">
+                Nome
+              </th>
+              <th style="min-width: 200px">
+                Ícone
+              </th>
+              <th>Itens</th>
+              <th>Criado em</th>
+              <th class="text-center">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="groupMenu in paginatedGroupMenus"
+              :key="groupMenu.id"
             >
-              {{ search ? 'Nenhum group menu encontrado para a busca.' : 'Nenhum group menu cadastrado.' }}
-            </td>
-          </tr>
-        </tbody>
+              <td class="font-weight-medium">
+                {{ groupMenu.name }}
+              </td>
+              <td>
+                <div class="d-flex align-center gap-2">
+                  <VIcon
+                    :icon="groupMenu.icon"
+                    size="18"
+                  />
+                  <span class="text-disabled text-body-2">{{ groupMenu.icon }}</span>
+                </div>
+              </td>
+              <td>
+                <VChip
+                  size="small"
+                  variant="tonal"
+                  color="primary"
+                >
+                  {{ groupMenu.children.length }} {{ groupMenu.children.length === 1 ? 'item' : 'itens' }}
+                </VChip>
+              </td>
+              <td>{{ formatDate(groupMenu.createdAt) }}</td>
+              <td
+                class="text-center"
+                style="white-space: nowrap"
+              >
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  @click="openChildren(groupMenu)"
+                >
+                  <VIcon icon="tabler-list-details" />
+                  <VTooltip activator="parent">
+                    Gerenciar itens
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  @click="openEdit(groupMenu)"
+                >
+                  <VIcon icon="tabler-pencil" />
+                  <VTooltip activator="parent">
+                    Editar
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="error"
+                  @click="openDelete(groupMenu)"
+                >
+                  <VIcon icon="tabler-trash" />
+                  <VTooltip activator="parent">
+                    Excluir
+                  </VTooltip>
+                </VBtn>
+              </td>
+            </tr>
+
+            <tr v-if="!isLoading && filteredGroupMenus.length === 0">
+              <td
+                colspan="5"
+                class="text-center text-disabled py-8"
+              >
+                {{ search ? 'Nenhum group menu encontrado para a busca.' : 'Nenhum group menu cadastrado.' }}
+              </td>
+            </tr>
+          </tbody>
         </VTable>
       </div>
 

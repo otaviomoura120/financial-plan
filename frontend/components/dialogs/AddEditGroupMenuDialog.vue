@@ -39,7 +39,7 @@ const requiredRule = (label: string) => [(v: string) => !!v || `${label} é obri
 
 watch(
   () => props.isDialogVisible,
-  (visible) => {
+  visible => {
     if (visible) {
       name.value = props.groupMenu?.name ?? ''
       icon.value = props.groupMenu?.icon ?? ''

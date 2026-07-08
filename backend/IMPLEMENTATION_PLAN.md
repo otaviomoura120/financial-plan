@@ -601,7 +601,7 @@ Reaproveitam integralmente o padrão já estabelecido no plano core (página + `
 
 ### [Grupo FCC1] Cadastro de Cartões
 
-- [ ] **FCC1 — Credit Cards** (`pages/credit-cards/`)
+- [x] **FCC1 — Credit Cards** (`pages/credit-cards/`)
 Form: `name`, `limit`, `closingDay`, `dueDay`. CRUD completo, mesmo padrão de F2 (Bank Accounts).
 *Depende de:* backend CC2.
 **Verificação:** manual no navegador — criar/editar/desativar cartão.
@@ -609,7 +609,7 @@ Form: `name`, `limit`, `closingDay`, `dueDay`. CRUD completo, mesmo padrão de F
 
 ### [Grupo FCC2] Lançamentos no cartão
 
-- [ ] **FCC2 — Lançamentos de Cartão** (dialog secundário a partir da linha do cartão, `ManageCreditCardTransactionsDialog.vue`)
+- [x] **FCC2 — Lançamentos de Cartão** (implementado como página dedicada `pages/credit-cards/[id]/transactions.vue`, não como dialog secundário — decisão validada com o usuário na sessão de implementação, já que só existe entrada de sidebar para `/credit-cards`)
 Lista/cria/edita/exclui `CreditCardTransaction` do cartão selecionado: `categoryId`+`subCategoryId` (cascata, selects de F3), `amount`, `purchaseDate`, `description`, `totalInstallments` (campo opcional "parcelar em X vezes" — se preenchido >1, a UI só cria, não edita/exclui em lote). Cada linha da lista mostra "N/total" quando fizer parte de um grupo parcelado (via `GET .../installment-groups/{id}`) e um selo "antecipada" quando `anticipated=true`. Ação "Antecipar parcelas" na linha de uma compra parcelada (dialog: escolher quantas das últimas parcelas antecipar para a fatura aberta atual) chamando `POST .../installment-groups/{id}/anticipate` (backend CC5b). Filtro de período.
 *Depende de:* FCC1, F3 (selects de categoria), backend CC5, CC5b.
 **Verificação:** manual no navegador — lançar compra parcelada em 6x e conferir as 6 linhas geradas; tentar editar/excluir uma compra de mês já pago (depois de FCC3 existir) e confirmar bloqueio; antecipar as 2 últimas parcelas e conferir que só elas mudam de fatura.
@@ -617,7 +617,7 @@ Lista/cria/edita/exclui `CreditCardTransaction` do cartão selecionado: `categor
 
 ### [Grupo FCC3] Fatura, pagamento e reversão
 
-- [ ] **FCC3 — Fatura do Cartão** (`pages/credit-cards/[id]/invoices.vue` ou dialog)
+- [x] **FCC3 — Fatura do Cartão** (`pages/credit-cards/[id]/invoices.vue`)
 Lista meses (aberto/pago) com totais; dialog "Pagar Fatura" (`bankAccountId`, `categoryId`, `paymentMethodId`, `paidDate`); ação "Desfazer Pagamento" com confirmação explícita dedicada ("Tem certeza? O saldo da conta X será revertido em R$Y").
 *Depende de:* FCC2, backend CC6, CC7.
 **Verificação:** manual no navegador — pagar fatura, conferir saldo da conta escolhida em `/bank-accounts`, desfazer o pagamento e confirmar que a fatura volta a "aberta" e o saldo é revertido.
@@ -625,7 +625,7 @@ Lista meses (aberto/pago) com totais; dialog "Pagar Fatura" (`bankAccountId`, `c
 
 ### [Grupo FAP1] Cadastro de Contas a Pagar
 
-- [ ] **FAP1 — Bills** (`pages/bills/`)
+- [x] **FAP1 — Bills** (`pages/bills/`)
 Form básico (`name`, `categoryId`, `defaultAmount`) + seção separada "Agenda" (`recurring`/`startDate`, editável via ação própria). CRUD (update básico + update de agenda conforme AP3).
 *Depende de:* backend AP3, F3 (categorias).
 **Verificação:** manual no navegador — criar conta avulsa (confirmar 1 instância já aparece em FAP2) e conta recorrente; editar a agenda de uma recorrente e confirmar que só instâncias futuras mudam.
@@ -633,7 +633,7 @@ Form básico (`name`, `categoryId`, `defaultAmount`) + seção separada "Agenda"
 
 ### [Grupo FAP2] Contas do mês (pagar/desfazer)
 
-- [ ] **FAP2 — Contas do Mês** (`pages/bills/instances.vue` ou seção da mesma página)
+- [x] **FAP2 — Contas do Mês** (`pages/bills/instances.vue`)
 Lista `BillInstance` do período selecionado (default mês atual), com edição inline de `amount` (só se PENDING), dialog "Marcar como Paga" (`bankAccountId`, `categoryId?`, `paymentMethodId`, `paidDate`) e ação "Desfazer Pagamento" com confirmação dedicada.
 *Depende de:* FAP1, backend AP4/AP5/AP6.
 **Verificação:** manual no navegador — editar valor de uma pendente, pagar, conferir saldo da conta, desfazer o pagamento e confirmar retorno a pendente.
@@ -641,11 +641,20 @@ Lista `BillInstance` do período selecionado (default mês atual), com edição 
 
 ### [Grupo FRPT1] Atualização da tela de Reports
 
-- [ ] **FRPT1 — Saldo previsto em Reports** (atualização de `pages/reports/` de F5)
+- [x] **FRPT1 — Saldo previsto em Reports** (atualização de `pages/reports/` de F5)
 Adicionar cards de `currentBalance`/`projectedBalance` e duas listas (faturas pendentes, contas pendentes) ao lado dos cards já existentes de `totalIncome`/`totalExpense`/`balance`.
 *Depende de:* F5 (já existente), backend RPT1.
 **Verificação:** manual no navegador — conferir que `projectedBalance` bate com `currentBalance - faturas pendentes - contas pendentes` do período filtrado.
 **Docs:** `frontend/docs/reports.md` (atualizar, não recriar).
+
+**Pendente de verificação manual (ambiente sem `pnpm`/binário nativo compatível disponível nesta
+sessão):** `nuxt dev` falhou ao subir por um binding nativo do `oxc-parser` ausente para a
+arquitetura do sandbox (`Cannot find module '@oxc-parser/binding-linux-arm64-gnu'`) — limitação de
+ambiente, não relacionada ao código escrito. Validado nesta sessão apenas via `eslint . -c
+.eslintrc.cjs --fix --ext .ts,.js,.cjs,.vue,.tsx,.jsx` (limpo em todos os arquivos novos/alterados
+de FCC1-3/FAP1-2/FRPT1; os 2 problemas remanescentes são pré-existentes em arquivos não tocados
+por esta rodada). Rodar o roteiro de verificação manual abaixo (item 4) em um ambiente com
+`pnpm`/dev server funcional antes de considerar FCC1-3/FAP1-2/FRPT1 100% fechadas.
 
 ---
 

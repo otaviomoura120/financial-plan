@@ -57,8 +57,6 @@ async function submit() {
     }
 
     await navigateTo(hasPendingInvites ? '/invites' : '/onboarding/space')
-
-    return
   }
   catch {
     setError('Falha ao salvar seu perfil. Por favor, tente novamente.')

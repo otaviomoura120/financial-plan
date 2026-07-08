@@ -61,7 +61,7 @@ const paginatedChildren = computed(() => {
 
 watch(
   () => props.isDialogVisible,
-  (visible) => {
+  visible => {
     if (visible && props.groupMenu) {
       children.value = [...(props.groupMenu.children ?? [])]
       search.value = ''
@@ -91,9 +91,8 @@ function openDelete(child: GroupMenuChildrenResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedChild.value) {
+  if (!confirmed || !selectedChild.value)
     return
-  }
 
   isDeleting.value = true
   clearError()
@@ -116,20 +115,18 @@ async function onDeleteConfirm(confirmed: boolean) {
 function onChildSaved(saved: GroupMenuChildrenResponse) {
   const idx = children.value.findIndex(c => c.id === saved.id)
 
-  if (idx >= 0) {
+  if (idx >= 0)
     children.value[idx] = saved
-  }
-  else {
+
+  else
     children.value = [saved, ...children.value]
-  }
 
   emitUpdated()
 }
 
 function emitUpdated() {
-  if (!props.groupMenu) {
+  if (!props.groupMenu)
     return
-  }
 
   emit('updated', { ...props.groupMenu, children: [...children.value] })
 }

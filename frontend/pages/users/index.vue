@@ -236,7 +236,10 @@ function formatDate(iso: string) {
   <div>
     <VCard>
       <VCardText class="d-flex align-center flex-wrap gap-4">
-        <h5 class="text-h5 text-truncate" style="min-inline-size: 0">
+        <h5
+          class="text-h5 text-truncate"
+          style="min-inline-size: 0"
+        >
           Usuários
         </h5>
 
@@ -308,94 +311,102 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <div v-else style="overflow-x: auto">
+      <div
+        v-else
+        style="overflow-x: auto"
+      >
         <VTable>
-        <thead style="white-space: nowrap">
-          <tr>
-            <th style="min-width: 200px">Nome</th>
-            <th>E-mail</th>
-            <th>Role</th>
-            <th>Membro desde</th>
-            <th class="text-center">
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="member in paginatedMembers"
-            :key="member.memberId"
-          >
-            <td class="font-weight-medium">
-              {{ member.userName }}
-            </td>
-            <td class="text-disabled">
-              {{ member.userEmail }}
-            </td>
-            <td>
-              <VChip
-                :color="member.roleName === 'OWNER' ? 'warning' : 'primary'"
-                size="small"
-                variant="tonal"
-              >
-                {{ member.roleName }}
-              </VChip>
-            </td>
-            <td>{{ formatDate(member.joinedAt) }}</td>
-            <td class="text-center" style="white-space: nowrap">
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                :disabled="member.roleName === 'OWNER'"
-                @click="openEdit(member)"
-              >
-                <VIcon icon="tabler-pencil" />
-                <VTooltip activator="parent">
-                  {{ member.roleName === 'OWNER' ? 'Role do OWNER não pode ser alterada' : 'Alterar role' }}
-                </VTooltip>
-              </VBtn>
-
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                :disabled="member.roleName === 'OWNER'"
-                @click="openRemove(member)"
-              >
-                <VIcon icon="tabler-user-minus" />
-                <VTooltip activator="parent">
-                  {{ member.roleName === 'OWNER' ? 'OWNER não pode ser removido' : 'Remover do espaço' }}
-                </VTooltip>
-              </VBtn>
-
-              <VBtn
-                v-if="isCurrentUser(member)"
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                @click="isEditProfileDialogVisible = true"
-              >
-                <VIcon icon="tabler-user-edit" />
-                <VTooltip activator="parent">
-                  Editar meus dados
-                </VTooltip>
-              </VBtn>
-            </td>
-          </tr>
-
-          <tr v-if="!isLoading && filteredMembers.length === 0">
-            <td
-              colspan="5"
-              class="text-center text-disabled py-8"
+          <thead style="white-space: nowrap">
+            <tr>
+              <th style="min-width: 200px">
+                Nome
+              </th>
+              <th>E-mail</th>
+              <th>Role</th>
+              <th>Membro desde</th>
+              <th class="text-center">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="member in paginatedMembers"
+              :key="member.memberId"
             >
-              {{ search ? 'Nenhum usuário encontrado para a busca.' : 'Nenhum membro neste espaço.' }}
-            </td>
-          </tr>
-        </tbody>
+              <td class="font-weight-medium">
+                {{ member.userName }}
+              </td>
+              <td class="text-disabled">
+                {{ member.userEmail }}
+              </td>
+              <td>
+                <VChip
+                  :color="member.roleName === 'OWNER' ? 'warning' : 'primary'"
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ member.roleName }}
+                </VChip>
+              </td>
+              <td>{{ formatDate(member.joinedAt) }}</td>
+              <td
+                class="text-center"
+                style="white-space: nowrap"
+              >
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  :disabled="member.roleName === 'OWNER'"
+                  @click="openEdit(member)"
+                >
+                  <VIcon icon="tabler-pencil" />
+                  <VTooltip activator="parent">
+                    {{ member.roleName === 'OWNER' ? 'Role do OWNER não pode ser alterada' : 'Alterar role' }}
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="error"
+                  :disabled="member.roleName === 'OWNER'"
+                  @click="openRemove(member)"
+                >
+                  <VIcon icon="tabler-user-minus" />
+                  <VTooltip activator="parent">
+                    {{ member.roleName === 'OWNER' ? 'OWNER não pode ser removido' : 'Remover do espaço' }}
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  v-if="isCurrentUser(member)"
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  @click="isEditProfileDialogVisible = true"
+                >
+                  <VIcon icon="tabler-user-edit" />
+                  <VTooltip activator="parent">
+                    Editar meus dados
+                  </VTooltip>
+                </VBtn>
+              </td>
+            </tr>
+
+            <tr v-if="!isLoading && filteredMembers.length === 0">
+              <td
+                colspan="5"
+                class="text-center text-disabled py-8"
+              >
+                {{ search ? 'Nenhum usuário encontrado para a busca.' : 'Nenhum membro neste espaço.' }}
+              </td>
+            </tr>
+          </tbody>
         </VTable>
       </div>
 
@@ -439,74 +450,80 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <div v-else style="overflow-x: auto">
+      <div
+        v-else
+        style="overflow-x: auto"
+      >
         <VTable>
-        <thead style="white-space: nowrap">
-          <tr>
-            <th>E-mail</th>
-            <th>Role</th>
-            <th>Enviado em</th>
-            <th>Expira em</th>
-            <th>Status</th>
-            <th class="text-center">
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="invite in pendingInvites"
-            :key="invite.inviteId"
-          >
-            <td class="text-disabled">
-              {{ invite.email }}
-            </td>
-            <td>
-              <VChip
-                color="primary"
-                size="small"
-                variant="tonal"
-              >
-                {{ invite.roleName }}
-              </VChip>
-            </td>
-            <td>{{ formatDate(invite.createdAt) }}</td>
-            <td>{{ formatDate(invite.expiresAt) }}</td>
-            <td>
-              <VChip
-                :color="{ PENDING: 'warning', ACCEPTED: 'success', CANCELLED: 'secondary', DECLINED: 'error' }[invite.status]"
-                size="small"
-                variant="tonal"
-              >
-                {{ { PENDING: 'Pendente', ACCEPTED: 'Aceito', CANCELLED: 'Cancelado', DECLINED: 'Rejeitado' }[invite.status] }}
-              </VChip>
-            </td>
-            <td class="text-center" style="white-space: nowrap">
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                :loading="isCancellingInvite === invite.inviteId"
-                @click="cancelInvite(invite)"
-              >
-                <VIcon icon="tabler-x" />
-                <VTooltip activator="parent">
-                  Cancelar convite
-                </VTooltip>
-              </VBtn>
-            </td>
-          </tr>
-
-          <tr v-if="!isLoadingInvites && pendingInvites.length === 0">
-            <td
-              colspan="6"
-              class="text-center text-disabled py-8"
+          <thead style="white-space: nowrap">
+            <tr>
+              <th>E-mail</th>
+              <th>Role</th>
+              <th>Enviado em</th>
+              <th>Expira em</th>
+              <th>Status</th>
+              <th class="text-center">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="invite in pendingInvites"
+              :key="invite.inviteId"
             >
-              Nenhum convite pendente.
-            </td>
-          </tr>
-        </tbody>
+              <td class="text-disabled">
+                {{ invite.email }}
+              </td>
+              <td>
+                <VChip
+                  color="primary"
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ invite.roleName }}
+                </VChip>
+              </td>
+              <td>{{ formatDate(invite.createdAt) }}</td>
+              <td>{{ formatDate(invite.expiresAt) }}</td>
+              <td>
+                <VChip
+                  :color="{ PENDING: 'warning', ACCEPTED: 'success', CANCELLED: 'secondary', DECLINED: 'error' }[invite.status]"
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ { PENDING: 'Pendente', ACCEPTED: 'Aceito', CANCELLED: 'Cancelado', DECLINED: 'Rejeitado' }[invite.status] }}
+                </VChip>
+              </td>
+              <td
+                class="text-center"
+                style="white-space: nowrap"
+              >
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="error"
+                  :loading="isCancellingInvite === invite.inviteId"
+                  @click="cancelInvite(invite)"
+                >
+                  <VIcon icon="tabler-x" />
+                  <VTooltip activator="parent">
+                    Cancelar convite
+                  </VTooltip>
+                </VBtn>
+              </td>
+            </tr>
+
+            <tr v-if="!isLoadingInvites && pendingInvites.length === 0">
+              <td
+                colspan="6"
+                class="text-center text-disabled py-8"
+              >
+                Nenhum convite pendente.
+              </td>
+            </tr>
+          </tbody>
         </VTable>
       </div>
     </VCard>

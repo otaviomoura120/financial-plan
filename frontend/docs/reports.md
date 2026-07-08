@@ -21,10 +21,26 @@ throws if missing); everything else, including `from`/`to`, is optional as far a
 is concerned. `from`/`to` being "obrigatórios" is a **frontend-only** UX decision (per the
 plan) — enforced client-side via `VForm` validation before the request is sent.
 
-`ReportResponse`: `{ transactions: TransactionResponse[], totalIncome, totalExpense, balance }`.
+`ReportResponse`: `{ transactions: TransactionResponse[], totalIncome, totalExpense, balance,
+currentBalance, pendingCreditCardInvoices, pendingCreditCardTotal, pendingBillInstances,
+pendingBillTotal, projectedBalance }`.
 `totalIncome`/`totalExpense` are summed via `Transaction.isIncome()`/`isExpense()`, which
 naturally exclude `TRANSFER` — it still appears in the `transactions` list, just not in the
 totals. `balance = totalIncome - totalExpense`.
+
+### Projected balance (Grupo FRPT1, added after Cartão de Crédito / Contas a Pagar)
+
+- `currentBalance` — sum of active `BankAccount.balance` in the space (or just the filtered
+  account, if `bankAccountId` is set).
+- `pendingCreditCardInvoices` (`{creditCardId, creditCardName, referenceMonth, dueDate, amount}[]`)
+  / `pendingCreditCardTotal` — open (unpaid) credit card invoices whose `dueDate` falls inside
+  `[from, to]`. Since installments are materialized at purchase time, this already includes
+  future installments of a parceled purchase without any extra generation step.
+- `pendingBillInstances` (`{billInstanceId, billId, billName, referenceMonth, dueDate, amount}[]`)
+  / `pendingBillTotal` — `PENDING` `BillInstance` rows whose `dueDate` falls inside `[from, to]`
+  (the backend runs `EnsureBillInstancesGeneratedService` first, so a never-visited future month
+  is generated on demand).
+- `projectedBalance = currentBalance - pendingCreditCardTotal - pendingBillTotal`.
 
 ## Frontend — file map
 
@@ -54,10 +70,19 @@ for `pages/users/index.vue`) for the "Membro" filter.
 - Transaction table columns and formatting are identical to F4's list (date, type chip,
   account, category/destination, payment method, description, signed/colored amount) minus the
   "Ações" column — this page has no edit/delete.
+- A second `VRow` below the period cards shows **Saldo Atual** (`currentBalance`) and **Saldo
+  Previsto** (`projectedBalance`, `success`/`error` by sign, same calm-not-alarming convention as
+  "Saldo do Período").
+- Two more cards ("Faturas Pendentes" / "Contas Pendentes") render below, each only when its
+  list is non-empty, listing card/bill name, reference month, due date, amount, and a total row
+  — no row actions (read-only, same as the transaction table on this page).
 
 ## Manual verification
 
 No frontend test suite exists in this project — verified manually: `pnpm dev`, open
 `/reports`, confirm the default (current month) report loads with correct totals, change the
 period and a couple of filters and regenerate, confirm a `TRANSFER` transaction shows in the
-table but doesn't affect `totalIncome`/`totalExpense`/`balance`.
+table but doesn't affect `totalIncome`/`totalExpense`/`balance`. Filter a period covering future
+pending invoices/bill instances and confirm `projectedBalance` matches
+`currentBalance - pendingCreditCardTotal - pendingBillTotal`, and that both pending lists list
+the right rows.

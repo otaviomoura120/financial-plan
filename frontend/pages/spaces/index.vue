@@ -43,11 +43,11 @@ watch(search, () => {
   page.value = 1
 })
 
-watch(()=>spaceStore.dbUser,
+watch(() => spaceStore.dbUser,
   async () => {
-  console.log('active space changed')
-  await fetchSpaces()
-}, { immediate: true }
+    console.log('active space changed')
+    await fetchSpaces()
+  }, { immediate: true },
 )
 
 async function fetchSpaces() {
@@ -149,7 +149,10 @@ function formatDate(iso: string) {
   <div>
     <VCard>
       <VCardText class="d-flex align-center flex-wrap gap-4">
-        <h5 class="text-h5 text-truncate" style="min-inline-size: 0">
+        <h5
+          class="text-h5 text-truncate"
+          style="min-inline-size: 0"
+        >
           Espaços
         </h5>
 
@@ -221,109 +224,119 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <div v-else style="overflow-x: auto">
+      <div
+        v-else
+        style="overflow-x: auto"
+      >
         <VTable>
-        <thead style="white-space: nowrap">
-          <tr>
-            <th style="min-width: 300px">Nome</th>
-            <th style="min-width: 200px">Descrição</th>
-            <th>Sua role</th>
-            <th>Criado em</th>
-            <th class="text-center">
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="space in paginatedSpaces"
-            :key="space.id"
-          >
-            <td>
-              <div class="d-flex align-center gap-2">
-                <span class="font-weight-medium">{{ space.name }}</span>
+          <thead style="white-space: nowrap">
+            <tr>
+              <th style="min-width: 300px">
+                Nome
+              </th>
+              <th style="min-width: 200px">
+                Descrição
+              </th>
+              <th>Sua role</th>
+              <th>Criado em</th>
+              <th class="text-center">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="space in paginatedSpaces"
+              :key="space.id"
+            >
+              <td>
+                <div class="d-flex align-center gap-2">
+                  <span class="font-weight-medium">{{ space.name }}</span>
+                  <VChip
+                    v-if="spaceStore.activeSpace?.id === space.id"
+                    color="success"
+                    size="x-small"
+                    variant="tonal"
+                  >
+                    Ativo
+                  </VChip>
+                </div>
+              </td>
+              <td class="text-disabled">
+                {{ space.description ?? '—' }}
+              </td>
+              <td>
                 <VChip
-                  v-if="spaceStore.activeSpace?.id === space.id"
-                  color="success"
-                  size="x-small"
+                  v-if="space.currentUserRoleName"
+                  :color="space.currentUserRoleName === 'OWNER' ? 'warning' : 'primary'"
+                  size="small"
                   variant="tonal"
                 >
-                  Ativo
+                  {{ space.currentUserRoleName }}
                 </VChip>
-              </div>
-            </td>
-            <td class="text-disabled">
-              {{ space.description ?? '—' }}
-            </td>
-            <td>
-              <VChip
-                v-if="space.currentUserRoleName"
-                :color="space.currentUserRoleName === 'OWNER' ? 'warning' : 'primary'"
-                size="small"
-                variant="tonal"
+                <span
+                  v-else
+                  class="text-disabled"
+                >—</span>
+              </td>
+              <td>{{ formatDate(space.createdDate) }}</td>
+              <td
+                class="text-center"
+                style="white-space: nowrap"
               >
-                {{ space.currentUserRoleName }}
-              </VChip>
-              <span
-                v-else
-                class="text-disabled"
-              >—</span>
-            </td>
-            <td>{{ formatDate(space.createdDate) }}</td>
-            <td class="text-center" style="white-space: nowrap">
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                :disabled="spaceStore.activeSpace?.id === space.id"
-                @click="setActive(space)"
-              >
-                <VIcon icon="tabler-circle-check" />
-                <VTooltip activator="parent">
-                  {{ spaceStore.activeSpace?.id === space.id ? 'Espaço já ativo' : 'Definir como ativo' }}
-                </VTooltip>
-              </VBtn>
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  :disabled="spaceStore.activeSpace?.id === space.id"
+                  @click="setActive(space)"
+                >
+                  <VIcon icon="tabler-circle-check" />
+                  <VTooltip activator="parent">
+                    {{ spaceStore.activeSpace?.id === space.id ? 'Espaço já ativo' : 'Definir como ativo' }}
+                  </VTooltip>
+                </VBtn>
 
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                :disabled="space.currentUserRoleName !== 'OWNER'"
-                @click="openEdit(space)"
-              >
-                <VIcon icon="tabler-pencil" />
-                <VTooltip activator="parent">
-                  {{ space.currentUserRoleName !== 'OWNER' ? 'Apenas o OWNER pode editar' : 'Editar espaço' }}
-                </VTooltip>
-              </VBtn>
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  :disabled="space.currentUserRoleName !== 'OWNER'"
+                  @click="openEdit(space)"
+                >
+                  <VIcon icon="tabler-pencil" />
+                  <VTooltip activator="parent">
+                    {{ space.currentUserRoleName !== 'OWNER' ? 'Apenas o OWNER pode editar' : 'Editar espaço' }}
+                  </VTooltip>
+                </VBtn>
 
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                :disabled="space.currentUserRoleName !== 'OWNER'"
-                @click="openDelete(space)"
-              >
-                <VIcon icon="tabler-trash" />
-                <VTooltip activator="parent">
-                  {{ space.currentUserRoleName !== 'OWNER' ? 'Apenas o OWNER pode excluir' : 'Excluir espaço' }}
-                </VTooltip>
-              </VBtn>
-            </td>
-          </tr>
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="error"
+                  :disabled="space.currentUserRoleName !== 'OWNER'"
+                  @click="openDelete(space)"
+                >
+                  <VIcon icon="tabler-trash" />
+                  <VTooltip activator="parent">
+                    {{ space.currentUserRoleName !== 'OWNER' ? 'Apenas o OWNER pode excluir' : 'Excluir espaço' }}
+                  </VTooltip>
+                </VBtn>
+              </td>
+            </tr>
 
-          <tr v-if="!isLoading && filteredSpaces.length === 0">
-            <td
-              colspan="5"
-              class="text-center text-disabled py-8"
-            >
-              {{ search ? 'Nenhum espaço encontrado para a busca.' : 'Nenhum espaço cadastrado.' }}
-            </td>
-          </tr>
-        </tbody>
+            <tr v-if="!isLoading && filteredSpaces.length === 0">
+              <td
+                colspan="5"
+                class="text-center text-disabled py-8"
+              >
+                {{ search ? 'Nenhum espaço encontrado para a busca.' : 'Nenhum espaço cadastrado.' }}
+              </td>
+            </tr>
+          </tbody>
         </VTable>
       </div>
 

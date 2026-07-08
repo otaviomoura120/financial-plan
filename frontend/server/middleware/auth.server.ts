@@ -1,6 +1,6 @@
 const PUBLIC_PATHS = ['/auth/', '/login']
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async event => {
   const url = getRequestURL(event)
 
   if (PUBLIC_PATHS.some(p => url.pathname.startsWith(p)))

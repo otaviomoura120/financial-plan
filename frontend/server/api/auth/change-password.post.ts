@@ -1,9 +1,8 @@
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async event => {
   const session = await useAuth0(event).getSession()
 
-  if (!session?.user?.email) {
+  if (!session?.user?.email)
     throw createError({ statusCode: 401, message: 'Não autenticado' })
-  }
 
   const config = useRuntimeConfig()
 
