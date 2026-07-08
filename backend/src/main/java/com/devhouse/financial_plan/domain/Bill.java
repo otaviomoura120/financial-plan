@@ -1,0 +1,100 @@
+package com.devhouse.financial_plan.domain;
+
+import com.devhouse.financial_plan.domain.exception.DomainException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Objects;
+
+public class Bill {
+
+    private Long id;
+    private Integer version;
+    private Space space;
+    private String name;
+    private Category category;
+    private BigDecimal defaultAmount;
+    private LocalDate startDate;
+    private boolean recurring;
+    private boolean active;
+    private final Instant createdDate;
+    private Instant updatedDate;
+
+    public Bill(Long id, Integer version, Space space, String name, Category category, BigDecimal defaultAmount,
+                LocalDate startDate, boolean recurring, boolean active, Instant createdDate, Instant updatedDate) {
+        this.id = id;
+        this.version = version;
+        this.space = space;
+        this.name = name;
+        this.category = category;
+        this.defaultAmount = defaultAmount;
+        this.startDate = startDate;
+        this.recurring = recurring;
+        this.active = active;
+        this.createdDate = createdDate;
+        this.updatedDate = updatedDate;
+    }
+
+    public void validate() {
+        if (name == null || name.isBlank()) {
+            throw new DomainException("Bill name cannot be empty");
+        }
+        if (space == null) {
+            throw new DomainException("Bill must be associated with a space");
+        }
+        if (defaultAmount == null || defaultAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new DomainException("Bill default amount must be positive");
+        }
+        if (startDate == null) {
+            throw new DomainException("Bill start date is required");
+        }
+    }
+
+    public void update(String name, Category category, BigDecimal defaultAmount) {
+        this.name = name;
+        this.category = category;
+        this.defaultAmount = defaultAmount;
+        this.updatedDate = Instant.now();
+    }
+
+    public void updateSchedule(boolean recurring, LocalDate startDate) {
+        this.recurring = recurring;
+        this.startDate = startDate;
+        this.updatedDate = Instant.now();
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) {
+        if (!Objects.equals(version, this.version)) {
+            throw new ObjectOptimisticLockingFailureException("Error optimistic locking bill", new Exception());
+        }
+        this.version = version;
+    }
+
+    public Space getSpace() { return space; }
+    public void setSpace(Space space) { this.space = space; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public Category getCategory() { return category; }
+    public void setCategory(Category category) { this.category = category; }
+    public BigDecimal getDefaultAmount() { return defaultAmount; }
+    public void setDefaultAmount(BigDecimal defaultAmount) { this.defaultAmount = defaultAmount; }
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public boolean isRecurring() { return recurring; }
+    public void setRecurring(boolean recurring) { this.recurring = recurring; }
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
+    public Instant getCreatedDate() { return createdDate; }
+    public Instant getUpdatedDate() { return updatedDate; }
+    public void setUpdatedDate(Instant updatedDate) { this.updatedDate = updatedDate; }
+}

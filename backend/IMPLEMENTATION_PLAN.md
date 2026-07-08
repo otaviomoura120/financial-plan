@@ -521,7 +521,7 @@ Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento —
 
 ### [Grupo AP1] Domínio e persistência: Bill
 
-- [ ] **AP1 — Bill: domain + persistência**
+- [x] **AP1 — Bill: domain + persistência**
 Criar `domain/Bill.java`, `domain/repository/BillRepository.java`, JPA entity, `JpaBillRepository`, `BillRepositoryImpl` (tenancy direta).
 *Depende de:* nenhuma.
 **Testes (obrigatório):** `BillSpec.groovy` (validate, update, updateSchedule).
@@ -530,7 +530,7 @@ Criar `domain/Bill.java`, `domain/repository/BillRepository.java`, JPA entity, `
 
 ### [Grupo AP2] Domínio e persistência: BillInstance
 
-- [ ] **AP2 — BillInstance: domain + persistência (isolamento por Space desde o início)**
+- [x] **AP2 — BillInstance: domain + persistência (isolamento por Space desde o início)**
 Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domain/repository/BillInstanceRepository.java` (`save/update/findById/findByBillIdAndReferenceMonth/findByBillId/findBySpaceAndPeriod`), JPA entity (índice único), `JpaBillInstanceRepository`, `BillInstanceRepositoryImpl` com filtro por `spaceId` via subquery já embutido.
 *Depende de:* AP1.
 **Testes (obrigatório):** `BillInstanceSpec.groovy` (validate, updateAmount bloqueado se PAID, markAsPaid bloqueado se já PAID, revertToPending).
@@ -539,7 +539,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo AP3] CRUD de Bill (básico + agenda) + instância automática avulsa + controller
 
-- [ ] **AP3 — Bill: services CRUD completos + auto-criação de instância única (não-recorrente) + controller**
+- [x] **AP3 — Bill: services CRUD completos + auto-criação de instância única (não-recorrente) + controller**
 `CreateBillService` (se `recurring=false`, cria imediatamente 1 `BillInstance` PENDING com `dueDate=startDate`, na mesma transação), `UpdateBillService` (nome/categoria/defaultAmount), `UpdateBillScheduleService` (recurring/startDate — dedicado, só afeta futuro), `DeactivateBillService`, `ListBillsService` + controller `/bills` com `@PreAuthorize`.
 *Depende de:* AP1, AP2.
 **Testes (obrigatório):** uma spec por service, incluindo "Bill não-recorrente já nasce com 1 instância" e "updateSchedule não altera instâncias já geradas".
@@ -548,7 +548,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo AP4] Geração preguiçosa + listagem "contas do mês"
 
-- [ ] **AP4 — EnsureBillInstancesGeneratedService + ListBillInstancesService**
+- [x] **AP4 — EnsureBillInstancesGeneratedService + ListBillInstancesService**
 `EnsureBillInstancesGeneratedService(spaceId, upToDate)`: gera `BillInstance` PENDING faltantes por `Bill` ativo+recorrente, do último mês existente até `min(mês de upToDate, mês atual+1)`, idempotente. `ListBillInstancesService(spaceId, from, to)`: chama o ensure-service, depois `findBySpaceAndPeriod`. Controller: `GET /bills/instances?spaceId=&from=&to=`.
 *Depende de:* AP2, AP3.
 **Testes (obrigatório):** `EnsureBillInstancesGeneratedServiceSpec.groovy` (gera só o que falta, respeita o cap, idempotente), `ListBillInstancesServiceSpec.groovy`.
@@ -557,7 +557,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo AP5] Pagamento + edição de valor
 
-- [ ] **AP5 — PayBillInstanceService + UpdateBillInstanceAmountService**
+- [x] **AP5 — PayBillInstanceService + UpdateBillInstanceAmountService**
 `UpdateBillInstanceAmountService(id, newAmount)` (bloqueia se PAID). `PayBillInstanceService.execute(id, {bankAccountId, paymentMethodId, categoryId?, paidDate})`: resolve categoria (request → `Bill.categoryId` → erro), chama `CreateTransactionService` (`type=EXPENSE`, `sourceType=BILL_INSTANCE_PAYMENT`), `billInstance.markAsPaid(...)`. `@Transactional`. Controller: `PUT /bills/instances/{id}/amount`, `POST /bills/instances/{id}/pay`.
 *Depende de:* AP2, AP4, P1, core T5/T6.
 **Testes (obrigatório):** `PayBillInstanceServiceSpec.groovy` (sucesso, já paga, sem categoria resolvível), `UpdateBillInstanceAmountServiceSpec.groovy`.
@@ -566,7 +566,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo AP6] Desfazer pagamento de conta (ação dedicada)
 
-- [ ] **AP6 — UndoBillInstancePaymentService + controller**
+- [x] **AP6 — UndoBillInstancePaymentService + controller**
 `UndoBillInstancePaymentService(billInstanceId)`: busca `BillInstance` (valida `status==PAID`, senão `DomainException`), busca a `Transaction` via `paymentTransactionId`, `TransactionBalanceEffectService.revert(transaction)` + `TransactionRepository.delete(...)` diretamente, `billInstance.revertToPending()` + `update()`. `@Transactional`. Controller: `POST /bills/instances/{id}/undo-payment`, `@PreAuthorize`.
 *Depende de:* AP5, P1.
 **Testes (obrigatório):** `UndoBillInstancePaymentServiceSpec.groovy` (sucesso, instância não paga rejeitada).

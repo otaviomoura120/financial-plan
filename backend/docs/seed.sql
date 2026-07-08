@@ -99,7 +99,18 @@ VALUES
 -- CreditCardInvoiceController — /credit-cards/invoices, /credit-cards/{id}/invoices/{referenceMonth}
 (1, '/credit-cards/invoices',                                                        'Cartões de Crédito', 71, 'API', 'GET',  'Conta', NOW(), NOW()),
 (1, '/credit-cards/[0-9]+/invoices/[0-9]{4}-[0-9]{2}-[0-9]{2}/pay',                   'Cartões de Crédito', 72, 'API', 'POST', 'Conta', NOW(), NOW()),
-(1, '/credit-cards/[0-9]+/invoices/[0-9]{4}-[0-9]{2}-[0-9]{2}/undo-payment',          'Cartões de Crédito', 73, 'API', 'POST', 'Conta', NOW(), NOW());
+(1, '/credit-cards/[0-9]+/invoices/[0-9]{4}-[0-9]{2}-[0-9]{2}/undo-payment',          'Cartões de Crédito', 73, 'API', 'POST', 'Conta', NOW(), NOW()),
+
+-- BillController — /bills
+(1, '/bills',                                 'Contas a Pagar',             74, 'API', 'GET,POST',   'Conta', NOW(), NOW()),
+(1, '/bills/[0-9]+',                          'Contas a Pagar',             75, 'API', 'PUT,DELETE', 'Conta', NOW(), NOW()),
+(1, '/bills/[0-9]+/schedule',                 'Contas a Pagar',             76, 'API', 'PUT',        'Conta', NOW(), NOW()),
+
+-- BillInstanceController — /bills/instances
+(1, '/bills/instances',                       'Contas a Pagar',             77, 'API', 'GET',        'Conta', NOW(), NOW()),
+(1, '/bills/instances/[0-9]+/amount',         'Contas a Pagar',             78, 'API', 'PUT',        'Conta', NOW(), NOW()),
+(1, '/bills/instances/[0-9]+/pay',            'Contas a Pagar',             79, 'API', 'POST',       'Conta', NOW(), NOW()),
+(1, '/bills/instances/[0-9]+/undo-payment',   'Contas a Pagar',             80, 'API', 'POST',       'Conta', NOW(), NOW());
 
 
 -- =============================================================================
@@ -125,7 +136,8 @@ VALUES
 (1, '/roles',               'Funções',               9,  'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
 (1, '/endpoint-permissions','Permissões de Acesso',  10, 'FRONT_PAGE', 'GET', 'internal_management',NOW(), NOW()),
 (1, '/group-menus',         'Estrutura de Menu',     11, 'FRONT_PAGE', 'GET', 'internal_management',NOW(), NOW()),
-(1, '/credit-cards',        'Cartões de Crédito',    12, 'FRONT_PAGE', 'GET', 'Conta',        NOW(), NOW());
+(1, '/credit-cards',        'Cartões de Crédito',    12, 'FRONT_PAGE', 'GET', 'Conta',        NOW(), NOW()),
+(1, '/bills',                'Contas a Pagar',       13, 'FRONT_PAGE', 'GET', 'Conta',        NOW(), NOW());
 
 
 -- =============================================================================
@@ -165,6 +177,8 @@ UNION ALL
 SELECT 'Formas de Pagamento', '/payment-methods',     'tabler-wallet',           id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
 UNION ALL
 SELECT 'Cartões de Crédito',  '/credit-cards',        'tabler-credit-card',     id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
+UNION ALL
+SELECT 'Contas a Pagar',      '/bills',               'tabler-calendar-due',    id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
 
 UNION ALL
 
@@ -206,7 +220,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name IN ('Página Inicial', 'Listar Funções', 'Transações', 'Relatórios',
-                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito',
+                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
                    'Listar Espaços do Usuário', 'Listar Membros do Espaço', 'Listar Convites do Espaço')
 WHERE r.name = 'ADMIN';
 
@@ -215,7 +229,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'DENY', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name NOT IN ('Página Inicial', 'Listar Funções', 'Transações', 'Relatórios',
-                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito',
+                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
                        'Listar Espaços do Usuário', 'Listar Membros do Espaço', 'Listar Convites do Espaço')
 WHERE r.name = 'ADMIN';
 
@@ -224,7 +238,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name IN ('Página Inicial', 'Transações', 'Relatórios',
-                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito',
+                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
                    'Listar Espaços do Usuário', 'Listar Membros do Espaço')
 WHERE r.name = 'MEMBER';
 
@@ -233,7 +247,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'DENY', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name NOT IN ('Página Inicial', 'Transações', 'Relatórios',
-                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito',
+                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
                        'Listar Espaços do Usuário', 'Listar Membros do Espaço')
 WHERE r.name = 'MEMBER';
 
@@ -594,6 +608,122 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r
 JOIN endpoint_permissions ep ON ep.name = 'Cartões de Crédito'
+WHERE r.name = 'MEMBER'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- =============================================================================
+-- 11. INCREMENTAL — Bill/BillInstance module (Grupos AP1-AP6)
+--    Mesmo raciocínio das seções 7/8/9/10. Reaproveita um único name 'Contas a Pagar'
+--    em todos os 7 novos endpoints (BillController + BillInstanceController) — em um
+--    banco novo já herda ALLOW sozinho via a seção 5 (já inclui 'Contas a Pagar' nas
+--    listas ADMIN/MEMBER); esta seção só é necessária para quem já rodou a seção 5
+--    antes deste módulo existir. Idempotente via WHERE NOT EXISTS.
+-- =============================================================================
+
+-- 11.1 — endpoint_permissions (API) que ainda não existirem
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bills' AS endpoint, 'Contas a Pagar' AS name,
+           74 AS sequence, 'API' AS type, 'GET,POST' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bills' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bills/[0-9]+' AS endpoint, 'Contas a Pagar' AS name,
+           75 AS sequence, 'API' AS type, 'PUT,DELETE' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bills/[0-9]+' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bills/[0-9]+/schedule' AS endpoint, 'Contas a Pagar' AS name,
+           76 AS sequence, 'API' AS type, 'PUT' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bills/[0-9]+/schedule' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bills/instances' AS endpoint, 'Contas a Pagar' AS name,
+           77 AS sequence, 'API' AS type, 'GET' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bills/instances' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bills/instances/[0-9]+/amount' AS endpoint, 'Contas a Pagar' AS name,
+           78 AS sequence, 'API' AS type, 'PUT' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bills/instances/[0-9]+/amount' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bills/instances/[0-9]+/pay' AS endpoint, 'Contas a Pagar' AS name,
+           79 AS sequence, 'API' AS type, 'POST' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bills/instances/[0-9]+/pay' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bills/instances/[0-9]+/undo-payment' AS endpoint, 'Contas a Pagar' AS name,
+           80 AS sequence, 'API' AS type, 'POST' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bills/instances/[0-9]+/undo-payment' AND type = 'API');
+
+-- 11.2 — endpoint_permissions (FRONT_PAGE) se ainda não existir
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bills' AS endpoint, 'Contas a Pagar' AS name,
+           13 AS sequence, 'FRONT_PAGE' AS type, 'GET' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bills' AND type = 'FRONT_PAGE');
+
+-- 11.3 — group_menu_children: item na sidebar sob 'Contas e Pagamentos', se ainda não existir
+INSERT INTO group_menu_children (name, endpoint, icon, group_menu_id, created_at, updated_at)
+SELECT 'Contas a Pagar', '/bills', 'tabler-calendar-due', gm.id, NOW(), NOW()
+FROM group_menus gm
+WHERE gm.name = 'Contas e Pagamentos'
+  AND NOT EXISTS (SELECT 1 FROM group_menu_children gmc WHERE gmc.endpoint = '/bills');
+
+-- 11.4 — role_endpoint_permissions: OWNER ganha ALLOW em 'Contas a Pagar' (cobre as 7 linhas novas)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'OWNER'
+  AND ep.name = 'Contas a Pagar'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 11.5 — role_endpoint_permissions: ADMIN ganha ALLOW em 'Contas a Pagar'
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep ON ep.name = 'Contas a Pagar'
+WHERE r.name = 'ADMIN'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 11.6 — role_endpoint_permissions: MEMBER ganha ALLOW em 'Contas a Pagar'
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep ON ep.name = 'Contas a Pagar'
 WHERE r.name = 'MEMBER'
   AND NOT EXISTS (
       SELECT 1 FROM role_endpoint_permissions rep
