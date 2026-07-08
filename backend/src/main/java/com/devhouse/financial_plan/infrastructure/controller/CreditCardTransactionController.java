@@ -1,10 +1,12 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.application.creditcardtransaction.AnticipateCreditCardInstallmentsService;
 import com.devhouse.financial_plan.application.creditcardtransaction.CreateCreditCardTransactionService;
 import com.devhouse.financial_plan.application.creditcardtransaction.DeleteCreditCardTransactionService;
 import com.devhouse.financial_plan.application.creditcardtransaction.ListCreditCardTransactionsService;
 import com.devhouse.financial_plan.application.creditcardtransaction.ListInstallmentGroupService;
 import com.devhouse.financial_plan.application.creditcardtransaction.UpdateCreditCardTransactionService;
+import com.devhouse.financial_plan.application.creditcardtransaction.dto.AnticipateCreditCardInstallmentsRequest;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreateCreditCardTransactionRequest;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.UpdateCreditCardTransactionRequest;
@@ -26,17 +28,20 @@ public class CreditCardTransactionController {
     private final DeleteCreditCardTransactionService deleteCreditCardTransactionService;
     private final ListCreditCardTransactionsService listCreditCardTransactionsService;
     private final ListInstallmentGroupService listInstallmentGroupService;
+    private final AnticipateCreditCardInstallmentsService anticipateCreditCardInstallmentsService;
 
     public CreditCardTransactionController(CreateCreditCardTransactionService createCreditCardTransactionService,
                                             UpdateCreditCardTransactionService updateCreditCardTransactionService,
                                             DeleteCreditCardTransactionService deleteCreditCardTransactionService,
                                             ListCreditCardTransactionsService listCreditCardTransactionsService,
-                                            ListInstallmentGroupService listInstallmentGroupService) {
+                                            ListInstallmentGroupService listInstallmentGroupService,
+                                            AnticipateCreditCardInstallmentsService anticipateCreditCardInstallmentsService) {
         this.createCreditCardTransactionService = createCreditCardTransactionService;
         this.updateCreditCardTransactionService = updateCreditCardTransactionService;
         this.deleteCreditCardTransactionService = deleteCreditCardTransactionService;
         this.listCreditCardTransactionsService = listCreditCardTransactionsService;
         this.listInstallmentGroupService = listInstallmentGroupService;
+        this.anticipateCreditCardInstallmentsService = anticipateCreditCardInstallmentsService;
     }
 
     @GetMapping
@@ -56,6 +61,14 @@ public class CreditCardTransactionController {
     public List<CreditCardTransactionResponse> listInstallmentGroup(@PathVariable String installmentGroupId,
                                                                       Authentication authentication, HttpServletRequest request) {
         return listInstallmentGroupService.execute(installmentGroupId);
+    }
+
+    @PostMapping("/installment-groups/{installmentGroupId}/anticipate")
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public List<CreditCardTransactionResponse> anticipate(@PathVariable String installmentGroupId,
+                                                            @RequestBody AnticipateCreditCardInstallmentsRequest body,
+                                                            Authentication authentication, HttpServletRequest request) {
+        return anticipateCreditCardInstallmentsService.execute(installmentGroupId, body.targetReferenceMonth(), body.installmentsToAnticipate());
     }
 
     @PostMapping
