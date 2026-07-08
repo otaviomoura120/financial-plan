@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 @Transactional
@@ -47,6 +48,13 @@ public class CreditCardInvoicePaymentRepositoryImpl implements CreditCardInvoice
         return jpaCreditCardInvoicePaymentRepository.findByCreditCard_IdAndReferenceMonth(creditCardId, referenceMonth)
                 .map(this::toDomain)
                 .orElse(null);
+    }
+
+    @Override
+    public List<CreditCardInvoicePayment> findByPaymentTransactionIdIn(List<Long> transactionIds) {
+        return jpaCreditCardInvoicePaymentRepository.findByPaymentTransactionIdIn(transactionIds).stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     @Override

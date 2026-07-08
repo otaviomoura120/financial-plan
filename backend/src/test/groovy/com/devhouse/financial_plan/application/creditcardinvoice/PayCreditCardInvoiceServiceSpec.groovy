@@ -58,7 +58,8 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
         creditCardTransactionRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >>
                 [buildTransaction(new BigDecimal("100.00")), buildTransaction(new BigDecimal("50.00"))]
         TransactionResponse transactionResponse = new TransactionResponse(99L, 0, TransactionType.EXPENSE, 1L, 2L, null,
-                30L, null, 40L, new BigDecimal("150.00"), LocalDate.of(2026, 4, 5), "Pagamento de fatura - Nubank", Instant.now())
+                30L, null, 40L, new BigDecimal("150.00"), LocalDate.of(2026, 4, 5), "Pagamento de fatura - Nubank", Instant.now(),
+                null, null, null)
         CreateTransactionRequest capturedRequest = null
         createTransactionService.execute(_, TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 10L) >> { CreateTransactionRequest req, srcType, srcId ->
             capturedRequest = req

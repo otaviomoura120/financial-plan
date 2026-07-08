@@ -49,7 +49,8 @@ class PayBillInstanceServiceSpec extends Specification {
         billRepository.findById(1L) >> buildInstance(category, BillInstanceStatus.PENDING, subCategory)
         userRepository.findByAuth0Sub("auth0|1") >> buildUser()
         TransactionResponse transactionResponse = new TransactionResponse(99L, 0, TransactionType.EXPENSE, 1L, 2L, null,
-                20L, 30L, 40L, new BigDecimal("150.00"), LocalDate.of(2026, 3, 9), "Pagamento de conta - Energy Bill", Instant.now())
+                20L, 30L, 40L, new BigDecimal("150.00"), LocalDate.of(2026, 3, 9), "Pagamento de conta - Energy Bill", Instant.now(),
+                null, null, null)
         CreateTransactionRequest capturedRequest = null
         createTransactionService.execute(_, TransactionSourceType.BILL_INSTANCE_PAYMENT, 1L) >> { CreateTransactionRequest req, srcType, srcId ->
             capturedRequest = req

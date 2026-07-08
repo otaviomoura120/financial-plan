@@ -124,6 +124,6 @@ public class CreateTransactionService {
                 t.getCategory() != null ? t.getCategory().getId() : null,
                 t.getSubCategory() != null ? t.getSubCategory().getId() : null,
                 t.getPaymentMethod() != null ? t.getPaymentMethod().getId() : null, t.getAmount(),
-                t.getTransactionDate(), t.getDescription(), t.getCreatedDate());
+                t.getTransactionDate(), t.getDescription(), t.getCreatedDate(), t.getSourceType(), t.getSourceId(), null);
     }
 }

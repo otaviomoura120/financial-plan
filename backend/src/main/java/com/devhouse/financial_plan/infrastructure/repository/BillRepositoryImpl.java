@@ -85,13 +85,18 @@ public class BillRepositoryImpl implements BillRepository {
 
     @Override
     public List<Bill> findBySpaceAndPeriod(Long spaceId, LocalDate from, LocalDate to) {
-        Specification<BillEntityJpa> specification = buildSpecification(spaceId, from, to);
+        return findBySpaceAndPeriod(spaceId, from, to, null, null);
+    }
+
+    @Override
+    public List<Bill> findBySpaceAndPeriod(Long spaceId, LocalDate from, LocalDate to, Long categoryId, Long subCategoryId) {
+        Specification<BillEntityJpa> specification = buildSpecification(spaceId, from, to, categoryId, subCategoryId);
         return jpaBillRepository.findAll(specification).stream()
                 .map(this::toDomain)
                 .toList();
     }
 
-    private Specification<BillEntityJpa> buildSpecification(Long spaceId, LocalDate from, LocalDate to) {
+    private Specification<BillEntityJpa> buildSpecification(Long spaceId, LocalDate from, LocalDate to, Long categoryId, Long subCategoryId) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(criteriaBuilder.equal(root.get("space").get("id"), spaceId));
@@ -101,6 +106,12 @@ public class BillRepositoryImpl implements BillRepository {
             }
             if (to != null) {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("dueDate"), to));
+            }
+            if (categoryId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("category").get("id"), categoryId));
+            }
+            if (subCategoryId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("subCategory").get("id"), subCategoryId));
             }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
