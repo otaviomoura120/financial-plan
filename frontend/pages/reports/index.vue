@@ -230,10 +230,6 @@ function isReconciledByFilter(transaction: TransactionResponse) {
     && !matchesCategoryFilter(transaction.categoryId, transaction.subCategoryId)
 }
 
-function isItemMatchedByFilter(item: CreditCardTransactionResponse) {
-  return hasActiveCategoryFilter() && matchesCategoryFilter(item.categoryId, item.subCategoryId)
-}
-
 async function fetchInvoiceItems(transaction: TransactionResponse) {
   if (!spaceStore.activeSpace || !transaction.sourceId || !transaction.creditCardInvoiceReferenceMonth)
     return
@@ -249,6 +245,8 @@ async function fetchInvoiceItems(transaction: TransactionResponse) {
         spaceId: spaceStore.activeSpace.id,
         creditCardId: transaction.sourceId,
         referenceMonth: transaction.creditCardInvoiceReferenceMonth,
+        categoryId: categoryId.value,
+        subCategoryId: subCategoryId.value,
       },
     })
 
@@ -842,15 +840,6 @@ function formatReferenceMonth(isoDate: string) {
                               >
                                 / {{ subCategoryName(item.subCategoryId) }}
                               </span>
-                              <VChip
-                                v-if="isItemMatchedByFilter(item)"
-                                size="x-small"
-                                variant="tonal"
-                                color="warning"
-                                class="ms-1"
-                              >
-                                Filtro
-                              </VChip>
                             </td>
                             <td class="text-disabled">
                               {{ item.description || '—' }}
@@ -882,7 +871,9 @@ function formatReferenceMonth(isoDate: string) {
                               colspan="5"
                               class="text-center text-disabled py-4"
                             >
-                              Nenhum lançamento encontrado nesta fatura.
+                              {{ hasActiveCategoryFilter()
+                                ? 'Nenhum item desta fatura corresponde ao filtro selecionado.'
+                                : 'Nenhum lançamento encontrado nesta fatura.' }}
                             </td>
                           </tr>
                         </tbody>
