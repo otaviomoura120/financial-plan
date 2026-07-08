@@ -720,7 +720,7 @@ function formatReferenceMonth(isoDate: string) {
                 </th>
                 <th>Forma de Pagamento</th>
                 <th>Descrição</th>
-                <th class="text-right">
+                <th class="text-right" style="min-width: 120px">
                   Valor
                 </th>
               </tr>

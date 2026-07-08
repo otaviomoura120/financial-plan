@@ -395,6 +395,33 @@ class GenerateReportServiceSpec extends Specification {
         response.transactions()[0].sourceType() == TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT
         response.transactions()[0].sourceId() == 5L
         response.transactions()[0].creditCardInvoiceReferenceMonth() == referenceMonth
+        // amount shown (and summed into totals) is the filtered items' subtotal (120.00), not the full invoice payment (450.00)
+        response.transactions()[0].amount() == new BigDecimal("120.00")
+        response.totalExpense() == new BigDecimal("120.00")
+    }
+
+    def "execute sums only the matching items' amounts when a reconciled invoice has more than one item"() {
+        given:
+        LocalDate referenceMonth = LocalDate.of(2026, 3, 1)
+        Transaction paymentTransaction = buildInvoicePaymentTransaction(99L, 5L, new BigDecimal("450.00"), LocalDate.of(2026, 3, 15))
+        transactionRepository.findByFilter(*_) >> []
+        transactionRepository.findById(99L) >> paymentTransaction
+        bankAccountRepository.findBySpaceId(_) >> []
+        listCreditCardInvoicesService.execute(*_) >> []
+        billRepository.findBySpaceAndPeriod(*_) >> []
+        creditCardTransactionRepository.findByFilter(1L, null, 7L, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31), null) >>
+                [buildCreditCardItem(5L, referenceMonth, 7L, new BigDecimal("120.00")),
+                 buildCreditCardItem(5L, referenceMonth, 7L, new BigDecimal("30.00"))]
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(5L, referenceMonth) >> buildInvoicePayment(5L, referenceMonth, 99L)
+        creditCardInvoicePaymentRepository.findByPaymentTransactionIdIn([99L]) >> [buildInvoicePayment(5L, referenceMonth, 99L)]
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
+                null, null, 7L, null, null, null)
+
+        when:
+        ReportResponse response = service.execute(filter)
+
+        then:
+        response.transactions()[0].amount() == new BigDecimal("150.00")
     }
 
     def "execute does not reconcile invoice payments when no composing item matches the category filter"() {
@@ -436,6 +463,9 @@ class GenerateReportServiceSpec extends Specification {
         then:
         response.pendingCreditCardInvoices().size() == 1
         response.pendingCreditCardInvoices()[0].creditCardId() == 5L
+        // amount reflects only the matching items' subtotal (120.00), not the invoice's full total (450.00)
+        response.pendingCreditCardInvoices()[0].amount() == new BigDecimal("120.00")
+        response.pendingCreditCardTotal() == new BigDecimal("120.00")
     }
 
     def "execute passes category and subCategory filters through to the pending bill instances query"() {
