@@ -90,7 +90,7 @@ First entity of the new **credit card module** (in progress). Tenancy is direct,
 - `resolveReferenceMonth(purchaseDate, closingDay)` — first day of the invoice month a purchase falls into: the purchase's own month if made on or before that month's closing date, otherwise the next month
 - `resolveDueDate(referenceMonth, closingDay, dueDay)` — if `dueDay <= closingDay` the due date falls in the month **after** `referenceMonth` (the due date always trails the closing date by construction), otherwise within `referenceMonth` itself; always clamped to the resulting month's length
 
-No persistence or CRUD is exposed yet — `CreditCardRepository`/`CreditCardRepositoryImpl` only provide `save/update/findById/findBySpaceId/delete`, wired the same way as `BankAccountRepositoryImpl`. Services, controller, `@PreAuthorize` and `seed.sql` entries come next (see `IMPLEMENTATION_PLAN.md`, group CC2).
+CRUD is exposed via `CreditCardController` (`/credit-cards`, see REST API Reference below), protected by `@PreAuthorize` from the start — unlike the core module, this credit card controller never had the T10 authorization gap. `DELETE /credit-cards/{id}` maps to `DeactivateCreditCardService`, which soft-deletes (`active=false`, same as `BankAccount`/`PaymentMethod` before their DEL2/DEL3 hard-delete rework) rather than removing the row — no hard delete/`existsBy` FK-guard exists yet for this entity. `seed.sql` grants `'Cartões de Crédito'` `ALLOW` to OWNER/ADMIN/MEMBER and adds its sidebar entry under the existing `'Contas e Pagamentos'` group.
 
 ---
 
@@ -233,6 +233,14 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | PUT | `/{id}` | Rename payment method |
 | PATCH | `/{id}/status` | Activate/deactivate payment method (`{active: boolean}`) |
 | DELETE | `/{id}` | Delete payment method (hard delete; rejects with 422 if linked transactions exist) |
+
+### Credit Cards `/credit-cards`
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/?spaceId=` | List credit cards of a space |
+| POST | `/` | Create credit card (`name`, `limit`, `closingDay`, `dueDay`) |
+| PUT | `/{id}` | Update name/limit/closingDay/dueDay |
+| DELETE | `/{id}` | Deactivate credit card (soft delete — `active=false`, no hard delete yet) |
 
 ### Roles `/roles`
 | Method | Path | Purpose |

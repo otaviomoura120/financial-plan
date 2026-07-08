@@ -451,7 +451,7 @@ Criar `domain/CreditCard.java`, `domain/CreditCardInvoiceCycle.java` (calculador
 
 ### [Grupo CC2] CRUD de CreditCard + controller + seed
 
-- [ ] **CC2 — CreditCard: services CRUD + controller + `@PreAuthorize` desde o início**
+- [x] **CC2 — CreditCard: services CRUD + controller + `@PreAuthorize` desde o início**
 `CreateCreditCardService`, `UpdateCreditCardService`, `DeactivateCreditCardService`, `ListCreditCardsService` + DTOs + `CreditCardController` (`POST/PUT/DELETE/GET /credit-cards`) já com `@PreAuthorize` (não repetir o gap do T10 core).
 *Depende de:* CC1.
 **Testes (obrigatório):** uma spec por service.
