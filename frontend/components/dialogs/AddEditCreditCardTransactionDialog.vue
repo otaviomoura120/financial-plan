@@ -67,7 +67,7 @@ const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
-const amount = shallowRef<string>('')
+const amount = shallowRef<number | null>(null)
 const purchaseDate = shallowRef<string>('')
 const description = shallowRef('')
 const totalInstallments = shallowRef<string>('')
@@ -92,7 +92,7 @@ const subCategoryItems = computed(() =>
 )
 
 const categoryRules = [(v: number | null) => v !== null || 'Categoria é obrigatória']
-const amountRules = [(v: string) => (v !== '' && Number(v) > 0) || 'Valor deve ser maior que zero']
+const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
 const installmentsRules = [(v: string) => {
@@ -117,7 +117,7 @@ watch(
 
       categoryId.value = t?.categoryId ?? null
       subCategoryId.value = t?.subCategoryId ?? null
-      amount.value = t ? String(t.amount) : ''
+      amount.value = t?.amount ?? null
       purchaseDate.value = t?.purchaseDate ?? toLocalDateString(new Date())
       description.value = t?.description ?? ''
       totalInstallments.value = ''
@@ -145,7 +145,7 @@ async function onSubmit() {
           version: props.transaction!.version,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
-          amount: Number(amount.value),
+          amount: amount.value,
           purchaseDate: purchaseDate.value,
           description: description.value || undefined,
         },
@@ -159,7 +159,7 @@ async function onSubmit() {
           userId: spaceStore.dbUser!.id,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
-          amount: Number(amount.value),
+          amount: amount.value,
           purchaseDate: purchaseDate.value,
           description: description.value || undefined,
           totalInstallments: totalInstallments.value !== '' ? Number(totalInstallments.value) : undefined,
@@ -241,12 +241,10 @@ function onClose() {
               cols="12"
               md="6"
             >
-              <AppTextField
+              <AppCurrencyField
                 v-model="amount"
-                type="number"
-                step="0.01"
                 label="Valor"
-                placeholder="0.00"
+                placeholder="0,00"
                 :rules="amountRules"
               />
             </VCol>

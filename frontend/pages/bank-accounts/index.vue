@@ -14,8 +14,6 @@ const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-
 const bankAccounts = ref<BankAccountResponse[]>([])
 const search = shallowRef('')
 const page = shallowRef(1)
@@ -174,7 +172,7 @@ function toggleSearch() {
 }
 
 function formatBalance(balance: number) {
-  return currencyFormatter.format(balance)
+  return formatCurrency(balance)
 }
 </script>
 

@@ -54,7 +54,7 @@ const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 const name = shallowRef('')
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
-const amount = shallowRef<string>('')
+const amount = shallowRef<number | null>(null)
 const dueDate = shallowRef<string>('')
 const isLoading = shallowRef(false)
 
@@ -73,7 +73,7 @@ const subCategoryItems = computed(() =>
 )
 
 const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
-const amountRules = [(v: string) => (v !== '' && Number(v) > 0) || 'Valor deve ser maior que zero']
+const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
 watch(categoryId, () => {
@@ -88,7 +88,7 @@ watch(
       name.value = props.bill?.name ?? ''
       categoryId.value = props.bill?.categoryId ?? null
       subCategoryId.value = props.bill?.subCategoryId ?? null
-      amount.value = props.bill ? String(props.bill.amount) : ''
+      amount.value = props.bill?.amount ?? null
       dueDate.value = props.bill?.dueDate ?? ''
       clearError()
     }
@@ -112,7 +112,7 @@ async function onSubmit() {
         name: name.value,
         categoryId: categoryId.value,
         subCategoryId: subCategoryId.value,
-        amount: Number(amount.value),
+        amount: amount.value,
         dueDate: dueDate.value,
       },
     })
@@ -184,12 +184,10 @@ function onClose() {
               :disabled="!selectedCategory"
             />
 
-            <AppTextField
+            <AppCurrencyField
               v-model="amount"
-              type="number"
-              step="0.01"
               label="Valor"
-              placeholder="0.00"
+              placeholder="0,00"
               :rules="amountRules"
             />
 

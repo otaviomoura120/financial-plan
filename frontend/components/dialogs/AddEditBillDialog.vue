@@ -60,7 +60,7 @@ const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 const name = shallowRef('')
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
-const defaultAmount = shallowRef<string>('')
+const defaultAmount = shallowRef<number | null>(null)
 const startDate = shallowRef<string>('')
 const recurring = shallowRef(false)
 const isLoading = shallowRef(false)
@@ -82,7 +82,7 @@ const subCategoryItems = computed(() =>
 )
 
 const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
-const amountRules = [(v: string) => (v !== '' && Number(v) > 0) || 'Valor deve ser maior que zero']
+const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
 watch(categoryId, () => {
@@ -97,7 +97,7 @@ watch(
       name.value = props.bill?.name ?? ''
       categoryId.value = props.bill?.categoryId ?? null
       subCategoryId.value = props.bill?.subCategoryId ?? null
-      defaultAmount.value = props.bill ? String(props.bill.defaultAmount) : ''
+      defaultAmount.value = props.bill?.defaultAmount ?? null
       startDate.value = props.bill?.startDate ?? toLocalDateString(new Date())
       recurring.value = false
       clearError()
@@ -123,7 +123,7 @@ async function onSubmit() {
           name: name.value,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
-          defaultAmount: Number(defaultAmount.value),
+          defaultAmount: defaultAmount.value,
         },
       })
     }
@@ -135,7 +135,7 @@ async function onSubmit() {
           name: name.value,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
-          defaultAmount: Number(defaultAmount.value),
+          defaultAmount: defaultAmount.value,
           startDate: startDate.value,
         },
       })
@@ -148,7 +148,7 @@ async function onSubmit() {
           name: name.value,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
-          amount: Number(defaultAmount.value),
+          amount: defaultAmount.value,
           dueDate: startDate.value,
         },
       })
@@ -221,12 +221,10 @@ function onClose() {
               :disabled="!selectedCategory"
             />
 
-            <AppTextField
+            <AppCurrencyField
               v-model="defaultAmount"
-              type="number"
-              step="0.01"
               label="Valor padrão"
-              placeholder="0.00"
+              placeholder="0,00"
               :rules="amountRules"
             />
 

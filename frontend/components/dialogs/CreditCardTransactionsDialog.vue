@@ -316,9 +316,11 @@ function onClose() {
 
     <div>
       <VCard>
-        <VCardText class="pa-5 v-application" style="display: block;">
+        <VCardText
+          class="pa-5 v-application"
+          style="display: block;"
+        >
           <div>
-
             <VCard
               class="d-flex flex-column"
               style="block-size: 100%"
@@ -333,7 +335,10 @@ function onClose() {
 
                 <VSpacer />
 
-                <div class="d-flex flex-wrap align-center gap-2" style="flex-grow: 1; justify-content: flex-end;">
+                <div
+                  class="d-flex flex-wrap align-center gap-2"
+                  style="flex-grow: 1; justify-content: flex-end;"
+                >
                   <VTextField
                     v-model="from"
                     type="date"
@@ -363,9 +368,7 @@ function onClose() {
                   >
                     <span class="d-sm-inline">Adicionar</span>
                   </VBtn>
-
                 </div>
-
               </VCardText>
 
               <VDivider />
@@ -404,124 +407,124 @@ function onClose() {
                 >
                   <VTable>
                     <thead style="white-space: nowrap">
-                    <tr>
-                      <th>Data</th>
-                      <th style="min-width: 200px">
-                        Categoria
-                      </th>
-                      <th>Descrição</th>
-                      <th>Fatura</th>
-                      <th>Parcela</th>
-                      <th class="text-right">
-                        Valor
-                      </th>
-                      <th class="text-center">
-                        Ações
-                      </th>
-                    </tr>
+                      <tr>
+                        <th>Data</th>
+                        <th style="min-width: 200px">
+                          Categoria
+                        </th>
+                        <th>Descrição</th>
+                        <th>Fatura</th>
+                        <th>Parcela</th>
+                        <th class="text-right">
+                          Valor
+                        </th>
+                        <th class="text-center">
+                          Ações
+                        </th>
+                      </tr>
                     </thead>
                     <tbody>
-                    <tr
-                      v-for="transaction in paginatedTransactions"
-                      :key="transaction.id"
-                    >
-                      <td>{{ formatDate(transaction.purchaseDate) }}</td>
-                      <td>
-                        {{ categoryName(transaction.categoryId) }}
-                        <span
-                          v-if="subCategoryName(transaction.subCategoryId)"
-                          class="text-disabled"
-                        >
-                    / {{ subCategoryName(transaction.subCategoryId) }}
-                  </span>
-                      </td>
-                      <td class="text-disabled">
-                        {{ transaction.description || '—' }}
-                      </td>
-                      <td>{{ formatReferenceMonth(transaction.referenceMonth) }}</td>
-                      <td>
-                        <VChip
-                          v-if="transaction.totalInstallments > 1"
-                          size="small"
-                          variant="tonal"
-                          color="info"
-                        >
-                          {{ transaction.installmentNumber }}/{{ transaction.totalInstallments }}
-                        </VChip>
-                        <VChip
-                          v-else
-                          size="small"
-                          variant="tonal"
-                        >
-                          À vista
-                        </VChip>
-                        <VChip
-                          v-if="transaction.anticipated"
-                          size="small"
-                          variant="tonal"
-                          color="warning"
-                          class="ms-1"
-                        >
-                          Antecipada
-                        </VChip>
-                      </td>
-                      <td class="text-right">
-                        {{ currencyFormatter.format(transaction.amount) }}
-                      </td>
-                      <td
-                        class="text-center"
-                        style="white-space: nowrap"
+                      <tr
+                        v-for="transaction in paginatedTransactions"
+                        :key="transaction.id"
                       >
-                        <VBtn
-                          v-if="transaction.totalInstallments > 1 && transaction.installmentNumber < transaction.totalInstallments"
-                          icon
-                          variant="text"
-                          size="small"
-                          color="default"
-                          @click="openAnticipate(transaction)"
+                        <td>{{ formatDate(transaction.purchaseDate) }}</td>
+                        <td>
+                          {{ categoryName(transaction.categoryId) }}
+                          <span
+                            v-if="subCategoryName(transaction.subCategoryId)"
+                            class="text-disabled"
+                          >
+                            / {{ subCategoryName(transaction.subCategoryId) }}
+                          </span>
+                        </td>
+                        <td class="text-disabled">
+                          {{ transaction.description || '—' }}
+                        </td>
+                        <td>{{ formatReferenceMonth(transaction.referenceMonth) }}</td>
+                        <td>
+                          <VChip
+                            v-if="transaction.totalInstallments > 1"
+                            size="small"
+                            variant="tonal"
+                            color="info"
+                          >
+                            {{ transaction.installmentNumber }}/{{ transaction.totalInstallments }}
+                          </VChip>
+                          <VChip
+                            v-else
+                            size="small"
+                            variant="tonal"
+                          >
+                            À vista
+                          </VChip>
+                          <VChip
+                            v-if="transaction.anticipated"
+                            size="small"
+                            variant="tonal"
+                            color="warning"
+                            class="ms-1"
+                          >
+                            Antecipada
+                          </VChip>
+                        </td>
+                        <td class="text-right">
+                          {{ currencyFormatter.format(transaction.amount) }}
+                        </td>
+                        <td
+                          class="text-center"
+                          style="white-space: nowrap"
                         >
-                          <VIcon icon="tabler-clock-forward" />
-                          <VTooltip activator="parent">
-                            Antecipar parcelas
-                          </VTooltip>
-                        </VBtn>
+                          <VBtn
+                            v-if="transaction.totalInstallments > 1 && transaction.installmentNumber < transaction.totalInstallments"
+                            icon
+                            variant="text"
+                            size="small"
+                            color="default"
+                            @click="openAnticipate(transaction)"
+                          >
+                            <VIcon icon="tabler-clock-forward" />
+                            <VTooltip activator="parent">
+                              Antecipar parcelas
+                            </VTooltip>
+                          </VBtn>
 
-                        <VBtn
-                          icon
-                          variant="text"
-                          size="small"
-                          color="default"
-                          @click="openEdit(transaction)"
+                          <VBtn
+                            icon
+                            variant="text"
+                            size="small"
+                            color="default"
+                            @click="openEdit(transaction)"
+                          >
+                            <VIcon icon="tabler-pencil" />
+                            <VTooltip activator="parent">
+                              Editar
+                            </VTooltip>
+                          </VBtn>
+
+                          <VBtn
+                            icon
+                            variant="text"
+                            size="small"
+                            color="error"
+                            @click="openDelete(transaction)"
+                          >
+                            <VIcon icon="tabler-trash" />
+                            <VTooltip activator="parent">
+                              Excluir
+                            </VTooltip>
+                          </VBtn>
+                        </td>
+                      </tr>
+
+                      <tr v-if="!isLoading && transactions.length === 0">
+                        <td
+                          colspan="7"
+                          class="text-center text-disabled py-8"
                         >
-                          <VIcon icon="tabler-pencil" />
-                          <VTooltip activator="parent">
-                            Editar
-                          </VTooltip>
-                        </VBtn>
-
-                        <VBtn
-                          icon
-                          variant="text"
-                          size="small"
-                          color="error"
-                          @click="openDelete(transaction)"
-                        >
-                          <VIcon icon="tabler-trash" />
-                          <VTooltip activator="parent">
-                            Excluir
-                          </VTooltip>
-                        </VBtn>
-                      </td>
-                    </tr>
-
-                    <tr v-if="!isLoading && transactions.length === 0">
-                      <td
-                        colspan="7"
-                        class="text-center text-disabled py-8"
-                      >
-                        Nenhum lançamento encontrado para o período selecionado.
-                      </td>
-                    </tr>
+                          Nenhum lançamento encontrado para o período selecionado.
+                        </td>
+                      </tr>
                     </tbody>
                   </VTable>
                 </div>
@@ -535,7 +538,6 @@ function onClose() {
                 />
               </VCardText>
             </VCard>
-
           </div>
         </VCardText>
       </VCard>

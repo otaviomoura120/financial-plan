@@ -15,8 +15,6 @@ const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-
 const creditCards = ref<CreditCardResponse[]>([])
 const search = shallowRef('')
 const page = shallowRef(1)
@@ -132,7 +130,7 @@ function toggleSearch() {
 }
 
 function formatLimit(limit: number) {
-  return currencyFormatter.format(limit)
+  return formatCurrency(limit)
 }
 
 function openTransactions(creditCard: CreditCardResponse) {

@@ -34,7 +34,7 @@ const { error, setError, clearError } = useApiError()
 
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 const name = shallowRef('')
-const limit = shallowRef<string>('')
+const limit = shallowRef<number | null>(null)
 const closingDay = shallowRef<string>('')
 const dueDay = shallowRef<string>('')
 const isLoading = shallowRef(false)
@@ -42,7 +42,7 @@ const isLoading = shallowRef(false)
 const isEditMode = computed(() => props.creditCard !== null)
 
 const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
-const limitRules = [(v: string) => (v !== '' && Number(v) > 0) || 'Limite deve ser maior que zero']
+const limitRules = [(v: number | null) => (v !== null && v > 0) || 'Limite deve ser maior que zero']
 
 function dayRules(label: string) {
   return [(v: string) => {
@@ -60,7 +60,7 @@ watch(
   visible => {
     if (visible) {
       name.value = props.creditCard?.name ?? ''
-      limit.value = props.creditCard ? String(props.creditCard.limit) : ''
+      limit.value = props.creditCard?.limit ?? null
       closingDay.value = props.creditCard ? String(props.creditCard.closingDay) : ''
       dueDay.value = props.creditCard ? String(props.creditCard.dueDay) : ''
       clearError()
@@ -82,7 +82,7 @@ async function onSubmit() {
 
     const commonBody = {
       name: name.value,
-      limit: Number(limit.value),
+      limit: limit.value,
       closingDay: Number(closingDay.value),
       dueDay: Number(dueDay.value),
     }
@@ -154,12 +154,10 @@ function onClose() {
               :rules="nameRules"
             />
 
-            <AppTextField
+            <AppCurrencyField
               v-model="limit"
-              type="number"
-              step="0.01"
               label="Limite"
-              placeholder="0.00"
+              placeholder="0,00"
               :rules="limitRules"
             />
 

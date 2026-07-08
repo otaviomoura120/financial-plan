@@ -83,7 +83,7 @@ const destinationBankAccountId = shallowRef<number | null>(null)
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
 const paymentMethodId = shallowRef<number | null>(null)
-const amount = shallowRef<string>('')
+const amount = shallowRef<number | null>(null)
 const transactionDate = shallowRef<string>('')
 const description = shallowRef('')
 const isLoading = shallowRef(false)
@@ -135,7 +135,7 @@ const destinationRules = [
 
 const categoryRules = [(v: number | null) => isTransfer.value || v !== null || 'Categoria é obrigatória']
 const paymentMethodRules = [(v: number | null) => isTransfer.value || v !== null || 'Forma de pagamento é obrigatória']
-const amountRules = [(v: string) => (v !== '' && Number(v) > 0) || 'Valor deve ser maior que zero']
+const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
 watch(type, () => {
@@ -166,7 +166,7 @@ watch(
       categoryId.value = t?.categoryId ?? null
       subCategoryId.value = t?.subCategoryId ?? null
       paymentMethodId.value = t?.paymentMethodId ?? null
-      amount.value = t ? String(t.amount) : ''
+      amount.value = t?.amount ?? null
       transactionDate.value = t?.transactionDate ?? toLocalDateString(new Date())
       description.value = t?.description ?? ''
       clearError()
@@ -193,7 +193,7 @@ async function onSubmit() {
       categoryId: isTransfer.value ? null : categoryId.value,
       subCategoryId: isTransfer.value ? null : subCategoryId.value,
       paymentMethodId: isTransfer.value ? null : paymentMethodId.value,
-      amount: Number(amount.value),
+      amount: amount.value,
       transactionDate: transactionDate.value,
       description: description.value || undefined,
     }
@@ -274,12 +274,10 @@ function onClose() {
               cols="12"
               md="6"
             >
-              <AppTextField
+              <AppCurrencyField
                 v-model="amount"
-                type="number"
-                step="0.01"
                 label="Valor"
-                placeholder="0.00"
+                placeholder="0,00"
                 :rules="amountRules"
               />
             </VCol>

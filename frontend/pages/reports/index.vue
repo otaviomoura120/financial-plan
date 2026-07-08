@@ -84,8 +84,6 @@ interface SpaceMemberResponse {
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-
 function toLocalDateString(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -307,7 +305,7 @@ function paymentMethodName(id: number | null) {
 }
 
 function formatAmount(transaction: TransactionResponse) {
-  const formatted = currencyFormatter.format(transaction.amount)
+  const formatted = formatCurrency(transaction.amount)
 
   if (transaction.type === 'INCOME')
     return `+ ${formatted}`
@@ -465,7 +463,7 @@ function formatReferenceMonth(isoDate: string) {
             title="Total de Receitas"
             color="success"
             icon="tabler-arrow-up"
-            :stats="currencyFormatter.format(report.totalIncome)"
+            :stats="formatCurrency(report.totalIncome)"
           />
         </VCol>
 
@@ -477,7 +475,7 @@ function formatReferenceMonth(isoDate: string) {
             title="Total de Despesas"
             color="error"
             icon="tabler-arrow-down"
-            :stats="currencyFormatter.format(report.totalExpense)"
+            :stats="formatCurrency(report.totalExpense)"
           />
         </VCol>
 
@@ -489,7 +487,7 @@ function formatReferenceMonth(isoDate: string) {
             title="Saldo do Período"
             :color="report.balance >= 0 ? 'primary' : 'error'"
             icon="tabler-scale"
-            :stats="currencyFormatter.format(report.balance)"
+            :stats="formatCurrency(report.balance)"
           />
         </VCol>
       </VRow>
@@ -503,7 +501,7 @@ function formatReferenceMonth(isoDate: string) {
             title="Saldo Atual"
             :color="report.currentBalance >= 0 ? 'primary' : 'error'"
             icon="tabler-wallet"
-            :stats="currencyFormatter.format(report.currentBalance)"
+            :stats="formatCurrency(report.currentBalance)"
           />
         </VCol>
 
@@ -515,7 +513,7 @@ function formatReferenceMonth(isoDate: string) {
             title="Saldo Previsto"
             :color="report.projectedBalance >= 0 ? 'success' : 'error'"
             icon="tabler-trending-up"
-            :stats="currencyFormatter.format(report.projectedBalance)"
+            :stats="formatCurrency(report.projectedBalance)"
           />
         </VCol>
       </VRow>
@@ -552,7 +550,7 @@ function formatReferenceMonth(isoDate: string) {
                       {{ formatDate(invoice.dueDate) }}
                     </td>
                     <td class="text-right">
-                      {{ currencyFormatter.format(invoice.amount) }}
+                      {{ formatCurrency(invoice.amount) }}
                     </td>
                   </tr>
                 </tbody>
@@ -560,7 +558,7 @@ function formatReferenceMonth(isoDate: string) {
             </div>
             <VCardText class="d-flex justify-space-between text-body-1 font-weight-medium">
               <span>Total</span>
-              <span>{{ currencyFormatter.format(report.pendingCreditCardTotal) }}</span>
+              <span>{{ formatCurrency(report.pendingCreditCardTotal) }}</span>
             </VCardText>
           </VCard>
         </VCol>
@@ -596,7 +594,7 @@ function formatReferenceMonth(isoDate: string) {
                       {{ formatDate(instance.dueDate) }}
                     </td>
                     <td class="text-right">
-                      {{ currencyFormatter.format(instance.amount) }}
+                      {{ formatCurrency(instance.amount) }}
                     </td>
                   </tr>
                 </tbody>
@@ -604,7 +602,7 @@ function formatReferenceMonth(isoDate: string) {
             </div>
             <VCardText class="d-flex justify-space-between text-body-1 font-weight-medium">
               <span>Total</span>
-              <span>{{ currencyFormatter.format(report.pendingBillTotal) }}</span>
+              <span>{{ formatCurrency(report.pendingBillTotal) }}</span>
             </VCardText>
           </VCard>
         </VCol>

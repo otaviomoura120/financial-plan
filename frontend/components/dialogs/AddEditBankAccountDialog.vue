@@ -34,14 +34,14 @@ const { error, setError, clearError } = useApiError()
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 const name = shallowRef('')
 const bankName = shallowRef('')
-const initialBalance = shallowRef<string>('0')
+const initialBalance = shallowRef<number | null>(0)
 const isLoading = shallowRef(false)
 
 const isEditMode = computed(() => props.bankAccount !== null)
 
 const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
 const bankNameRules = [(v: string) => !!v || 'Banco é obrigatório']
-const balanceRules = [(v: string) => (v !== '' && !Number.isNaN(Number(v))) || 'Saldo inicial deve ser um número válido']
+const balanceRules = [(v: number | null) => v !== null || 'Saldo inicial deve ser um número válido']
 
 watch(
   () => props.isDialogVisible,
@@ -49,7 +49,7 @@ watch(
     if (visible) {
       name.value = props.bankAccount?.name ?? ''
       bankName.value = props.bankAccount?.bankName ?? ''
-      initialBalance.value = '0'
+      initialBalance.value = 0
       clearError()
     }
   },
@@ -84,7 +84,7 @@ async function onSubmit() {
           spaceId: spaceStore.activeSpace!.id,
           name: name.value,
           bankName: bankName.value,
-          initialBalance: Number(initialBalance.value),
+          initialBalance: initialBalance.value,
         },
       })
     }
@@ -144,19 +144,17 @@ function onClose() {
               :rules="bankNameRules"
             />
 
-            <AppTextField
+            <AppCurrencyField
               v-if="!isEditMode"
               v-model="initialBalance"
-              type="number"
-              step="0.01"
               label="Saldo inicial"
-              placeholder="0.00"
+              placeholder="0,00"
               :rules="balanceRules"
             />
 
             <AppTextField
               v-else
-              :model-value="bankAccount?.balance"
+              :model-value="formatCurrency(bankAccount?.balance ?? 0)"
               label="Saldo"
               readonly
               disabled

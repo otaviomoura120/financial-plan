@@ -42,8 +42,6 @@ const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-
 function toLocalDateString(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -303,8 +301,10 @@ function formatDate(isoDate: string) {
 
         <VSpacer />
 
-        <div class="d-flex flex-wrap align-center gap-2" style="flex-grow: 1; justify-content: flex-end;">
-
+        <div
+          class="d-flex flex-wrap align-center gap-2"
+          style="flex-grow: 1; justify-content: flex-end;"
+        >
           <VTextField
             v-model="from"
             type="date"
@@ -330,7 +330,6 @@ function formatDate(isoDate: string) {
             Filtrar
           </VBtn>
 
-
           <VBtn
             variant="tonal"
             prepend-icon="tabler-calendar-cog"
@@ -346,8 +345,6 @@ function formatDate(isoDate: string) {
             <span class="d-sm-inline">Adicionar Conta</span>
           </VBtn>
         </div>
-
-
       </VCardText>
 
       <VDivider />
@@ -412,7 +409,7 @@ function formatDate(isoDate: string) {
                 {{ formatDate(bill.dueDate) }}
               </td>
               <td>
-                {{ currencyFormatter.format(bill.amount) }}
+                {{ formatCurrency(bill.amount) }}
               </td>
               <td>
                 <VChip
@@ -528,7 +525,7 @@ function formatDate(isoDate: string) {
       :auto-result="false"
       confirm-color="error"
       :confirmation-question="selectedBill
-        ? `Tem certeza que deseja desfazer o pagamento de '${selectedBill.name}'? O saldo da conta utilizada no pagamento será revertido em ${currencyFormatter.format(selectedBill.amount)}.`
+        ? `Tem certeza que deseja desfazer o pagamento de '${selectedBill.name}'? O saldo da conta utilizada no pagamento será revertido em ${formatCurrency(selectedBill.amount)}.`
         : ''"
       cancel-title="Ação cancelada"
       cancel-msg="O pagamento não foi desfeito."

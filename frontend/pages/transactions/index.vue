@@ -47,8 +47,6 @@ const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
-
 function toLocalDateString(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -260,7 +258,7 @@ function paymentMethodName(id: number | null) {
 }
 
 function formatAmount(transaction: TransactionResponse) {
-  const formatted = currencyFormatter.format(transaction.amount)
+  const formatted = formatCurrency(transaction.amount)
 
   if (transaction.type === 'INCOME')
     return `+ ${formatted}`
