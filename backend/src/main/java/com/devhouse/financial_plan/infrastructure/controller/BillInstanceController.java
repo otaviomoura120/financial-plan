@@ -1,16 +1,20 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.application.billinstance.CreateBillInstanceService;
+import com.devhouse.financial_plan.application.billinstance.DeleteBillService;
 import com.devhouse.financial_plan.application.billinstance.ListBillInstancesService;
 import com.devhouse.financial_plan.application.billinstance.PayBillInstanceService;
 import com.devhouse.financial_plan.application.billinstance.UndoBillInstancePaymentService;
-import com.devhouse.financial_plan.application.billinstance.UpdateBillInstanceAmountService;
+import com.devhouse.financial_plan.application.billinstance.UpdateBillService;
 import com.devhouse.financial_plan.application.billinstance.dto.BillInstanceResponse;
+import com.devhouse.financial_plan.application.billinstance.dto.CreateBillInstanceRequest;
 import com.devhouse.financial_plan.application.billinstance.dto.PayBillInstanceRequest;
-import com.devhouse.financial_plan.application.billinstance.dto.UpdateBillInstanceAmountRequest;
+import com.devhouse.financial_plan.application.billinstance.dto.UpdateBillInstanceRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,16 +33,20 @@ import java.util.List;
 public class BillInstanceController {
 
     private final ListBillInstancesService listBillInstancesService;
-    private final UpdateBillInstanceAmountService updateBillInstanceAmountService;
+    private final CreateBillInstanceService createBillInstanceService;
+    private final UpdateBillService updateBillService;
+    private final DeleteBillService deleteBillService;
     private final PayBillInstanceService payBillInstanceService;
     private final UndoBillInstancePaymentService undoBillInstancePaymentService;
 
     public BillInstanceController(ListBillInstancesService listBillInstancesService,
-                                   UpdateBillInstanceAmountService updateBillInstanceAmountService,
-                                   PayBillInstanceService payBillInstanceService,
+                                   CreateBillInstanceService createBillInstanceService, UpdateBillService updateBillService,
+                                   DeleteBillService deleteBillService, PayBillInstanceService payBillInstanceService,
                                    UndoBillInstancePaymentService undoBillInstancePaymentService) {
         this.listBillInstancesService = listBillInstancesService;
-        this.updateBillInstanceAmountService = updateBillInstanceAmountService;
+        this.createBillInstanceService = createBillInstanceService;
+        this.updateBillService = updateBillService;
+        this.deleteBillService = deleteBillService;
         this.payBillInstanceService = payBillInstanceService;
         this.undoBillInstancePaymentService = undoBillInstancePaymentService;
     }
@@ -52,11 +60,25 @@ public class BillInstanceController {
         return listBillInstancesService.execute(spaceId, from, to);
     }
 
-    @PutMapping("/instances/{id}/amount")
+    @PostMapping("/instances")
+    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BillInstanceResponse updateAmount(@PathVariable Long id, @RequestBody UpdateBillInstanceAmountRequest body,
-                                              Authentication authentication, HttpServletRequest request) {
-        return updateBillInstanceAmountService.execute(id, body);
+    public BillInstanceResponse create(@RequestBody CreateBillInstanceRequest body, Authentication authentication, HttpServletRequest request) {
+        return createBillInstanceService.execute(body);
+    }
+
+    @PutMapping("/instances/{id}")
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public BillInstanceResponse update(@PathVariable Long id, @RequestBody UpdateBillInstanceRequest body,
+                                        Authentication authentication, HttpServletRequest request) {
+        return updateBillService.execute(id, body);
+    }
+
+    @DeleteMapping("/instances/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        deleteBillService.execute(id);
     }
 
     @PostMapping("/instances/{id}/pay")

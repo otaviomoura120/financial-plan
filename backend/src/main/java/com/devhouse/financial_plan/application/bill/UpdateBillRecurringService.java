@@ -1,56 +1,42 @@
 package com.devhouse.financial_plan.application.bill;
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse;
-import com.devhouse.financial_plan.application.bill.dto.CreateBillRequest;
+import com.devhouse.financial_plan.application.bill.dto.UpdateBillRecurringRequest;
 import com.devhouse.financial_plan.domain.BillRecurring;
 import com.devhouse.financial_plan.domain.Category;
-import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BillRecurringRepository;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
-import com.devhouse.financial_plan.domain.repository.SpaceRepository;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
 
 @Service
-public class CreateBillService {
+public class UpdateBillRecurringService {
 
     private final BillRecurringRepository billRecurringRepository;
-    private final SpaceRepository spaceRepository;
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
 
-    public CreateBillService(BillRecurringRepository billRecurringRepository, SpaceRepository spaceRepository,
-                              CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository) {
+    public UpdateBillRecurringService(BillRecurringRepository billRecurringRepository, CategoryRepository categoryRepository,
+                                       SubCategoryRepository subCategoryRepository) {
         this.billRecurringRepository = billRecurringRepository;
-        this.spaceRepository = spaceRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
     }
 
-    @Transactional
-    public BillResponse execute(CreateBillRequest request) {
-        Space space = resolveSpace(request.spaceId());
+    public BillResponse execute(Long id, UpdateBillRecurringRequest request) {
+        BillRecurring billRecurring = billRecurringRepository.findById(id);
+        if (billRecurring == null) {
+            throw new DomainException("Bill recurring not found");
+        }
+        billRecurring.setVersion(request.version());
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
-
-        BillRecurring billRecurring = new BillRecurring(null, 0, space, request.name(), category, subCategory,
-                request.defaultAmount(), request.startDate(), true, Instant.now(), null);
+        billRecurring.update(request.name(), category, subCategory, request.defaultAmount());
         billRecurring.validate();
-        BillRecurring saved = billRecurringRepository.save(billRecurring);
-        return toResponse(saved);
-    }
-
-    private Space resolveSpace(Long spaceId) {
-        Space space = spaceId != null ? spaceRepository.findById(spaceId) : null;
-        if (space == null) {
-            throw new DomainException("Space not found");
-        }
-        return space;
+        BillRecurring updated = billRecurringRepository.update(billRecurring);
+        return toResponse(updated);
     }
 
     private Category resolveCategory(Long categoryId) {

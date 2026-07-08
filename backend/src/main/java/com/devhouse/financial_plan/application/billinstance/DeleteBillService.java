@@ -1,4 +1,4 @@
-package com.devhouse.financial_plan.application.bill;
+package com.devhouse.financial_plan.application.billinstance;
 
 import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.exception.DomainException;
@@ -6,11 +6,11 @@ import com.devhouse.financial_plan.domain.repository.BillRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class DeactivateBillService {
+public class DeleteBillService {
 
     private final BillRepository billRepository;
 
-    public DeactivateBillService(BillRepository billRepository) {
+    public DeleteBillService(BillRepository billRepository) {
         this.billRepository = billRepository;
     }
 
@@ -19,7 +19,7 @@ public class DeactivateBillService {
         if (bill == null) {
             throw new DomainException("Bill not found");
         }
-        bill.deactivate();
+        bill.markDeleted();
         billRepository.update(bill);
     }
 }

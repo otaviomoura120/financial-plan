@@ -6,8 +6,10 @@ type BillInstanceStatus = 'PENDING' | 'PAID'
 interface BillInstanceResponse {
   id: number
   version: number
-  billId: number
-  billName: string
+  billRecurringId: number | null
+  name: string
+  categoryId: number | null
+  subCategoryId: number | null
   referenceMonth: string
   dueDate: string
   amount: number
@@ -28,7 +30,6 @@ interface Props {
   isDialogVisible: boolean
   billInstance: BillInstanceResponse | null
   bankAccounts: OptionItem[]
-  categories: OptionItem[]
   paymentMethods: OptionItem[]
 }
 
@@ -53,7 +54,6 @@ function toLocalDateString(date: Date) {
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 
 const bankAccountId = shallowRef<number | null>(null)
-const categoryId = shallowRef<number | null>(null)
 const paymentMethodId = shallowRef<number | null>(null)
 const paidDate = shallowRef<string>('')
 const isLoading = shallowRef(false)
@@ -63,7 +63,6 @@ function optionLabel(item: OptionItem) {
 }
 
 const bankAccountItems = computed(() => props.bankAccounts.map(ba => ({ ...ba, label: optionLabel(ba) })))
-const categoryItems = computed(() => props.categories.map(c => ({ ...c, label: optionLabel(c) })))
 const paymentMethodItems = computed(() => props.paymentMethods.map(pm => ({ ...pm, label: optionLabel(pm) })))
 
 const bankAccountRules = [(v: number | null) => v !== null || 'Conta é obrigatória']
@@ -75,7 +74,6 @@ watch(
   visible => {
     if (visible) {
       bankAccountId.value = null
-      categoryId.value = null
       paymentMethodId.value = null
       paidDate.value = toLocalDateString(new Date())
       clearError()
@@ -97,7 +95,6 @@ async function onSubmit() {
       method: 'POST',
       body: {
         bankAccountId: bankAccountId.value,
-        categoryId: categoryId.value,
         paymentMethodId: paymentMethodId.value,
         paidDate: paidDate.value,
       },
@@ -133,7 +130,7 @@ function onClose() {
           Marcar como Paga
         </h4>
         <p class="text-body-1 text-center mb-6">
-          {{ props.billInstance?.billName }}
+          {{ props.billInstance?.name }}
         </p>
 
         <ApiErrorAlert
@@ -151,17 +148,6 @@ function onClose() {
               item-title="label"
               item-value="id"
               :rules="bankAccountRules"
-            />
-
-            <AppSelect
-              v-model="categoryId"
-              label="Categoria"
-              :items="categoryItems"
-              item-title="label"
-              item-value="id"
-              clearable
-              hint="Deixe em branco para usar a categoria padrão da conta"
-              persistent-hint
             />
 
             <AppSelect

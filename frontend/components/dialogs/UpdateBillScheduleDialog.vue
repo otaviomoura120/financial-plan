@@ -7,9 +7,9 @@ interface BillResponse {
   spaceId: number
   name: string
   categoryId: number | null
+  subCategoryId: number | null
   defaultAmount: number
   startDate: string
-  recurring: boolean
   active: boolean
   createdDate: string
 }
@@ -30,7 +30,6 @@ const emit = defineEmits<Emit>()
 const { error, setError, clearError } = useApiError()
 
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
-const recurring = shallowRef(false)
 const startDate = shallowRef('')
 const isLoading = shallowRef(false)
 
@@ -40,7 +39,6 @@ watch(
   () => props.isDialogVisible,
   visible => {
     if (visible) {
-      recurring.value = props.bill?.recurring ?? false
       startDate.value = props.bill?.startDate ?? ''
       clearError()
     }
@@ -61,7 +59,6 @@ async function onSubmit() {
       method: 'PUT',
       body: {
         version: props.bill.version,
-        recurring: recurring.value,
         startDate: startDate.value,
       },
     })
@@ -104,7 +101,7 @@ function onClose() {
           variant="tonal"
           class="mb-4"
         >
-          Alterar a agenda só afeta instâncias futuras — as já geradas (pendentes ou pagas)
+          Alterar a agenda só afeta contas geradas no futuro — as já lançadas (pendentes ou pagas)
           mantêm o vencimento antigo.
         </VAlert>
 
@@ -116,16 +113,10 @@ function onClose() {
 
         <VForm ref="formRef">
           <div class="d-flex flex-column gap-4">
-            <VCheckbox
-              v-model="recurring"
-              label="Conta recorrente (repete todo mês)"
-              hide-details
-            />
-
             <AppTextField
               v-model="startDate"
               type="date"
-              label="Data inicial"
+              label="Data de Vencimento"
               :rules="dateRules"
             />
           </div>

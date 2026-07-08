@@ -1,25 +1,31 @@
 package com.devhouse.financial_plan.application.bill;
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse;
+import com.devhouse.financial_plan.application.bill.dto.UpdateBillRecurringScheduleRequest;
 import com.devhouse.financial_plan.domain.BillRecurring;
+import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BillRecurringRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
-public class ListBillsService {
+public class UpdateBillRecurringScheduleService {
 
     private final BillRecurringRepository billRecurringRepository;
 
-    public ListBillsService(BillRecurringRepository billRecurringRepository) {
+    public UpdateBillRecurringScheduleService(BillRecurringRepository billRecurringRepository) {
         this.billRecurringRepository = billRecurringRepository;
     }
 
-    public List<BillResponse> execute(Long spaceId) {
-        return billRecurringRepository.findBySpaceId(spaceId).stream()
-                .map(this::toResponse)
-                .toList();
+    public BillResponse execute(Long id, UpdateBillRecurringScheduleRequest request) {
+        BillRecurring billRecurring = billRecurringRepository.findById(id);
+        if (billRecurring == null) {
+            throw new DomainException("Bill recurring not found");
+        }
+        billRecurring.setVersion(request.version());
+        billRecurring.updateSchedule(request.startDate());
+        billRecurring.validate();
+        BillRecurring updated = billRecurringRepository.update(billRecurring);
+        return toResponse(updated);
     }
 
     private BillResponse toResponse(BillRecurring billRecurring) {

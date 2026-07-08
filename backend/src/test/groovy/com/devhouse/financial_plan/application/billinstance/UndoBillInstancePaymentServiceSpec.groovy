@@ -3,7 +3,6 @@ package com.devhouse.financial_plan.application.billinstance
 import com.devhouse.financial_plan.application.transaction.TransactionBalanceEffectService
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Bill
-import com.devhouse.financial_plan.domain.BillInstance
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
@@ -14,7 +13,7 @@ import com.devhouse.financial_plan.domain.enums.TransactionSourceType
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository
-import com.devhouse.financial_plan.domain.repository.BillInstanceRepository
+import com.devhouse.financial_plan.domain.repository.BillRepository
 import com.devhouse.financial_plan.domain.repository.TransactionRepository
 import spock.lang.Specification
 
@@ -23,26 +22,21 @@ import java.time.LocalDate
 
 class UndoBillInstancePaymentServiceSpec extends Specification {
 
-    BillInstanceRepository billInstanceRepository = Mock()
+    BillRepository billRepository = Mock()
     TransactionRepository transactionRepository = Mock()
     BankAccountRepository bankAccountRepository = Mock()
     TransactionBalanceEffectService transactionBalanceEffectService = new TransactionBalanceEffectService(bankAccountRepository)
 
-    UndoBillInstancePaymentService service = new UndoBillInstancePaymentService(billInstanceRepository, transactionRepository,
+    UndoBillInstancePaymentService service = new UndoBillInstancePaymentService(billRepository, transactionRepository,
             transactionBalanceEffectService)
 
     private Space buildSpace() {
         new Space(1L, 0, "My Space", null, Instant.now(), null)
     }
 
-    private Bill buildBill() {
-        new Bill(10L, 0, buildSpace(), "Energy Bill", null, new BigDecimal("150.00"),
-                LocalDate.of(2026, 3, 10), true, true, Instant.now(), null)
-    }
-
-    private BillInstance buildInstance(BillInstanceStatus status) {
-        new BillInstance(1L, 0, buildBill(), LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 10), new BigDecimal("150.00"),
-                status, LocalDate.of(2026, 3, 9), 99L, 2L, Instant.now(), null)
+    private Bill buildInstance(BillInstanceStatus status) {
+        new Bill(1L, 0, buildSpace(), null, "Energy Bill", null, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 10),
+                new BigDecimal("150.00"), status, LocalDate.of(2026, 3, 9), 99L, 2L, false, Instant.now(), null)
     }
 
     private BankAccount buildAccount(BigDecimal balance) {
@@ -56,13 +50,13 @@ class UndoBillInstancePaymentServiceSpec extends Specification {
         PaymentMethod paymentMethod = new PaymentMethod(40L, 0, null, "Débito Automático", true, Instant.now(), null)
         new Transaction(99L, 0, TransactionType.EXPENSE, user, bankAccount, null, category, null, paymentMethod,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 9), "Pagamento de conta - Energy Bill", Instant.now(), null,
-                TransactionSourceType.BILL_INSTANCE_PAYMENT, 10L)
+                TransactionSourceType.BILL_INSTANCE_PAYMENT, 1L)
     }
 
     def "execute reverts the account balance, deletes the transaction and reverts the instance to pending"() {
         given:
-        BillInstance instance = buildInstance(BillInstanceStatus.PAID)
-        billInstanceRepository.findById(1L) >> instance
+        Bill bill = buildInstance(BillInstanceStatus.PAID)
+        billRepository.findById(1L) >> bill
         BankAccount account = buildAccount(new BigDecimal("350.00"))
         Transaction transaction = buildPaymentTransaction(account)
         transactionRepository.findById(99L) >> transaction
@@ -75,13 +69,13 @@ class UndoBillInstancePaymentServiceSpec extends Specification {
         account.getBalance() == new BigDecimal("500.00")
         1 * bankAccountRepository.update(_)
         1 * transactionRepository.delete(99L)
-        1 * billInstanceRepository.update({ BillInstance i -> i.isPending() && i.getPaidDate() == null &&
+        1 * billRepository.update({ Bill i -> i.isPending() && i.getPaidDate() == null &&
                 i.getPaymentTransactionId() == null && i.getBankAccountId() == null })
     }
 
     def "execute throws DomainException when the bill instance does not exist"() {
         given:
-        billInstanceRepository.findById(99L) >> null
+        billRepository.findById(99L) >> null
 
         when:
         service.execute(99L)
@@ -89,12 +83,12 @@ class UndoBillInstancePaymentServiceSpec extends Specification {
         then:
         thrown(DomainException)
         0 * transactionRepository.delete(_)
-        0 * billInstanceRepository.update(_)
+        0 * billRepository.update(_)
     }
 
     def "execute throws DomainException when the bill instance is not paid"() {
         given:
-        billInstanceRepository.findById(1L) >> buildInstance(BillInstanceStatus.PENDING)
+        billRepository.findById(1L) >> buildInstance(BillInstanceStatus.PENDING)
 
         when:
         service.execute(1L)
@@ -102,6 +96,6 @@ class UndoBillInstancePaymentServiceSpec extends Specification {
         then:
         thrown(DomainException)
         0 * transactionRepository.delete(_)
-        0 * billInstanceRepository.update(_)
+        0 * billRepository.update(_)
     }
 }

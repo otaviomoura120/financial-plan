@@ -2,15 +2,15 @@ package com.devhouse.financial_plan.application.bill
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse
 import com.devhouse.financial_plan.application.bill.dto.CreateBillRequest
-import com.devhouse.financial_plan.domain.Bill
-import com.devhouse.financial_plan.domain.BillInstance
+import com.devhouse.financial_plan.domain.BillRecurring
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
+import com.devhouse.financial_plan.domain.SubCategory
 import com.devhouse.financial_plan.domain.exception.DomainException
-import com.devhouse.financial_plan.domain.repository.BillInstanceRepository
-import com.devhouse.financial_plan.domain.repository.BillRepository
+import com.devhouse.financial_plan.domain.repository.BillRecurringRepository
 import com.devhouse.financial_plan.domain.repository.CategoryRepository
 import com.devhouse.financial_plan.domain.repository.SpaceRepository
+import com.devhouse.financial_plan.domain.repository.SubCategoryRepository
 import spock.lang.Specification
 
 import java.time.Instant
@@ -18,99 +18,94 @@ import java.time.LocalDate
 
 class CreateBillServiceSpec extends Specification {
 
-    BillRepository billRepository = Mock()
-    BillInstanceRepository billInstanceRepository = Mock()
+    BillRecurringRepository billRecurringRepository = Mock()
     SpaceRepository spaceRepository = Mock()
     CategoryRepository categoryRepository = Mock()
+    SubCategoryRepository subCategoryRepository = Mock()
 
-    CreateBillService service = new CreateBillService(billRepository, billInstanceRepository, spaceRepository, categoryRepository)
+    CreateBillService service = new CreateBillService(billRecurringRepository, spaceRepository, categoryRepository, subCategoryRepository)
 
     private Space buildSpace() {
         new Space(1L, 0, "My Space", null, Instant.now(), null)
     }
 
-    def "execute creates a recurring bill without generating any instance"() {
+    def "execute creates a bill recurring"() {
         given:
         spaceRepository.findById(1L) >> buildSpace()
-        Bill saved = null
-        billRepository.save(_) >> { Bill b -> saved = new Bill(10L, 0, b.space, b.name, b.category, b.defaultAmount,
-                b.startDate, b.recurring, b.active, b.createdDate, b.updatedDate); saved }
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, new BigDecimal("150.00"),
-                LocalDate.of(2026, 3, 10), true)
+        billRecurringRepository.save(_) >> { BillRecurring b -> new BillRecurring(10L, 0, b.space, b.name, b.category,
+                b.subCategory, b.defaultAmount, b.startDate, b.active, b.createdDate, b.updatedDate) }
+        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, null, new BigDecimal("150.00"),
+                LocalDate.of(2026, 3, 10))
 
         when:
         BillResponse response = service.execute(request)
 
         then:
         response.id() == 10L
-        response.recurring()
-        0 * billInstanceRepository.save(_)
+        response.active()
     }
 
-    def "execute creates a non-recurring bill and auto-generates a single pending instance"() {
-        given:
-        spaceRepository.findById(1L) >> buildSpace()
-        billRepository.save(_) >> { Bill b -> new Bill(10L, 0, b.space, b.name, b.category, b.defaultAmount,
-                b.startDate, b.recurring, b.active, b.createdDate, b.updatedDate) }
-        List<BillInstance> savedInstances = []
-        billInstanceRepository.save(_) >> { BillInstance i -> savedInstances << i; i }
-        CreateBillRequest request = new CreateBillRequest(1L, "One-off repair", null, new BigDecimal("300.00"),
-                LocalDate.of(2026, 3, 10), false)
-
-        when:
-        service.execute(request)
-
-        then:
-        savedInstances.size() == 1
-        savedInstances[0].referenceMonth == LocalDate.of(2026, 3, 1)
-        savedInstances[0].dueDate == LocalDate.of(2026, 3, 10)
-        savedInstances[0].amount == new BigDecimal("300.00")
-        savedInstances[0].isPending()
-    }
-
-    def "execute resolves the optional category when informed"() {
+    def "execute resolves the optional category and subCategory when informed"() {
         given:
         spaceRepository.findById(1L) >> buildSpace()
         Category category = new Category(20L, 0, buildSpace(), "Utilities", true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
-        billRepository.save(_) >> { Bill b -> new Bill(10L, 0, b.space, b.name, b.category, b.defaultAmount,
-                b.startDate, b.recurring, b.active, b.createdDate, b.updatedDate) }
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", 20L, new BigDecimal("150.00"),
-                LocalDate.of(2026, 3, 10), true)
+        SubCategory subCategory = new SubCategory(30L, 0, category, "Electricity", true, Instant.now(), null)
+        subCategoryRepository.findById(30L) >> subCategory
+        billRecurringRepository.save(_) >> { BillRecurring b -> new BillRecurring(10L, 0, b.space, b.name, b.category,
+                b.subCategory, b.defaultAmount, b.startDate, b.active, b.createdDate, b.updatedDate) }
+        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", 20L, 30L, new BigDecimal("150.00"),
+                LocalDate.of(2026, 3, 10))
 
         when:
         BillResponse response = service.execute(request)
 
         then:
         response.categoryId() == 20L
+        response.subCategoryId() == 30L
     }
 
     def "execute throws DomainException when space does not exist"() {
         given:
         spaceRepository.findById(1L) >> null
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, new BigDecimal("150.00"),
-                LocalDate.of(2026, 3, 10), true)
+        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, null, new BigDecimal("150.00"),
+                LocalDate.of(2026, 3, 10))
 
         when:
         service.execute(request)
 
         then:
         thrown(DomainException)
-        0 * billRepository.save(_)
+        0 * billRecurringRepository.save(_)
     }
 
     def "execute throws DomainException when category does not exist"() {
         given:
         spaceRepository.findById(1L) >> buildSpace()
         categoryRepository.findById(20L) >> null
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", 20L, new BigDecimal("150.00"),
-                LocalDate.of(2026, 3, 10), true)
+        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", 20L, null, new BigDecimal("150.00"),
+                LocalDate.of(2026, 3, 10))
 
         when:
         service.execute(request)
 
         then:
         thrown(DomainException)
-        0 * billRepository.save(_)
+        0 * billRecurringRepository.save(_)
+    }
+
+    def "execute throws DomainException when subCategory does not exist"() {
+        given:
+        spaceRepository.findById(1L) >> buildSpace()
+        subCategoryRepository.findById(30L) >> null
+        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, 30L, new BigDecimal("150.00"),
+                LocalDate.of(2026, 3, 10))
+
+        when:
+        service.execute(request)
+
+        then:
+        thrown(DomainException)
+        0 * billRecurringRepository.save(_)
     }
 }

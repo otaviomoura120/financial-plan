@@ -1,13 +1,14 @@
-package com.devhouse.financial_plan.application.bill;
+package com.devhouse.financial_plan.application.billinstance;
 
-import com.devhouse.financial_plan.application.bill.dto.BillResponse;
-import com.devhouse.financial_plan.application.bill.dto.CreateBillRequest;
-import com.devhouse.financial_plan.domain.BillRecurring;
+import com.devhouse.financial_plan.application.billinstance.dto.BillInstanceResponse;
+import com.devhouse.financial_plan.application.billinstance.dto.CreateBillInstanceRequest;
+import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.enums.BillInstanceStatus;
 import com.devhouse.financial_plan.domain.exception.DomainException;
-import com.devhouse.financial_plan.domain.repository.BillRecurringRepository;
+import com.devhouse.financial_plan.domain.repository.BillRepository;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.SpaceRepository;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
@@ -15,33 +16,35 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.YearMonth;
 
 @Service
-public class CreateBillService {
+public class CreateBillInstanceService {
 
-    private final BillRecurringRepository billRecurringRepository;
+    private final BillRepository billRepository;
     private final SpaceRepository spaceRepository;
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
 
-    public CreateBillService(BillRecurringRepository billRecurringRepository, SpaceRepository spaceRepository,
-                              CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository) {
-        this.billRecurringRepository = billRecurringRepository;
+    public CreateBillInstanceService(BillRepository billRepository, SpaceRepository spaceRepository,
+                                      CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository) {
+        this.billRepository = billRepository;
         this.spaceRepository = spaceRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
     }
 
     @Transactional
-    public BillResponse execute(CreateBillRequest request) {
+    public BillInstanceResponse execute(CreateBillInstanceRequest request) {
         Space space = resolveSpace(request.spaceId());
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        YearMonth referenceMonth = YearMonth.from(request.dueDate());
 
-        BillRecurring billRecurring = new BillRecurring(null, 0, space, request.name(), category, subCategory,
-                request.defaultAmount(), request.startDate(), true, Instant.now(), null);
-        billRecurring.validate();
-        BillRecurring saved = billRecurringRepository.save(billRecurring);
+        Bill bill = new Bill(null, 0, space, null, request.name(), category, subCategory, referenceMonth.atDay(1),
+                request.dueDate(), request.amount(), BillInstanceStatus.PENDING, null, null, null, false, Instant.now(), null);
+        bill.validate();
+        Bill saved = billRepository.save(bill);
         return toResponse(saved);
     }
 
@@ -75,11 +78,12 @@ public class CreateBillService {
         return subCategory;
     }
 
-    private BillResponse toResponse(BillRecurring billRecurring) {
-        return new BillResponse(billRecurring.getId(), billRecurring.getVersion(), billRecurring.getSpace().getId(),
-                billRecurring.getName(), billRecurring.getCategory() != null ? billRecurring.getCategory().getId() : null,
-                billRecurring.getSubCategory() != null ? billRecurring.getSubCategory().getId() : null,
-                billRecurring.getDefaultAmount(), billRecurring.getStartDate(), billRecurring.isActive(),
-                billRecurring.getCreatedDate());
+    private BillInstanceResponse toResponse(Bill bill) {
+        return new BillInstanceResponse(bill.getId(), bill.getVersion(),
+                bill.getBillRecurring() != null ? bill.getBillRecurring().getId() : null, bill.getName(),
+                bill.getCategory() != null ? bill.getCategory().getId() : null,
+                bill.getSubCategory() != null ? bill.getSubCategory().getId() : null, bill.getReferenceMonth(),
+                bill.getDueDate(), bill.getAmount(), bill.getStatus(), bill.getPaidDate(), bill.getPaymentTransactionId(),
+                bill.getBankAccountId(), bill.getCreatedDate());
     }
 }

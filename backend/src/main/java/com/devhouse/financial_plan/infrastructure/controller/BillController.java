@@ -1,14 +1,14 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
 import com.devhouse.financial_plan.application.bill.CreateBillService;
-import com.devhouse.financial_plan.application.bill.DeactivateBillService;
+import com.devhouse.financial_plan.application.bill.DeactivateBillRecurringService;
 import com.devhouse.financial_plan.application.bill.ListBillsService;
-import com.devhouse.financial_plan.application.bill.UpdateBillScheduleService;
-import com.devhouse.financial_plan.application.bill.UpdateBillService;
+import com.devhouse.financial_plan.application.bill.UpdateBillRecurringScheduleService;
+import com.devhouse.financial_plan.application.bill.UpdateBillRecurringService;
 import com.devhouse.financial_plan.application.bill.dto.BillResponse;
 import com.devhouse.financial_plan.application.bill.dto.CreateBillRequest;
-import com.devhouse.financial_plan.application.bill.dto.UpdateBillRequest;
-import com.devhouse.financial_plan.application.bill.dto.UpdateBillScheduleRequest;
+import com.devhouse.financial_plan.application.bill.dto.UpdateBillRecurringRequest;
+import com.devhouse.financial_plan.application.bill.dto.UpdateBillRecurringScheduleRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,18 +22,18 @@ import java.util.List;
 public class BillController {
 
     private final CreateBillService createBillService;
-    private final UpdateBillService updateBillService;
-    private final UpdateBillScheduleService updateBillScheduleService;
-    private final DeactivateBillService deactivateBillService;
+    private final UpdateBillRecurringService updateBillRecurringService;
+    private final UpdateBillRecurringScheduleService updateBillRecurringScheduleService;
+    private final DeactivateBillRecurringService deactivateBillRecurringService;
     private final ListBillsService listBillsService;
 
-    public BillController(CreateBillService createBillService, UpdateBillService updateBillService,
-                           UpdateBillScheduleService updateBillScheduleService, DeactivateBillService deactivateBillService,
-                           ListBillsService listBillsService) {
+    public BillController(CreateBillService createBillService, UpdateBillRecurringService updateBillRecurringService,
+                           UpdateBillRecurringScheduleService updateBillRecurringScheduleService,
+                           DeactivateBillRecurringService deactivateBillRecurringService, ListBillsService listBillsService) {
         this.createBillService = createBillService;
-        this.updateBillService = updateBillService;
-        this.updateBillScheduleService = updateBillScheduleService;
-        this.deactivateBillService = deactivateBillService;
+        this.updateBillRecurringService = updateBillRecurringService;
+        this.updateBillRecurringScheduleService = updateBillRecurringScheduleService;
+        this.deactivateBillRecurringService = deactivateBillRecurringService;
         this.listBillsService = listBillsService;
     }
 
@@ -52,20 +52,20 @@ public class BillController {
 
     @PutMapping("/{id}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BillResponse update(@PathVariable Long id, @RequestBody UpdateBillRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateBillService.execute(id, body);
+    public BillResponse update(@PathVariable Long id, @RequestBody UpdateBillRecurringRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateBillRecurringService.execute(id, body);
     }
 
     @PutMapping("/{id}/schedule")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BillResponse updateSchedule(@PathVariable Long id, @RequestBody UpdateBillScheduleRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateBillScheduleService.execute(id, body);
+    public BillResponse updateSchedule(@PathVariable Long id, @RequestBody UpdateBillRecurringScheduleRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateBillRecurringScheduleService.execute(id, body);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
     public void deactivate(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deactivateBillService.execute(id);
+        deactivateBillRecurringService.execute(id);
     }
 }

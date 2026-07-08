@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import { VForm } from 'vuetify/components/VForm'
 
-interface BillResponse {
+type BillInstanceStatus = 'PENDING' | 'PAID'
+
+interface BillInstanceResponse {
   id: number
   version: number
-  spaceId: number
+  billRecurringId: number | null
   name: string
   categoryId: number | null
   subCategoryId: number | null
-  defaultAmount: number
-  startDate: string
-  active: boolean
+  referenceMonth: string
+  dueDate: string
+  amount: number
+  status: BillInstanceStatus
+  paidDate: string | null
+  paymentTransactionId: number | null
+  bankAccountId: number | null
   createdDate: string
 }
 
@@ -30,42 +36,27 @@ interface CategoryOption {
 
 interface Props {
   isDialogVisible: boolean
-  bill?: BillResponse | null
+  bill: BillInstanceResponse | null
   categories: CategoryOption[]
 }
 
 interface Emit {
   (e: 'update:isDialogVisible', value: boolean): void
-  (e: 'saved'): void
+  (e: 'saved', bill: BillInstanceResponse): void
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  bill: null,
-})
-
+const props = defineProps<Props>()
 const emit = defineEmits<Emit>()
 
-const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
-
-function toLocalDateString(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
 
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 const name = shallowRef('')
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
-const defaultAmount = shallowRef<string>('')
-const startDate = shallowRef<string>('')
-const recurring = shallowRef(false)
+const amount = shallowRef<string>('')
+const dueDate = shallowRef<string>('')
 const isLoading = shallowRef(false)
-
-const isEditMode = computed(() => props.bill !== null)
 
 function optionLabel<T extends { name: string; active: boolean }>(item: T) {
   return item.active ? item.name : `${item.name} (inativo)`
@@ -97,9 +88,8 @@ watch(
       name.value = props.bill?.name ?? ''
       categoryId.value = props.bill?.categoryId ?? null
       subCategoryId.value = props.bill?.subCategoryId ?? null
-      defaultAmount.value = props.bill ? String(props.bill.defaultAmount) : ''
-      startDate.value = props.bill?.startDate ?? toLocalDateString(new Date())
-      recurring.value = false
+      amount.value = props.bill ? String(props.bill.amount) : ''
+      dueDate.value = props.bill?.dueDate ?? ''
       clearError()
     }
   },
@@ -108,53 +98,26 @@ watch(
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid)
+  if (!valid || !props.bill)
     return
 
   isLoading.value = true
   clearError()
 
   try {
-    if (isEditMode.value) {
-      await $fetch<BillResponse>(`/api/bills/${props.bill!.id}`, {
-        method: 'PUT',
-        body: {
-          version: props.bill!.version,
-          name: name.value,
-          categoryId: categoryId.value,
-          subCategoryId: subCategoryId.value,
-          defaultAmount: Number(defaultAmount.value),
-        },
-      })
-    }
-    else if (recurring.value) {
-      await $fetch<BillResponse>('/api/bills', {
-        method: 'POST',
-        body: {
-          spaceId: spaceStore.activeSpace!.id,
-          name: name.value,
-          categoryId: categoryId.value,
-          subCategoryId: subCategoryId.value,
-          defaultAmount: Number(defaultAmount.value),
-          startDate: startDate.value,
-        },
-      })
-    }
-    else {
-      await $fetch('/api/bills/instances', {
-        method: 'POST',
-        body: {
-          spaceId: spaceStore.activeSpace!.id,
-          name: name.value,
-          categoryId: categoryId.value,
-          subCategoryId: subCategoryId.value,
-          amount: Number(defaultAmount.value),
-          dueDate: startDate.value,
-        },
-      })
-    }
+    const saved = await $fetch<BillInstanceResponse>(`/api/bills/instances/${props.bill.id}`, {
+      method: 'PUT',
+      body: {
+        version: props.bill.version,
+        name: name.value,
+        categoryId: categoryId.value,
+        subCategoryId: subCategoryId.value,
+        amount: Number(amount.value),
+        dueDate: dueDate.value,
+      },
+    })
 
-    emit('saved')
+    emit('saved', saved)
     emit('update:isDialogVisible', false)
   }
   catch (e) {
@@ -181,10 +144,10 @@ function onClose() {
     <VCard class="pa-sm-10 pa-4">
       <VCardText>
         <h4 class="text-h4 text-center mb-2">
-          {{ isEditMode ? 'Editar Conta a Pagar' : 'Adicionar Conta a Pagar' }}
+          Editar Conta
         </h4>
         <p class="text-body-1 text-center mb-6">
-          {{ isEditMode ? 'Atualize os dados padrão da recorrência.' : 'Preencha os dados para criar uma nova conta a pagar.' }}
+          Altera somente esta conta lançada, sem afetar a recorrência.
         </p>
 
         <ApiErrorAlert
@@ -222,28 +185,20 @@ function onClose() {
             />
 
             <AppTextField
-              v-model="defaultAmount"
+              v-model="amount"
               type="number"
               step="0.01"
-              label="Valor padrão"
+              label="Valor"
               placeholder="0.00"
               :rules="amountRules"
             />
 
-            <template v-if="!isEditMode">
-              <AppTextField
-                v-model="startDate"
-                type="date"
-                label="Data de Vencimento"
-                :rules="dateRules"
-              />
-
-              <VCheckbox
-                v-model="recurring"
-                label="Conta recorrente (repete todo mês)"
-                hide-details
-              />
-            </template>
+            <AppTextField
+              v-model="dueDate"
+              type="date"
+              label="Data de Vencimento"
+              :rules="dateRules"
+            />
           </div>
 
           <div class="d-flex align-center justify-center gap-4 mt-6">
@@ -251,7 +206,7 @@ function onClose() {
               :loading="isLoading"
               @click="onSubmit"
             >
-              {{ isEditMode ? 'Salvar' : 'Criar' }}
+              Salvar
             </VBtn>
 
             <VBtn

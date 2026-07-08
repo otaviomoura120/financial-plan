@@ -29,7 +29,7 @@ interface PendingCreditCardInvoiceResponse {
 
 interface PendingBillInstanceResponse {
   billInstanceId: number
-  billId: number
+  billRecurringId: number | null
   billName: string
   referenceMonth: string
   dueDate: string

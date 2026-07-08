@@ -6,14 +6,13 @@ import com.devhouse.financial_plan.application.transaction.CreateTransactionServ
 import com.devhouse.financial_plan.application.transaction.dto.CreateTransactionRequest;
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse;
 import com.devhouse.financial_plan.domain.Bill;
-import com.devhouse.financial_plan.domain.BillInstance;
 import com.devhouse.financial_plan.domain.Category;
+import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
-import com.devhouse.financial_plan.domain.repository.BillInstanceRepository;
-import com.devhouse.financial_plan.domain.repository.CategoryRepository;
+import com.devhouse.financial_plan.domain.repository.BillRepository;
 import com.devhouse.financial_plan.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,46 +20,44 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PayBillInstanceService {
 
-    private final BillInstanceRepository billInstanceRepository;
-    private final CategoryRepository categoryRepository;
+    private final BillRepository billRepository;
     private final UserRepository userRepository;
     private final CreateTransactionService createTransactionService;
 
-    public PayBillInstanceService(BillInstanceRepository billInstanceRepository, CategoryRepository categoryRepository,
-                                   UserRepository userRepository, CreateTransactionService createTransactionService) {
-        this.billInstanceRepository = billInstanceRepository;
-        this.categoryRepository = categoryRepository;
+    public PayBillInstanceService(BillRepository billRepository, UserRepository userRepository,
+                                   CreateTransactionService createTransactionService) {
+        this.billRepository = billRepository;
         this.userRepository = userRepository;
         this.createTransactionService = createTransactionService;
     }
 
     @Transactional
     public BillInstanceResponse execute(Long id, PayBillInstanceRequest request, String auth0Sub) {
-        BillInstance instance = resolveInstance(id);
-        if (!instance.isPending()) {
+        Bill bill = resolveBill(id);
+        if (!bill.isPending()) {
             throw new DomainException("Bill instance is already paid");
         }
-        Bill bill = instance.getBill();
         User user = resolveUser(auth0Sub);
-        Category category = resolveCategory(request.categoryId(), bill);
+        Category category = resolveCategory(bill);
+        SubCategory subCategory = bill.getSubCategory();
 
         CreateTransactionRequest transactionRequest = new CreateTransactionRequest(TransactionType.EXPENSE, user.getId(),
-                request.bankAccountId(), null, category.getId(), null, request.paymentMethodId(), instance.getAmount(),
-                request.paidDate(), "Pagamento de conta - " + bill.getName());
+                request.bankAccountId(), null, category.getId(), subCategory != null ? subCategory.getId() : null,
+                request.paymentMethodId(), bill.getAmount(), request.paidDate(), "Pagamento de conta - " + bill.getName());
         TransactionResponse paymentTransaction = createTransactionService.execute(transactionRequest,
                 TransactionSourceType.BILL_INSTANCE_PAYMENT, bill.getId());
 
-        instance.markAsPaid(request.paidDate(), paymentTransaction.id(), request.bankAccountId());
-        BillInstance updated = billInstanceRepository.update(instance);
+        bill.markAsPaid(request.paidDate(), paymentTransaction.id(), request.bankAccountId());
+        Bill updated = billRepository.update(bill);
         return toResponse(updated);
     }
 
-    private BillInstance resolveInstance(Long id) {
-        BillInstance instance = billInstanceRepository.findById(id);
-        if (instance == null) {
+    private Bill resolveBill(Long id) {
+        Bill bill = billRepository.findById(id);
+        if (bill == null) {
             throw new DomainException("Bill instance not found");
         }
-        return instance;
+        return bill;
     }
 
     private User resolveUser(String auth0Sub) {
@@ -71,24 +68,19 @@ public class PayBillInstanceService {
         return user;
     }
 
-    private Category resolveCategory(Long categoryId, Bill bill) {
-        if (categoryId != null) {
-            Category category = categoryRepository.findById(categoryId);
-            if (category == null) {
-                throw new DomainException("Category not found");
-            }
-            return category;
-        }
+    private Category resolveCategory(Bill bill) {
         if (bill.getCategory() == null) {
-            throw new DomainException("No category informed and the bill has no default category");
+            throw new DomainException("The bill has no category");
         }
         return bill.getCategory();
     }
 
-    private BillInstanceResponse toResponse(BillInstance instance) {
-        return new BillInstanceResponse(instance.getId(), instance.getVersion(), instance.getBill().getId(),
-                instance.getBill().getName(), instance.getReferenceMonth(), instance.getDueDate(), instance.getAmount(),
-                instance.getStatus(), instance.getPaidDate(), instance.getPaymentTransactionId(), instance.getBankAccountId(),
-                instance.getCreatedDate());
+    private BillInstanceResponse toResponse(Bill bill) {
+        return new BillInstanceResponse(bill.getId(), bill.getVersion(),
+                bill.getBillRecurring() != null ? bill.getBillRecurring().getId() : null, bill.getName(),
+                bill.getCategory() != null ? bill.getCategory().getId() : null,
+                bill.getSubCategory() != null ? bill.getSubCategory().getId() : null, bill.getReferenceMonth(),
+                bill.getDueDate(), bill.getAmount(), bill.getStatus(), bill.getPaidDate(), bill.getPaymentTransactionId(),
+                bill.getBankAccountId(), bill.getCreatedDate());
     }
 }

@@ -1,6 +1,6 @@
 package com.devhouse.financial_plan.application.report;
 
-import com.devhouse.financial_plan.application.billinstance.EnsureBillInstancesGeneratedService;
+import com.devhouse.financial_plan.application.billinstance.EnsureRecurringBillsGeneratedService;
 import com.devhouse.financial_plan.application.creditcardinvoice.ListCreditCardInvoicesService;
 import com.devhouse.financial_plan.application.report.dto.PendingBillInstanceResponse;
 import com.devhouse.financial_plan.application.report.dto.PendingCreditCardInvoiceResponse;
@@ -8,11 +8,11 @@ import com.devhouse.financial_plan.application.report.dto.ReportFilterRequest;
 import com.devhouse.financial_plan.application.report.dto.ReportResponse;
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse;
 import com.devhouse.financial_plan.domain.BankAccount;
-import com.devhouse.financial_plan.domain.BillInstance;
+import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository;
-import com.devhouse.financial_plan.domain.repository.BillInstanceRepository;
+import com.devhouse.financial_plan.domain.repository.BillRepository;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 
@@ -27,18 +27,18 @@ public class GenerateReportService {
     private final TransactionRepository transactionRepository;
     private final BankAccountRepository bankAccountRepository;
     private final ListCreditCardInvoicesService listCreditCardInvoicesService;
-    private final EnsureBillInstancesGeneratedService ensureBillInstancesGeneratedService;
-    private final BillInstanceRepository billInstanceRepository;
+    private final EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService;
+    private final BillRepository billRepository;
 
     public GenerateReportService(TransactionRepository transactionRepository, BankAccountRepository bankAccountRepository,
                                   ListCreditCardInvoicesService listCreditCardInvoicesService,
-                                  EnsureBillInstancesGeneratedService ensureBillInstancesGeneratedService,
-                                  BillInstanceRepository billInstanceRepository) {
+                                  EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService,
+                                  BillRepository billRepository) {
         this.transactionRepository = transactionRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.listCreditCardInvoicesService = listCreditCardInvoicesService;
-        this.ensureBillInstancesGeneratedService = ensureBillInstancesGeneratedService;
-        this.billInstanceRepository = billInstanceRepository;
+        this.ensureRecurringBillsGeneratedService = ensureRecurringBillsGeneratedService;
+        this.billRepository = billRepository;
     }
 
     public ReportResponse execute(ReportFilterRequest filter) {
@@ -86,11 +86,12 @@ public class GenerateReportService {
 
     private List<PendingBillInstanceResponse> resolvePendingBillInstances(ReportFilterRequest filter) {
         LocalDate upToDate = filter.to() != null ? filter.to() : LocalDate.now();
-        ensureBillInstancesGeneratedService.execute(filter.spaceId(), upToDate);
-        return billInstanceRepository.findBySpaceAndPeriod(filter.spaceId(), filter.from(), filter.to()).stream()
-                .filter(BillInstance::isPending)
-                .map(instance -> new PendingBillInstanceResponse(instance.getId(), instance.getBill().getId(),
-                        instance.getBill().getName(), instance.getReferenceMonth(), instance.getDueDate(), instance.getAmount()))
+        ensureRecurringBillsGeneratedService.execute(filter.spaceId(), upToDate);
+        return billRepository.findBySpaceAndPeriod(filter.spaceId(), filter.from(), filter.to()).stream()
+                .filter(Bill::isPending)
+                .map(bill -> new PendingBillInstanceResponse(bill.getId(),
+                        bill.getBillRecurring() != null ? bill.getBillRecurring().getId() : null,
+                        bill.getName(), bill.getReferenceMonth(), bill.getDueDate(), bill.getAmount()))
                 .toList();
     }
 

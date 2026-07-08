@@ -101,14 +101,14 @@ VALUES
 (1, '/credit-cards/[0-9]+/invoices/[0-9]{4}-[0-9]{2}-[0-9]{2}/pay',                   'Cartões de Crédito', 72, 'API', 'POST', 'Conta', NOW(), NOW()),
 (1, '/credit-cards/[0-9]+/invoices/[0-9]{4}-[0-9]{2}-[0-9]{2}/undo-payment',          'Cartões de Crédito', 73, 'API', 'POST', 'Conta', NOW(), NOW()),
 
--- BillController — /bills
+-- BillController — /bills (agora CRUD de BillRecurring)
 (1, '/bills',                                 'Contas a Pagar',             74, 'API', 'GET,POST',   'Conta', NOW(), NOW()),
 (1, '/bills/[0-9]+',                          'Contas a Pagar',             75, 'API', 'PUT,DELETE', 'Conta', NOW(), NOW()),
 (1, '/bills/[0-9]+/schedule',                 'Contas a Pagar',             76, 'API', 'PUT',        'Conta', NOW(), NOW()),
 
--- BillInstanceController — /bills/instances
-(1, '/bills/instances',                       'Contas a Pagar',             77, 'API', 'GET',        'Conta', NOW(), NOW()),
-(1, '/bills/instances/[0-9]+/amount',         'Contas a Pagar',             78, 'API', 'PUT',        'Conta', NOW(), NOW()),
+-- BillInstanceController — /bills/instances (agora CRUD de Bill, a conta lançada)
+(1, '/bills/instances',                       'Contas a Pagar',             77, 'API', 'GET,POST',   'Conta', NOW(), NOW()),
+(1, '/bills/instances/[0-9]+',                'Contas a Pagar',             81, 'API', 'PUT,DELETE', 'Conta', NOW(), NOW()),
 (1, '/bills/instances/[0-9]+/pay',            'Contas a Pagar',             79, 'API', 'POST',       'Conta', NOW(), NOW()),
 (1, '/bills/instances/[0-9]+/undo-payment',   'Contas a Pagar',             80, 'API', 'POST',       'Conta', NOW(), NOW());
 
@@ -724,6 +724,68 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r
 JOIN endpoint_permissions ep ON ep.name = 'Contas a Pagar'
+WHERE r.name = 'MEMBER'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- =============================================================================
+-- 12. INCREMENTAL — Bill/BillRecurring model split (BillInstance passou a ser a
+--    entidade principal, renomeada para Bill; a antiga Bill virou BillRecurring,
+--    só a config de recorrência). BillInstanceController ganhou POST/PUT/DELETE
+--    em /bills/instances[/{id}] (criar avulsa, editar completa, excluir) e perdeu
+--    o antigo PUT /bills/instances/{id}/amount. BillController (/bills) não mudou
+--    de path/método. Idempotente via WHERE NOT EXISTS / guarda de UPDATE.
+-- =============================================================================
+
+-- 12.1 — remove o endpoint_permission obsoleto de /amount (cascade apaga as
+--    role_endpoint_permissions dependentes via ON DELETE CASCADE na FK)
+DELETE FROM endpoint_permissions
+WHERE endpoint = '/bills/instances/[0-9]+/amount' AND type = 'API';
+
+-- 12.2 — /bills/instances passa a aceitar também POST (criar conta avulsa)
+UPDATE endpoint_permissions
+SET permitted_methods = 'GET,POST', updated_at = NOW()
+WHERE endpoint = '/bills/instances' AND type = 'API' AND permitted_methods <> 'GET,POST';
+
+-- 12.3 — novo endpoint_permission /bills/instances/{id} (editar completo / excluir)
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/bills/instances/[0-9]+' AS endpoint, 'Contas a Pagar' AS name,
+           81 AS sequence, 'API' AS type, 'PUT,DELETE' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bills/instances/[0-9]+' AND type = 'API');
+
+-- 12.4 — role_endpoint_permissions: OWNER ganha ALLOW em /bills/instances/{id}
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'OWNER'
+  AND ep.endpoint = '/bills/instances/[0-9]+' AND ep.type = 'API'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 12.5 — role_endpoint_permissions: ADMIN ganha ALLOW em /bills/instances/{id}
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep ON ep.endpoint = '/bills/instances/[0-9]+' AND ep.type = 'API'
+WHERE r.name = 'ADMIN'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 12.6 — role_endpoint_permissions: MEMBER ganha ALLOW em /bills/instances/{id}
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep ON ep.endpoint = '/bills/instances/[0-9]+' AND ep.type = 'API'
 WHERE r.name = 'MEMBER'
   AND NOT EXISTS (
       SELECT 1 FROM role_endpoint_permissions rep
