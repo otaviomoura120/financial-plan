@@ -36,10 +36,10 @@ totals. `balance = totalIncome - totalExpense`.
   / `pendingCreditCardTotal` — open (unpaid) credit card invoices whose `dueDate` falls inside
   `[from, to]`. Since installments are materialized at purchase time, this already includes
   future installments of a parceled purchase without any extra generation step.
-- `pendingBillInstances` (`{billInstanceId, billId, billName, referenceMonth, dueDate, amount}[]`)
-  / `pendingBillTotal` — `PENDING` `BillInstance` rows whose `dueDate` falls inside `[from, to]`
-  (the backend runs `EnsureBillInstancesGeneratedService` first, so a never-visited future month
-  is generated on demand).
+- `pendingBillInstances` (`{billInstanceId, billRecurringId, billName, referenceMonth, dueDate, amount}[]`)
+  / `pendingBillTotal` — `PENDING` `Bill` rows whose `dueDate` falls inside `[from, to]` (`billRecurringId`
+  is `null` for a standalone/one-off bill). The backend runs `EnsureRecurringBillsGeneratedService` first,
+  so a never-visited future month of a recurring bill is generated on demand — see `backend/docs/recurring-bills.md`.
 - `projectedBalance = currentBalance - pendingCreditCardTotal - pendingBillTotal`.
 
 ## Frontend — file map

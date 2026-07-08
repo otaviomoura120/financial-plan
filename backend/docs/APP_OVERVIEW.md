@@ -112,29 +112,31 @@ CRUD is exposed via `CreditCardTransactionController` (`/credit-card-transaction
 
 **Anticipation** (`AnticipateCreditCardInstallmentsService`, `POST .../installment-groups/{id}/anticipate`): moves the last N installments of a purchase into an earlier **open** invoice (`targetReferenceMonth`). It rejects if the target invoice is already paid, if `installmentsToAnticipate` is not positive, or if there aren't enough installments strictly after `targetReferenceMonth` to satisfy the request. Eligible installments are picked by descending `installmentNumber` (the last ones first), each moved via the domain's `anticipateTo(...)` (see above — safe against double-anticipation). **It never touches money** — no `TransactionBalanceEffectService` call here; the balance effect only happens later, when the target invoice is actually paid through `PayCreditCardInvoiceService` (CC6), like any other invoice. A full write-up of the invoice/anticipation flow lands in `backend/docs/credit-card-invoice.md` together with CC6.
 
-### Bill
-A recurring or one-off bill **template** (electricity, internet, a one-time repair) — the thing that produces monthly occurrences, not an occurrence itself (see `BillInstance` below). Tenancy is direct, same pattern as `CreditCard`/`BankAccount`:
-- `name`, `category` (optional `Category`, used as the default when paying an instance without picking one explicitly), `defaultAmount` (positive `BigDecimal`, copied into each generated instance), `startDate` (`LocalDate` — anchors the first due date and, for recurring bills, the day-of-month of every future due date), `recurring` (boolean), `active`
-- `validate()` requires `name`, `space`, a positive `defaultAmount`, and a non-null `startDate`; `category` is optional
-- `update(name, category, defaultAmount)` — basic fields — and `updateSchedule(recurring, startDate)` are two **separate** methods on purpose: changing the schedule never touches name/category/amount and vice-versa, and since instance generation always reads the `Bill`'s current state on demand (see `BillInstance` below), a schedule change only ever affects instances not yet generated — anything already materialized (pending or paid) keeps its original `dueDate`
+### BillRecurring
+A recurrence config (electricity, internet, rent) — the thing that produces monthly occurrences, not an occurrence itself (see `Bill` below). Only exists for bills the user marked recurring; a one-off bill never creates one. Tenancy is direct, same pattern as `CreditCard`/`BankAccount`:
+- `name`, `category`/`subCategory` (optional, used as the defaults copied into each generated occurrence), `defaultAmount` (positive `BigDecimal`, copied into each generated occurrence), `startDate` (`LocalDate` — anchors the first due date and the day-of-month of every future due date), `active`
+- `validate()` requires `name`, `space`, a positive `defaultAmount`, and a non-null `startDate`; `category`/`subCategory` are optional
+- `update(name, category, subCategory, defaultAmount)` — basic fields — and `updateSchedule(startDate)` are two **separate** methods on purpose: changing the schedule never touches name/category/subCategory/amount and vice-versa, and since occurrence generation always reads the `BillRecurring`'s current state on demand (see `Bill` below), a schedule change only ever affects occurrences not yet generated — anything already materialized (pending or paid) keeps its original `dueDate`
 - `deactivate()` (soft delete, same as `CreditCard`) and optimistic locking via `setVersion`
 
-A category (`Long categoryId` in the plan's original spec) is stored as a real `Category` object with a physical FK, matching the project's current convention (see REF1-4 in `IMPLEMENTATION_PLAN.md`) rather than a raw `Long`.
+A category/subCategory is stored as a real `Category`/`SubCategory` object with a physical FK, matching the project's current convention (see REF1-4 in `IMPLEMENTATION_PLAN.md`) rather than a raw `Long`.
 
-`CreateBillService` auto-creates exactly one `BillInstance` (`PENDING`, `dueDate = startDate`) in the same transaction **only when `recurring = false`** — a one-off bill is fully usable the moment it's created, with nothing else to generate. A `recurring = true` bill creates zero instances at creation time; its instances only appear lazily, see `EnsureBillInstancesGeneratedService` below.
+`CreateBillInstanceService` (`POST /bills/instances`) creates a standalone `Bill` (`PENDING`, `dueDate` = the requested date) directly, with no `BillRecurring` at all — a one-off bill is fully usable the moment it's created, with nothing else to generate and nothing left over afterward. `CreateBillService` (`POST /bills`) instead creates only a `BillRecurring`; its occurrences appear lazily, see `EnsureRecurringBillsGeneratedService` below.
 
-### BillInstance
-A single month's occurrence of a `Bill` — the thing that actually gets paid. Tenancy is **indirect**, same pattern as `CreditCardTransaction`: it holds a `Bill` (which itself belongs to a `Space`), not a `Space` directly.
-- `bill`, `referenceMonth` (`LocalDate`, first day of month — unique together with `bill` at the database level), `dueDate`, `amount` (starts as a copy of `Bill.defaultAmount`, independently editable while `PENDING`)
+### Bill
+A single month's occurrence — the thing that actually gets paid, and the module's primary entity. Tenancy is **direct**: it always carries its own `space`, never derived through a join.
+- `space`, `billRecurring` (nullable — set only when generated by a `BillRecurring`, `null` for a standalone bill), `name`, `category`/`subCategory`, `referenceMonth` (`LocalDate`, first day of month — unique together with `billRecurring` at the database level), `dueDate`, `amount` (for a recurring-generated bill, starts as a copy of `BillRecurring`'s defaults at generation time; independently editable while `PENDING`), `deleted` (soft-delete flag)
 - `status` (`BillInstanceStatus`: `PENDING`/`PAID`) plus `paidDate`/`paymentTransactionId`/`bankAccountId`, all `null` until paid
-- Unlike `CreditCardInvoicePayment` (which only ever exists once, fully formed, and is never updated — see `credit-card-invoice.md`), `BillInstance` needs its own mutable lifecycle: it must be visible and payable **before** any `Transaction` exists for it, so there is no other row to derive a "paid" flag from by grouping. See `backend/docs/recurring-bills.md` for the full rationale and the generation/payment/undo flow.
-- `updateAmount(newAmount)` and `markAsPaid(paidDate, paymentTransactionId, bankAccountId)` both reject (`DomainException`) if the instance is not currently `PENDING`; `revertToPending()` clears the payment fields and flips back to `PENDING` — used only by the dedicated undo action (`UndoBillInstancePaymentService`), never by the regular update/pay flow
+- Unlike `CreditCardInvoicePayment` (which only ever exists once, fully formed, and is never updated — see `credit-card-invoice.md`), `Bill` needs its own mutable lifecycle: it must be visible and payable **before** any `Transaction` exists for it, so there is no other row to derive a "paid" flag from by grouping. See `backend/docs/recurring-bills.md` for the full rationale, including why the entity was inverted from an earlier `Bill`(template)/`BillInstance`(occurrence) split.
+- `updateDetails(name, category, subCategory, amount, dueDate)`, `markDeleted()` and `markAsPaid(paidDate, paymentTransactionId, bankAccountId)` all reject (`DomainException`) if the bill is not currently `PENDING`; `revertToPending()` clears the payment fields and flips back to `PENDING` — used only by the dedicated undo action (`UndoBillInstancePaymentService`), never by the regular update/pay flow
 
-**Lazy generation** (`EnsureBillInstancesGeneratedService`, no dedicated endpoint — called internally by `ListBillInstancesService` and later by Reports, see `RPT1`): for every active+recurring `Bill` in a space, generates the missing `PENDING` instances from the month after the last one that already exists (or the `Bill`'s `startMonth` if none exist yet) up to `min(month of the requested date, current month + 1)` — same "+1 lookahead, no scheduler" philosophy as the credit card module's invoice grouping, but here rows must actually be written ahead of time since there's nothing to compute from. Idempotent: it always checks `findByBillIdAndReferenceMonth` before inserting, so calling it repeatedly (every list/report request) never creates duplicates.
+**Lazy generation** (`EnsureRecurringBillsGeneratedService`, no dedicated endpoint — called internally by `ListBillInstancesService` and by Reports, see `RPT1`): for every active `BillRecurring` in a space, generates the missing `PENDING` `Bill` rows from the month after the last one that already exists (or the `BillRecurring`'s `startMonth` if none exist yet) up to `min(month of the requested date, current month + 1)` — same "+1 lookahead, no scheduler" philosophy as the credit card module's invoice grouping, but here rows must actually be written ahead of time since there's nothing to compute from. Idempotent: it always checks `findByBillRecurringIdAndReferenceMonth` before inserting (this also matches soft-deleted rows, so a deleted occurrence's month is never regenerated), so calling it repeatedly (every list/report request) never creates duplicates. Standalone bills never go through this service.
 
-Persistence (`BillInstanceRepositoryImpl`) enforces `spaceId` isolation via subquery from the start (`bill_id IN (SELECT id FROM bills WHERE space_id = :spaceId)`), same lesson learned from `T9b`/`CreditCardTransaction`.
+Persistence (`BillRepositoryImpl`) enforces `spaceId` isolation by filtering `Bill.space` directly — no join/subquery needed, since `Bill` (unlike the old `BillInstance`) always carries its own `spaceId`.
 
-**Paying** (`PayBillInstanceService`, `POST /bills/instances/{id}/pay`) and **undoing a payment** (`UndoBillInstancePaymentService`, `POST /bills/instances/{id}/undo-payment`) mirror `PayCreditCardInvoiceService`/`UndoCreditCardInvoicePaymentService` closely: the payer is the authenticated user (never a request field), the generated `Transaction` carries `sourceType=BILL_INSTANCE_PAYMENT`/`sourceId=billId` and is created **before** the instance is marked paid, and undo reverts the balance + hard-deletes that `Transaction` directly (bypassing the normal linked-transaction guard) before flipping the instance back to `PENDING`. Full write-up in `backend/docs/recurring-bills.md`.
+**Editing/deleting** (`UpdateBillService`/`DeleteBillService`, `PUT`/`DELETE /bills/instances/{id}`) only work while `PENDING` (`422` otherwise) and only ever touch the individual `Bill` row — never the parent `BillRecurring`'s defaults, never other occurrences.
+
+**Paying** (`PayBillInstanceService`, `POST /bills/instances/{id}/pay`) and **undoing a payment** (`UndoBillInstancePaymentService`, `POST /bills/instances/{id}/undo-payment`) mirror `PayCreditCardInvoiceService`/`UndoCreditCardInvoicePaymentService` closely: the payer is the authenticated user (never a request field), category/subCategory always come from the `Bill` itself (no override in the request), the generated `Transaction` carries `sourceType=BILL_INSTANCE_PAYMENT`/`sourceId=bill.id` and is created **before** the bill is marked paid, and undo reverts the balance + hard-deletes that `Transaction` directly (bypassing the normal linked-transaction guard) before flipping the bill back to `PENDING`. Full write-up in `backend/docs/recurring-bills.md`.
 
 ---
 
@@ -194,9 +196,10 @@ balance effect (see transaction-balance-effect.md), so recorded balances stay co
   installments already carry their final `referenceMonth` at creation time (CC5), a future installment of a
   parcelled purchase shows up here automatically the moment its `dueDate` falls inside `[from, to]` — no extra
   generation step, unlike bills below.
-- `pendingBillInstances[]` / `pendingBillTotal` — calls `EnsureBillInstancesGeneratedService.execute(spaceId, to ?? today)`
-  first (so the filtered period is fully materialized), then `BillInstanceRepository.findBySpaceAndPeriod(spaceId, from, to)`
-  filtered to `status=PENDING` (paid instances are excluded).
+- `pendingBillInstances[]` / `pendingBillTotal` — calls `EnsureRecurringBillsGeneratedService.execute(spaceId, to ?? today)`
+  first (so the filtered period is fully materialized), then `BillRepository.findBySpaceAndPeriod(spaceId, from, to)`
+  filtered to `status=PENDING` (paid bills are excluded). `spaceId` isolation here comes directly from `Bill.space`,
+  not from a join through a parent template.
 - `projectedBalance = currentBalance - pendingCreditCardTotal - pendingBillTotal`.
 
 Both pending lists only include items whose `dueDate` falls within `[from, to]` — a pending invoice or bill instance
@@ -325,19 +328,21 @@ Full cycle explained in `backend/docs/credit-card-invoice.md` — an invoice is 
 | POST | `/credit-cards/{id}/invoices/{referenceMonth}/undo-payment` | Reverse a payment — reverts the bank account balance, hard-deletes the generated `Transaction` (bypassing the normal linked-transaction guard) and the `CreditCardInvoicePayment` row, so the invoice shows as open again |
 
 ### Bills `/bills`
-Full cycle explained in `backend/docs/recurring-bills.md`.
+Full cycle explained in `backend/docs/recurring-bills.md`. `/bills` itself is `BillRecurring` CRUD; `/bills/instances` is `Bill` (the actual occurrence) CRUD.
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/?spaceId=` | List bills of a space |
-| POST | `/` | Create a bill (`name`, `categoryId?`, `defaultAmount`, `startDate`, `recurring`) — a non-recurring bill also creates its single `BillInstance` immediately |
-| PUT | `/{id}` | Update `name`/`categoryId`/`defaultAmount` |
-| PUT | `/{id}/schedule` | Update `recurring`/`startDate` (dedicated — only affects instances not yet generated) |
-| DELETE | `/{id}` | Deactivate bill (soft delete — `active=false`, no hard delete yet) |
-| GET | `/instances?spaceId=&from=&to=` | List bill instances due within `[from, to]` (both optional); lazily generates any missing recurring-bill instances up to the requested period before returning |
-| PUT | `/instances/{id}/amount` | Update a pending instance's `amount` (rejects with 422 if already paid) |
-| POST | `/instances/{id}/pay` | Pay a pending instance (`bankAccountId`, `categoryId?`, `paymentMethodId`, `paidDate`) — creates an `EXPENSE` `Transaction` (`sourceType=BILL_INSTANCE_PAYMENT`, `sourceId=billId`) debiting `bankAccountId`, then marks the instance `PAID`; payer is the authenticated user, not a request field |
-| POST | `/instances/{id}/undo-payment` | Reverse a payment — reverts the bank account balance, hard-deletes the generated `Transaction` (bypassing the normal linked-transaction guard) and flips the instance back to `PENDING` |
+| GET | `/?spaceId=` | List `BillRecurring` configs of a space |
+| POST | `/` | Create a `BillRecurring` (`name`, `categoryId?`, `subCategoryId?`, `defaultAmount`, `startDate`) — occurrences are generated lazily, none is created here |
+| PUT | `/{id}` | Update `name`/`categoryId`/`subCategoryId`/`defaultAmount` |
+| PUT | `/{id}/schedule` | Update `startDate` (dedicated — only affects occurrences not yet generated) |
+| DELETE | `/{id}` | Deactivate the `BillRecurring` (soft delete — `active=false`, no hard delete/reactivate yet) |
+| GET | `/instances?spaceId=&from=&to=` | List `Bill` occurrences due within `[from, to]` (both optional); lazily generates any missing recurring-bill occurrences up to the requested period before returning |
+| POST | `/instances` | Create a standalone `Bill` directly (`spaceId`, `name`, `categoryId?`, `subCategoryId?`, `amount`, `dueDate`) — no `BillRecurring` involved |
+| PUT | `/instances/{id}` | Update a pending `Bill`'s `name`/`categoryId`/`subCategoryId`/`amount`/`dueDate` (rejects with 422 if already paid); never touches a parent `BillRecurring` |
+| DELETE | `/instances/{id}` | Soft-delete a pending `Bill` (rejects with 422 if already paid) |
+| POST | `/instances/{id}/pay` | Pay a pending bill (`bankAccountId`, `paymentMethodId`, `paidDate` — no category override) — creates an `EXPENSE` `Transaction` (`sourceType=BILL_INSTANCE_PAYMENT`, `sourceId=bill.id`) debiting `bankAccountId` using the bill's own category/subCategory, then marks it `PAID`; payer is the authenticated user, not a request field |
+| POST | `/instances/{id}/undo-payment` | Reverse a payment — reverts the bank account balance, hard-deletes the generated `Transaction` (bypassing the normal linked-transaction guard) and flips the bill back to `PENDING` |
 
 ### Roles `/roles`
 | Method | Path | Purpose |
