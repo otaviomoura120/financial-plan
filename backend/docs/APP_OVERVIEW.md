@@ -92,6 +92,22 @@ First entity of the new **credit card module** (in progress). Tenancy is direct,
 
 CRUD is exposed via `CreditCardController` (`/credit-cards`, see REST API Reference below), protected by `@PreAuthorize` from the start — unlike the core module, this credit card controller never had the T10 authorization gap. `DELETE /credit-cards/{id}` maps to `DeactivateCreditCardService`, which soft-deletes (`active=false`, same as `BankAccount`/`PaymentMethod` before their DEL2/DEL3 hard-delete rework) rather than removing the row — no hard delete/`existsBy` FK-guard exists yet for this entity. `seed.sql` grants `'Cartões de Crédito'` `ALLOW` to OWNER/ADMIN/MEMBER and adds its sidebar entry under the existing `'Contas e Pagamentos'` group.
 
+### CreditCardTransaction
+A single purchase (or a single installment of a parcelled purchase) made on a `CreditCard`. Tenancy is **indirect** — same pattern as `Transaction`/`SubCategory`: it holds a `CreditCard` (which itself belongs to a `Space`), not a `Space` directly.
+- Links: `creditCard`, `user`, `category`, `subCategory` (optional) — all resolved as domain objects with a real FK, matching the project's current convention (see REF1-4 in `IMPLEMENTATION_PLAN.md`); there is no `paymentMethod` (it's implicitly "this credit card") and no `bankAccount` (a credit card purchase never touches a bank account balance directly — only paying the invoice does, see `CreditCardInvoicePayment`)
+- `amount` (positive `BigDecimal`), `purchaseDate` (`LocalDate`), `description` (optional)
+- No soft-delete — hard delete, like `Transaction`
+- **Planned guard (not yet implemented — lands with CC5):** create/update/delete will be rejected with `DomainException` once a `CreditCardInvoicePayment` already exists for `(creditCard, transaction.referenceMonth)` — "cannot modify a transaction from a paid invoice"
+
+**Installments model.** A purchase split into N installments is stored as **N separate rows**, one per future invoice, linked by a shared group id — not as one row with an in-memory projection. A cash purchase is just the `totalInstallments=1` case of the same model, no special-casing:
+- `referenceMonth` (`LocalDate`, first day of month) — which monthly invoice this specific installment belongs to. Unlike a plain `Transaction`, this is **computed once and stored at creation**, not re-derived on every read: installment 1 uses `CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, card.closingDay)`; installment *i* (i>1) uses `referenceMonth(installment 1).plusMonths(i-1)`. `purchaseDate` keeps meaning "when the purchase was made" (same value across every installment of the group) and is no longer used to derive the invoice at read time.
+- `installmentGroupId` (`String`, UUID) — shared by every row of the same purchase (a cash purchase is a group of one)
+- `installmentNumber` (1-based) / `totalInstallments` (1-60) — position within the group and its size; `validate()` enforces `1 <= totalInstallments <= 60` and `1 <= installmentNumber <= totalInstallments`
+- `anticipated` / `originalReferenceMonth` — set by `anticipateTo(LocalDate targetReferenceMonth)`, which moves this installment to an earlier open invoice: on the *first* call it snapshots the current `referenceMonth` into `originalReferenceMonth` before overwriting it; a *second* anticipation of an already-anticipated row moves `referenceMonth` again but keeps the original `originalReferenceMonth` untouched (so it always reflects where the installment would have landed with no anticipation at all, not the last intermediate stop)
+- Per-installment amount rounding (splitting the total across N installments, last one absorbing the rounding residue) is an **application-layer** concern (CC5), not part of this domain class
+
+Persistence (`CreditCardTransactionRepositoryImpl`) enforces `spaceId` isolation via subquery from the start (`credit_card_id IN (SELECT id FROM credit_cards WHERE space_id = :spaceId)`) — learned from the `T9b` gap in the core `Transaction` module, where this filter was missing until a dedicated task added it after the fact. `findByInstallmentGroupId` returns every row of a purchase (used later by installment-progress UI and by anticipation). The `(credit_card_id, reference_month)` index is **not unique** — several installments (from the same or different purchases, including anticipated ones) legitimately coexist in the same invoice month.
+
 ---
 
 ## Key Flows

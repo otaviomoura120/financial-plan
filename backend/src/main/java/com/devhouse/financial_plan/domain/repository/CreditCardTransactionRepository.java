@@ -1,0 +1,15 @@
+package com.devhouse.financial_plan.domain.repository;
+
+import com.devhouse.financial_plan.domain.CreditCardTransaction;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public interface CreditCardTransactionRepository {
+    CreditCardTransaction save(CreditCardTransaction creditCardTransaction);
+    CreditCardTransaction update(CreditCardTransaction creditCardTransaction);
+    CreditCardTransaction findById(Long id);
+    List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, LocalDate from, LocalDate to);
+    List<CreditCardTransaction> findByInstallmentGroupId(String installmentGroupId);
+    void delete(Long id);
+}
