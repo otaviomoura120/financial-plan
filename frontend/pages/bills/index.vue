@@ -303,45 +303,51 @@ function formatDate(isoDate: string) {
 
         <VSpacer />
 
-        <AppTextField
-          v-model="from"
-          type="date"
-          label="De"
-          density="compact"
-          hide-details
-          style="max-inline-size: 170px"
-        />
+        <div class="d-flex flex-wrap align-center gap-2" style="flex-grow: 1; justify-content: flex-end;">
 
-        <AppTextField
-          v-model="to"
-          type="date"
-          label="Até"
-          density="compact"
-          hide-details
-          style="max-inline-size: 170px"
-        />
+          <VTextField
+            v-model="from"
+            type="date"
+            label="De"
+            density="compact"
+            hide-details
+            style="max-inline-size: 170px"
+          />
 
-        <VBtn
-          variant="tonal"
-          @click="fetchBills"
-        >
-          Filtrar
-        </VBtn>
+          <VTextField
+            v-model="to"
+            type="date"
+            label="Até"
+            density="compact"
+            hide-details
+            style="max-inline-size: 170px"
+          />
 
-        <VBtn
-          variant="tonal"
-          prepend-icon="tabler-calendar-cog"
-          @click="openRecurrenceSettings"
-        >
-          <span class="d-none d-sm-inline">Configurações de Recorrência</span>
-        </VBtn>
+          <VBtn
+            variant="tonal"
+            @click="fetchBills"
+          >
+            Filtrar
+          </VBtn>
 
-        <VBtn
-          prepend-icon="tabler-plus"
-          @click="openAdd"
-        >
-          <span class="d-none d-sm-inline">Adicionar Conta</span>
-        </VBtn>
+
+          <VBtn
+            variant="tonal"
+            prepend-icon="tabler-calendar-cog"
+            @click="openRecurrenceSettings"
+          >
+            <span class="d-sm-inline">Recorrências</span>
+          </VBtn>
+
+          <VBtn
+            prepend-icon="tabler-plus"
+            @click="openAdd"
+          >
+            <span class="d-sm-inline">Adicionar Conta</span>
+          </VBtn>
+        </div>
+
+
       </VCardText>
 
       <VDivider />
