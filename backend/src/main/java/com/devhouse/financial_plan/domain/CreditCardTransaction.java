@@ -81,6 +81,15 @@ public class CreditCardTransaction {
         }
     }
 
+    public void update(Category category, SubCategory subCategory, BigDecimal amount, LocalDate purchaseDate, String description) {
+        this.category = category;
+        this.subCategory = subCategory;
+        this.amount = amount;
+        this.purchaseDate = purchaseDate;
+        this.description = description;
+        this.updatedDate = Instant.now();
+    }
+
     public void anticipateTo(LocalDate targetReferenceMonth) {
         if (!anticipated) {
             this.originalReferenceMonth = this.referenceMonth;

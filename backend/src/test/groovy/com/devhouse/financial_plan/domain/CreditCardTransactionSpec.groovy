@@ -199,4 +199,24 @@ class CreditCardTransactionSpec extends Specification {
         transaction.isAnticipated()
         transaction.getOriginalReferenceMonth() == LocalDate.of(2026, 3, 1)
     }
+
+    def "update replaces category, subCategory, amount, purchaseDate and description without touching installment fields"() {
+        given:
+        CreditCardTransaction transaction = buildTransaction("group-1", 3, 12)
+        Category newCategory = new Category(21L, 0, null, "Travel", true, Instant.now(), null)
+        SubCategory newSubCategory = new SubCategory(30L, 0, newCategory, "Flights", true, null, null)
+
+        when:
+        transaction.update(newCategory, newSubCategory, new BigDecimal("250.00"), LocalDate.of(2026, 3, 20), "new desc")
+
+        then:
+        transaction.getCategory() == newCategory
+        transaction.getSubCategory() == newSubCategory
+        transaction.getAmount() == new BigDecimal("250.00")
+        transaction.getPurchaseDate() == LocalDate.of(2026, 3, 20)
+        transaction.getDescription() == "new desc"
+        transaction.getReferenceMonth() == LocalDate.of(2026, 3, 1)
+        transaction.getInstallmentNumber() == 3
+        transaction.getTotalInstallments() == 12
+    }
 }

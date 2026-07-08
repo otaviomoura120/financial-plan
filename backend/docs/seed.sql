@@ -86,7 +86,14 @@ VALUES
 
 -- CreditCardController — /credit-cards
 (1, '/credit-cards',                          'Cartões de Crédito',         65, 'API', 'GET,POST',   'Conta',        NOW(), NOW()),
-(1, '/credit-cards/[0-9]+',                   'Cartões de Crédito',         66, 'API', 'PUT,DELETE', 'Conta',        NOW(), NOW());
+(1, '/credit-cards/[0-9]+',                   'Cartões de Crédito',         66, 'API', 'PUT,DELETE', 'Conta',        NOW(), NOW()),
+
+-- CreditCardTransactionController — /credit-card-transactions
+-- name reuses 'Cartões de Crédito' (same as CreditCardController above) so it inherits
+-- ALLOW automatically via the ADMIN/MEMBER ep.name IN (...) joins in section 5 below.
+(1, '/credit-card-transactions',                                 'Cartões de Crédito', 67, 'API', 'GET,POST',   'Conta', NOW(), NOW()),
+(1, '/credit-card-transactions/[0-9]+',                          'Cartões de Crédito', 68, 'API', 'PUT,DELETE', 'Conta', NOW(), NOW()),
+(1, '/credit-card-transactions/installment-groups/[a-zA-Z0-9-]+','Cartões de Crédito', 69, 'API', 'GET',        'Conta', NOW(), NOW());
 
 
 -- =============================================================================
@@ -386,6 +393,74 @@ WHERE r.name = 'ADMIN'
   );
 
 -- 7.6 — role_endpoint_permissions: MEMBER ganha ALLOW em 'Cartões de Crédito'
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep ON ep.name = 'Cartões de Crédito'
+WHERE r.name = 'MEMBER'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- =============================================================================
+-- 8. INCREMENTAL — CreditCardTransaction (Grupo CC5)
+--    Mesmo raciocínio da seção 7. As 3 linhas abaixo reaproveitam o name 'Cartões de
+--    Crédito' (mesmo já usado pelo CreditCardController), então em um banco novo elas já
+--    herdam ALLOW sozinhas via os joins de ep.name da seção 5 — esta seção só é necessária
+--    para quem já rodou a seção 5/7 antes deste módulo existir. Idempotente via WHERE NOT
+--    EXISTS; 8.2/8.3/8.4 casam por name, então cobrem as 3 linhas novas de uma vez.
+-- =============================================================================
+
+-- 8.1 — endpoint_permissions (API) que ainda não existirem
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/credit-card-transactions' AS endpoint, 'Cartões de Crédito' AS name,
+           67 AS sequence, 'API' AS type, 'GET,POST' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/credit-card-transactions' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/credit-card-transactions/[0-9]+' AS endpoint, 'Cartões de Crédito' AS name,
+           68 AS sequence, 'API' AS type, 'PUT,DELETE' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/credit-card-transactions/[0-9]+' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/credit-card-transactions/installment-groups/[a-zA-Z0-9-]+' AS endpoint, 'Cartões de Crédito' AS name,
+           69 AS sequence, 'API' AS type, 'GET' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/credit-card-transactions/installment-groups/[a-zA-Z0-9-]+' AND type = 'API');
+
+-- 8.2 — role_endpoint_permissions: OWNER ganha ALLOW em 'Cartões de Crédito' (cobre as 3 linhas novas)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'OWNER'
+  AND ep.name = 'Cartões de Crédito'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 8.3 — role_endpoint_permissions: ADMIN ganha ALLOW em 'Cartões de Crédito'
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep ON ep.name = 'Cartões de Crédito'
+WHERE r.name = 'ADMIN'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 8.4 — role_endpoint_permissions: MEMBER ganha ALLOW em 'Cartões de Crédito'
 INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r

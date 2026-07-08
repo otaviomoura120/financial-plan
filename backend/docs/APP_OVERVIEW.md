@@ -97,16 +97,18 @@ A single purchase (or a single installment of a parcelled purchase) made on a `C
 - Links: `creditCard`, `user`, `category`, `subCategory` (optional) — all resolved as domain objects with a real FK, matching the project's current convention (see REF1-4 in `IMPLEMENTATION_PLAN.md`); there is no `paymentMethod` (it's implicitly "this credit card") and no `bankAccount` (a credit card purchase never touches a bank account balance directly — only paying the invoice does, see `CreditCardInvoicePayment`)
 - `amount` (positive `BigDecimal`), `purchaseDate` (`LocalDate`), `description` (optional)
 - No soft-delete — hard delete, like `Transaction`
-- **Planned guard (not yet implemented — lands with CC5):** create/update/delete will be rejected with `DomainException` once a `CreditCardInvoicePayment` already exists for `(creditCard, transaction.referenceMonth)` — "cannot modify a transaction from a paid invoice"
+- **Paid-invoice guard:** `UpdateCreditCardTransactionService`/`DeleteCreditCardTransactionService` reject with `DomainException` ("cannot modify/delete a transaction from a paid invoice") whenever a `CreditCardInvoicePayment` already exists for `(creditCard, transaction.referenceMonth)`. `CreateCreditCardTransactionService` applies the same check against every installment's `referenceMonth` before creating any row — a new purchase can never land inside an invoice that's already paid.
 
 **Installments model.** A purchase split into N installments is stored as **N separate rows**, one per future invoice, linked by a shared group id — not as one row with an in-memory projection. A cash purchase is just the `totalInstallments=1` case of the same model, no special-casing:
 - `referenceMonth` (`LocalDate`, first day of month) — which monthly invoice this specific installment belongs to. Unlike a plain `Transaction`, this is **computed once and stored at creation**, not re-derived on every read: installment 1 uses `CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, card.closingDay)`; installment *i* (i>1) uses `referenceMonth(installment 1).plusMonths(i-1)`. `purchaseDate` keeps meaning "when the purchase was made" (same value across every installment of the group) and is no longer used to derive the invoice at read time.
 - `installmentGroupId` (`String`, UUID) — shared by every row of the same purchase (a cash purchase is a group of one)
 - `installmentNumber` (1-based) / `totalInstallments` (1-60) — position within the group and its size; `validate()` enforces `1 <= totalInstallments <= 60` and `1 <= installmentNumber <= totalInstallments`
 - `anticipated` / `originalReferenceMonth` — set by `anticipateTo(LocalDate targetReferenceMonth)`, which moves this installment to an earlier open invoice: on the *first* call it snapshots the current `referenceMonth` into `originalReferenceMonth` before overwriting it; a *second* anticipation of an already-anticipated row moves `referenceMonth` again but keeps the original `originalReferenceMonth` untouched (so it always reflects where the installment would have landed with no anticipation at all, not the last intermediate stop)
-- Per-installment amount rounding (splitting the total across N installments, last one absorbing the rounding residue) is an **application-layer** concern (CC5), not part of this domain class
+- Per-installment amount rounding: `CreateCreditCardTransactionService` divides the total by `totalInstallments` truncated to 2 decimals (`RoundingMode.DOWN`), then the **last** installment gets `total - (base × (N-1))` — so the sum of all installments always equals the original amount exactly, even when it doesn't divide evenly (e.g. R$100,00 in 3x → R$33,33 / R$33,33 / R$33,34)
 
 Persistence (`CreditCardTransactionRepositoryImpl`) enforces `spaceId` isolation via subquery from the start (`credit_card_id IN (SELECT id FROM credit_cards WHERE space_id = :spaceId)`) — learned from the `T9b` gap in the core `Transaction` module, where this filter was missing until a dedicated task added it after the fact. `findByInstallmentGroupId` returns every row of a purchase (used later by installment-progress UI and by anticipation). The `(credit_card_id, reference_month)` index is **not unique** — several installments (from the same or different purchases, including anticipated ones) legitimately coexist in the same invoice month.
+
+CRUD is exposed via `CreditCardTransactionController` (`/credit-card-transactions`, see REST API Reference below), `@PreAuthorize` on every method from the start. `CreateCreditCardTransactionService` accepts an optional `totalInstallments` in the request: `<= 1` behaves like a single cash purchase (one row); `> 1` creates all N rows in one `@Transactional` call, sharing the same `installmentGroupId`. `UpdateCreditCardTransactionService`/`DeleteCreditCardTransactionService` operate on a single row — editing or deleting one installment never renumbers or recalculates the others in its group. `GET /credit-card-transactions/installment-groups/{installmentGroupId}` (`ListInstallmentGroupService`) returns every row of a purchase sorted by `installmentNumber`, used by the UI to show progress (e.g. "3/12") and by the future anticipation flow (CC5b) to pick eligible installments.
 
 ---
 
@@ -257,6 +259,15 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | POST | `/` | Create credit card (`name`, `limit`, `closingDay`, `dueDay`) |
 | PUT | `/{id}` | Update name/limit/closingDay/dueDay |
 | DELETE | `/{id}` | Deactivate credit card (soft delete — `active=false`, no hard delete yet) |
+
+### Credit Card Transactions `/credit-card-transactions`
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/?spaceId=&creditCardId=&categoryId=&subCategoryId=&from=&to=` | List credit card transactions (filters optional, `from`/`to` match `purchaseDate`) |
+| GET | `/installment-groups/{installmentGroupId}` | List every installment of a purchase, sorted by `installmentNumber` |
+| POST | `/` | Create a purchase (`creditCardId`, `userId`, `categoryId`, `subCategoryId?`, `amount`, `purchaseDate`, `description?`, `totalInstallments?`) — `totalInstallments > 1` creates all N rows at once |
+| PUT | `/{id}` | Update a single installment's `categoryId`/`subCategoryId`/`amount`/`purchaseDate`/`description` (rejects with 422 if its invoice is already paid) |
+| DELETE | `/{id}` | Delete a single installment (hard delete; rejects with 422 if its invoice is already paid) |
 
 ### Roles `/roles`
 | Method | Path | Purpose |
