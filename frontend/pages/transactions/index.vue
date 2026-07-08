@@ -289,37 +289,45 @@ function formatDate(isoDate: string) {
 
         <VSpacer />
 
-        <AppTextField
-          v-model="from"
-          type="date"
-          label="De"
-          density="compact"
-          hide-details
-          style="max-inline-size: 170px"
-        />
-
-        <AppTextField
-          v-model="to"
-          type="date"
-          label="Até"
-          density="compact"
-          hide-details
-          style="max-inline-size: 170px"
-        />
-
-        <VBtn
-          variant="tonal"
-          @click="fetchTransactions"
+        <div
+          class="d-flex flex-wrap align-center gap-2"
+          style="flex-grow: 1; justify-content: flex-end;"
         >
-          Filtrar
-        </VBtn>
+          <VTextField
+            v-model="from"
+            type="date"
+            label="De"
+            density="compact"
+            hide-details
+            style="max-inline-size: 170px"
+          />
 
-        <VBtn
-          prepend-icon="tabler-plus"
-          @click="openCreate"
-        >
-          <span class="d-none d-sm-inline">Adicionar Transação</span>
-        </VBtn>
+          <VTextField
+            v-model="to"
+            type="date"
+            label="Até"
+            density="compact"
+            hide-details
+            style="max-inline-size: 170px"
+          />
+
+          <VBtn
+            variant="tonal"
+            @click="fetchTransactions"
+          >
+            Filtrar
+          </VBtn>
+
+          <VBtn
+            prepend-icon="tabler-plus"
+            @click="openCreate"
+          >
+            <span class="d-sm-inline">Adicionar Transação</span>
+          </VBtn>
+
+        </div>
+
+
       </VCardText>
 
       <VDivider />
@@ -363,7 +371,7 @@ function formatDate(isoDate: string) {
               </th>
               <th>Forma de Pagamento</th>
               <th>Descrição</th>
-              <th class="text-right">
+              <th class="text-right" style="min-width: 115px">
                 Valor
               </th>
               <th class="text-center">
@@ -375,6 +383,7 @@ function formatDate(isoDate: string) {
             <tr
               v-for="transaction in paginatedTransactions"
               :key="transaction.id"
+              style="font-size: 0.8rem"
             >
               <td>{{ formatDate(transaction.transactionDate) }}</td>
               <td>
