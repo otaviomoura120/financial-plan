@@ -460,7 +460,7 @@ Criar `domain/CreditCard.java`, `domain/CreditCardInvoiceCycle.java` (calculador
 
 ### [Grupo CC3] Domínio e persistência: CreditCardInvoicePayment
 
-- [ ] **CC3 — CreditCardInvoicePayment: domain + persistência**
+- [x] **CC3 — CreditCardInvoicePayment: domain + persistência**
 Criar `domain/CreditCardInvoicePayment.java`, `domain/repository/CreditCardInvoicePaymentRepository.java` (`save/findById/findByCreditCardIdAndReferenceMonth/deleteById`), JPA entity (índice único `credit_card_id+reference_month`), `JpaCreditCardInvoicePaymentRepository`, `CreditCardInvoicePaymentRepositoryImpl`.
 *Depende de:* CC1.
 **Testes (obrigatório):** `CreditCardInvoicePaymentSpec.groovy` (validate).
