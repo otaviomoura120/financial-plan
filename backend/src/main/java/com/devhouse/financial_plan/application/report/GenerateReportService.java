@@ -1,23 +1,44 @@
 package com.devhouse.financial_plan.application.report;
 
+import com.devhouse.financial_plan.application.billinstance.EnsureBillInstancesGeneratedService;
+import com.devhouse.financial_plan.application.creditcardinvoice.ListCreditCardInvoicesService;
+import com.devhouse.financial_plan.application.report.dto.PendingBillInstanceResponse;
+import com.devhouse.financial_plan.application.report.dto.PendingCreditCardInvoiceResponse;
 import com.devhouse.financial_plan.application.report.dto.ReportFilterRequest;
 import com.devhouse.financial_plan.application.report.dto.ReportResponse;
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse;
+import com.devhouse.financial_plan.domain.BankAccount;
+import com.devhouse.financial_plan.domain.BillInstance;
 import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.repository.BankAccountRepository;
+import com.devhouse.financial_plan.domain.repository.BillInstanceRepository;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.function.Function;
 
 @Service
 public class GenerateReportService {
 
     private final TransactionRepository transactionRepository;
+    private final BankAccountRepository bankAccountRepository;
+    private final ListCreditCardInvoicesService listCreditCardInvoicesService;
+    private final EnsureBillInstancesGeneratedService ensureBillInstancesGeneratedService;
+    private final BillInstanceRepository billInstanceRepository;
 
-    public GenerateReportService(TransactionRepository transactionRepository) {
+    public GenerateReportService(TransactionRepository transactionRepository, BankAccountRepository bankAccountRepository,
+                                  ListCreditCardInvoicesService listCreditCardInvoicesService,
+                                  EnsureBillInstancesGeneratedService ensureBillInstancesGeneratedService,
+                                  BillInstanceRepository billInstanceRepository) {
         this.transactionRepository = transactionRepository;
+        this.bankAccountRepository = bankAccountRepository;
+        this.listCreditCardInvoicesService = listCreditCardInvoicesService;
+        this.ensureBillInstancesGeneratedService = ensureBillInstancesGeneratedService;
+        this.billInstanceRepository = billInstanceRepository;
     }
 
     public ReportResponse execute(ReportFilterRequest filter) {
@@ -32,7 +53,51 @@ public class GenerateReportService {
         BigDecimal totalIncome = sumByType(transactions, true);
         BigDecimal totalExpense = sumByType(transactions, false);
 
-        return new ReportResponse(responses, totalIncome, totalExpense, totalIncome.subtract(totalExpense));
+        BigDecimal currentBalance = resolveCurrentBalance(filter);
+        List<PendingCreditCardInvoiceResponse> pendingCreditCardInvoices = resolvePendingCreditCardInvoices(filter);
+        BigDecimal pendingCreditCardTotal = sum(pendingCreditCardInvoices, PendingCreditCardInvoiceResponse::amount);
+        List<PendingBillInstanceResponse> pendingBillInstances = resolvePendingBillInstances(filter);
+        BigDecimal pendingBillTotal = sum(pendingBillInstances, PendingBillInstanceResponse::amount);
+        BigDecimal projectedBalance = currentBalance.subtract(pendingCreditCardTotal).subtract(pendingBillTotal);
+
+        return new ReportResponse(responses, totalIncome, totalExpense, totalIncome.subtract(totalExpense),
+                currentBalance, pendingCreditCardInvoices, pendingCreditCardTotal, pendingBillInstances, pendingBillTotal,
+                projectedBalance);
+    }
+
+    private BigDecimal resolveCurrentBalance(ReportFilterRequest filter) {
+        if (filter.bankAccountId() != null) {
+            BankAccount account = bankAccountRepository.findById(filter.bankAccountId());
+            return account != null ? account.getBalance() : BigDecimal.ZERO;
+        }
+        return bankAccountRepository.findBySpaceId(filter.spaceId()).stream()
+                .filter(BankAccount::isActive)
+                .map(BankAccount::getBalance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private List<PendingCreditCardInvoiceResponse> resolvePendingCreditCardInvoices(ReportFilterRequest filter) {
+        return listCreditCardInvoicesService.execute(filter.spaceId(), null, filter.from(), filter.to()).stream()
+                .filter(invoice -> !invoice.paid())
+                .map(invoice -> new PendingCreditCardInvoiceResponse(invoice.creditCardId(), invoice.creditCardName(),
+                        invoice.referenceMonth(), invoice.dueDate(), invoice.totalAmount()))
+                .toList();
+    }
+
+    private List<PendingBillInstanceResponse> resolvePendingBillInstances(ReportFilterRequest filter) {
+        LocalDate upToDate = filter.to() != null ? filter.to() : LocalDate.now();
+        ensureBillInstancesGeneratedService.execute(filter.spaceId(), upToDate);
+        return billInstanceRepository.findBySpaceAndPeriod(filter.spaceId(), filter.from(), filter.to()).stream()
+                .filter(BillInstance::isPending)
+                .map(instance -> new PendingBillInstanceResponse(instance.getId(), instance.getBill().getId(),
+                        instance.getBill().getName(), instance.getReferenceMonth(), instance.getDueDate(), instance.getAmount()))
+                .toList();
+    }
+
+    private <T> BigDecimal sum(List<T> items, Function<T, BigDecimal> amountExtractor) {
+        return items.stream()
+                .map(amountExtractor)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private List<TransactionResponse> buildResponses(List<Transaction> transactions) {

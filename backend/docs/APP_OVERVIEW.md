@@ -171,7 +171,9 @@ POST /reports
   body: { spaceId, from, to, userId?, bankAccountId?, categoryId?, subCategoryId?, paymentMethodId?, type? }
   → spaceId is required (422 DomainException if missing)
   → queries transactions matching all filters, scoped to bank accounts of that space
-  → returns: { transactions[], totalIncome, totalExpense, balance }
+  → returns: { transactions[], totalIncome, totalExpense, balance,
+               currentBalance, pendingCreditCardInvoices[], pendingCreditCardTotal,
+               pendingBillInstances[], pendingBillTotal, projectedBalance }
 ```
 `spaceId` is mandatory and enforces multi-tenant isolation: `Transaction` has no `spaceId` column of its own (only
 `bankAccountId`), so `TransactionRepositoryImpl.findByFilter` restricts results with
@@ -182,6 +184,23 @@ return transactions whose bank account belongs to another space, regardless of t
 `Transaction.isIncome()`/`isExpense()` both return `false` for `TRANSFER`, so the sums naturally skip it without any
 extra branching in `GenerateReportService`. Also delete a transaction reverts its `TransactionBalanceEffectService`
 balance effect (see transaction-balance-effect.md), so recorded balances stay consistent for reporting purposes.
+
+**Projected balance (RPT1).** `GenerateReportService` also computes a forward-looking view, independent of the
+`transactions[]`/totals above:
+- `currentBalance` — sum of `balance` across every **active** `BankAccount` in the space, or just the filtered
+  account's `balance` when `bankAccountId` is informed (`BankAccountRepository.findById`/`findBySpaceId`).
+- `pendingCreditCardInvoices[]` / `pendingCreditCardTotal` — reuses `ListCreditCardInvoicesService` (see
+  `credit-card-invoice.md`) with `creditCardId=null`, keeping only invoices where `paid=false`. Since credit card
+  installments already carry their final `referenceMonth` at creation time (CC5), a future installment of a
+  parcelled purchase shows up here automatically the moment its `dueDate` falls inside `[from, to]` — no extra
+  generation step, unlike bills below.
+- `pendingBillInstances[]` / `pendingBillTotal` — calls `EnsureBillInstancesGeneratedService.execute(spaceId, to ?? today)`
+  first (so the filtered period is fully materialized), then `BillInstanceRepository.findBySpaceAndPeriod(spaceId, from, to)`
+  filtered to `status=PENDING` (paid instances are excluded).
+- `projectedBalance = currentBalance - pendingCreditCardTotal - pendingBillTotal`.
+
+Both pending lists only include items whose `dueDate` falls within `[from, to]` — a pending invoice or bill instance
+due outside the filtered period simply doesn't affect `projectedBalance`, even though it still exists.
 
 ### 4. Access Control Flow
 ```

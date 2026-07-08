@@ -577,7 +577,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo RPT1] Saldo previsto no Report
 
-- [ ] **RPT1 — Saldo previsto em GenerateReportService**
+- [x] **RPT1 — Saldo previsto em GenerateReportService**
 Editar `ReportFilterRequest`/`ReportResponse` (campos novos da spec acima). Editar `GenerateReportService`: injeta `BankAccountRepository`, `CreditCardRepository`, `CreditCardTransactionRepository`, `CreditCardInvoicePaymentRepository`, `EnsureBillInstancesGeneratedService`, `BillInstanceRepository`; calcula `currentBalance`, pendências de cartão e de contas, `projectedBalance`.
 *Depende de:* CC6, AP5 (única tarefa que toca `GenerateReportService` para os dois módulos, evita reabrir o arquivo duas vezes).
 **Nota sobre parcelas de cartão:** ao contrário de `BillInstance` (que depende de `EnsureBillInstancesGeneratedService` rodando sob demanda), as parcelas de `CreditCardTransaction` já nascem materializadas na criação da compra (ver CC5) — então `pendingCreditCardInvoices`/`pendingCreditCardTotal` já enxergam parcelas de meses futuros dentro do período filtrado (`from`/`to`) sem nenhum passo de geração adicional; só é preciso que a consulta agrupe pelo `referenceMonth` armazenado (ver CC4/CC6), não há necessidade de um serviço de geração análogo ao de Bills para o cartão.
@@ -587,7 +587,7 @@ Editar `ReportFilterRequest`/`ReportResponse` (campos novos da spec acima). Edit
 
 ### [Grupo GATE1] Gate final dos dois módulos
 
-- [ ] **GATE1 — ArchUnit + suíte completa (gate final CC+AP)**
+- [x] **GATE1 — ArchUnit + suíte completa (gate final CC+AP)**
 Rodar `./gradlew test` (inclui `ArchitectureTest` + todas as specs de P1/CC1-7/AP1-6/RPT1). Confirmar que nenhum service novo vazou de camada.
 *Depende de:* todas as anteriores desta seção.
 **Testes (obrigatório):** `./gradlew test` 100% verde.
