@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
   const id = getRouterParam(event, 'id')
 
-  return $fetch(`/group-menus/${id}`, {
+  return backendFetch(`/group-menus/${id}`, {
     baseURL: config.public.apiBaseUrl,
     method: 'DELETE',
     headers: buildBackendHeaders(event, accessToken),

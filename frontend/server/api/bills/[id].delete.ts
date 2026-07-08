@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const id = getRouterParam(event, 'id')
 
   try {
-    return await $fetch(`/bills/${id}`, {
+    return await backendFetch(`/bills/${id}`, {
       baseURL: config.public.apiBaseUrl,
       method: 'DELETE',
       headers: buildBackendHeaders(event, accessToken),

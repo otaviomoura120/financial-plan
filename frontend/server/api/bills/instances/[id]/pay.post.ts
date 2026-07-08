@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
   const body = await readBody(event)
 
   try {
-    return await $fetch(`/bills/instances/${id}/pay`, {
+    return await backendFetch(`/bills/instances/${id}/pay`, {
       baseURL: config.public.apiBaseUrl,
       method: 'POST',
       headers: buildBackendHeaders(event, accessToken),

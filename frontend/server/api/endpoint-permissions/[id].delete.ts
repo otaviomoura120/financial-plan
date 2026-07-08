@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
   const id = getRouterParam(event, 'id')
 
-  return $fetch(`/endpoint-permissions/${id}`, {
+  return backendFetch(`/endpoint-permissions/${id}`, {
     baseURL: config.public.apiBaseUrl,
     method: 'DELETE',
     headers: buildBackendHeaders(event, accessToken),

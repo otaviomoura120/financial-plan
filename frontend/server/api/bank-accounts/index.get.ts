@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
   const query = getQuery(event)
 
-  return $fetch('/bank-accounts', {
+  return backendFetch('/bank-accounts', {
     baseURL: config.public.apiBaseUrl,
     method: 'GET',
     headers: buildBackendHeaders(event, accessToken),

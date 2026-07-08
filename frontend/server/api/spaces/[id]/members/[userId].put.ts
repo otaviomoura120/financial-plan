@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
   const userId = getRouterParam(event, 'userId')
   const body = await readBody(event)
 
-  return $fetch(`/spaces/${id}/members/${userId}`, {
+  return backendFetch(`/spaces/${id}/members/${userId}`, {
     baseURL: config.public.apiBaseUrl,
     method: 'PUT',
     headers: buildBackendHeaders(event, accessToken),

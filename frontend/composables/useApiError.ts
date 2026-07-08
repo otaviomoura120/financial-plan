@@ -22,6 +22,14 @@ export function useApiError() {
         return
       }
 
+      const nestedData = (data as { data?: unknown } | undefined)?.data
+
+      if (typeof nestedData === 'string' && nestedData) {
+        error.value = nestedData
+
+        return
+      }
+
       const dataMessage = (data as { message?: string } | undefined)?.message
 
       error.value = dataMessage ?? fetchErr.statusMessage ?? e.message ?? FALLBACK

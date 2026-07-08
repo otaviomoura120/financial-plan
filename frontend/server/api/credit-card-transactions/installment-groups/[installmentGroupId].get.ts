@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
   const installmentGroupId = getRouterParam(event, 'installmentGroupId')
 
-  return $fetch(`/credit-card-transactions/installment-groups/${installmentGroupId}`, {
+  return backendFetch(`/credit-card-transactions/installment-groups/${installmentGroupId}`, {
     baseURL: config.public.apiBaseUrl,
     method: 'GET',
     headers: buildBackendHeaders(event, accessToken),

@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
   const body = await readBody(event)
 
-  return $fetch('/roles', {
+  return backendFetch('/roles', {
     baseURL: config.public.apiBaseUrl,
     method: 'POST',
     headers: buildBackendHeaders(event, accessToken),

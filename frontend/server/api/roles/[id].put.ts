@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
 
-  return $fetch(`/roles/${id}`, {
+  return backendFetch(`/roles/${id}`, {
     baseURL: config.public.apiBaseUrl,
     method: 'PUT',
     headers: buildBackendHeaders(event, accessToken),

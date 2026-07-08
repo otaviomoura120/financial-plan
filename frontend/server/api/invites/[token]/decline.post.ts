@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const token = getRouterParam(event, 'token')
 
   try {
-    return await $fetch(`/invites/${token}/decline`, {
+    return await backendFetch(`/invites/${token}/decline`, {
       baseURL: config.public.apiBaseUrl,
       method: 'POST',
       headers: buildBackendHeaders(event, accessToken),

@@ -6,7 +6,7 @@ export default defineEventHandler(async event => {
 
   const config = useRuntimeConfig()
 
-  await $fetch(`https://${config.auth0.domain}/dbconnections/change_password`, {
+  await backendFetch(`https://${config.auth0.domain}/dbconnections/change_password`, {
     method: 'POST',
     body: {
       client_id: config.auth0.clientId,

@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
   const referenceMonth = getRouterParam(event, 'referenceMonth')
 
   try {
-    return await $fetch(`/credit-cards/${id}/invoices/${referenceMonth}/undo-payment`, {
+    return await backendFetch(`/credit-cards/${id}/invoices/${referenceMonth}/undo-payment`, {
       baseURL: config.public.apiBaseUrl,
       method: 'POST',
       headers: buildBackendHeaders(event, accessToken),

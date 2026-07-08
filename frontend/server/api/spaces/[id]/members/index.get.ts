@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
   const id = getRouterParam(event, 'id')
 
-  return $fetch(`/spaces/${id}/members`, {
+  return backendFetch(`/spaces/${id}/members`, {
     baseURL: config.public.apiBaseUrl,
     headers: buildBackendHeaders(event, accessToken),
   })

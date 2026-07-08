@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const id = getRouterParam(event, 'id')
 
   try {
-    return await $fetch(`/bills/instances/${id}/undo-payment`, {
+    return await backendFetch(`/bills/instances/${id}/undo-payment`, {
       baseURL: config.public.apiBaseUrl,
       method: 'POST',
       headers: buildBackendHeaders(event, accessToken),

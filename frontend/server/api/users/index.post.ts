@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
 
   const body = await readBody<Record<string, unknown>>(event)
 
-  return $fetch('/users', {
+  return backendFetch('/users', {
     baseURL: config.public.apiBaseUrl,
     method: 'POST',
     headers: buildBackendHeaders(event, accessToken),

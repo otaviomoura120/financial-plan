@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
   const body = await readBody(event)
 
   try {
-    return await $fetch(`/categories/subcategories/${id}/status`, {
+    return await backendFetch(`/categories/subcategories/${id}/status`, {
       baseURL: config.public.apiBaseUrl,
       method: 'PATCH',
       headers: buildBackendHeaders(event, accessToken),

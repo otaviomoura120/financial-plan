@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
   const body = await readBody(event)
 
-  return $fetch('/bank-accounts', {
+  return backendFetch('/bank-accounts', {
     baseURL: config.public.apiBaseUrl,
     method: 'POST',
     headers: buildBackendHeaders(event, accessToken),
