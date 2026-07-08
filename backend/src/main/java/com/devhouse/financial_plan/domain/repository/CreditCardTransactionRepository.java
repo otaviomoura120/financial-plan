@@ -11,5 +11,7 @@ public interface CreditCardTransactionRepository {
     CreditCardTransaction findById(Long id);
     List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, LocalDate from, LocalDate to);
     List<CreditCardTransaction> findByInstallmentGroupId(String installmentGroupId);
+    List<CreditCardTransaction> findByCreditCardId(Long creditCardId);
+    List<CreditCardTransaction> findByCreditCardIdAndReferenceMonth(Long creditCardId, LocalDate referenceMonth);
     void delete(Long id);
 }

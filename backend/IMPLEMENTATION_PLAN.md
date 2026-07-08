@@ -501,7 +501,7 @@ Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento —
 
 ### [Grupo CC6] Pagamento de fatura + listagem
 
-- [ ] **CC6 — PayCreditCardInvoiceService + ListCreditCardInvoicesService**
+- [x] **CC6 — PayCreditCardInvoiceService + ListCreditCardInvoicesService**
 `ListCreditCardInvoicesService(spaceId, creditCardId?, from, to)`: agrupa `CreditCardTransaction` por `(creditCardId, referenceMonth)` **direto pelo campo armazenado** `referenceMonth` (não mais via `CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, closingDay)` em tempo de leitura — `CreditCardInvoiceCycle` continua usado só para calcular `dueDate`/`closingDate` de exibição a partir do `referenceMonth` de cada grupo), marca pago/aberto conforme existência de `CreditCardInvoicePayment`. `PayCreditCardInvoiceService.execute(creditCardId, referenceMonth, {bankAccountId, categoryId, paymentMethodId, paidDate})`: rejeita se já paga ou soma zero; soma as `CreditCardTransaction` do mês (incluindo parcelas antecipadas de outras compras, que já chegam com `referenceMonth` ajustado); chama `CreateTransactionService` (reaproveita `TransactionBalanceEffectService` de T5/T6 do core, `type=EXPENSE`, `sourceType=CREDIT_CARD_INVOICE_PAYMENT`); persiste `CreditCardInvoicePayment` com o `paymentTransactionId`. `@Transactional`. Controller: `GET /credit-cards/invoices?spaceId=&creditCardId=&from=&to=`, `POST /credit-cards/{id}/invoices/{referenceMonth}/pay`.
 *Depende de:* CC3, CC5, P1, core T5/T6.
 **Testes (obrigatório):** `PayCreditCardInvoiceServiceSpec.groovy` (sucesso, já paga, mês vazio, FK inexistente), `ListCreditCardInvoicesServiceSpec.groovy` (mistura aberto/pago).
@@ -510,7 +510,7 @@ Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento —
 
 ### [Grupo CC7] Desfazer pagamento de fatura (ação dedicada)
 
-- [ ] **CC7 — UndoCreditCardInvoicePaymentService + controller**
+- [x] **CC7 — UndoCreditCardInvoicePaymentService + controller**
 `UndoCreditCardInvoicePaymentService(creditCardId, referenceMonth)`: busca `CreditCardInvoicePayment` (senão `DomainException`), busca a `Transaction` via `paymentTransactionId`, chama `TransactionBalanceEffectService.revert(transaction)` + `TransactionRepository.delete(transaction.id)` diretamente (não via `DeleteTransactionService`, que bloqueia transações vinculadas), depois `creditCardInvoicePaymentRepository.deleteById(payment.id)`. `@Transactional`. Controller: `POST /credit-cards/{id}/invoices/{referenceMonth}/undo-payment`, `@PreAuthorize`.
 *Depende de:* CC6, P1.
 **Testes (obrigatório):** `UndoCreditCardInvoicePaymentServiceSpec.groovy` (sucesso — saldo revertido e fatura volta a aberta; fatura inexistente/não paga rejeitada).

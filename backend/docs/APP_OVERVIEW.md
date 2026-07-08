@@ -272,6 +272,15 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | DELETE | `/{id}` | Delete a single installment (hard delete; rejects with 422 if its invoice is already paid) |
 | POST | `/installment-groups/{installmentGroupId}/anticipate` | Move the last N installments of a purchase to an earlier open invoice (`targetReferenceMonth`, `installmentsToAnticipate`); returns the whole updated group |
 
+### Credit Card Invoices `/credit-cards/invoices`, `/credit-cards/{id}/invoices/{referenceMonth}`
+Full cycle explained in `backend/docs/credit-card-invoice.md` — an invoice is never materialized until paid; "paid" == a `CreditCardInvoicePayment` row exists for `(creditCardId, referenceMonth)`.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/credit-cards/invoices?spaceId=&creditCardId=&from=&to=` | List invoices (grouped in memory from `CreditCardTransaction.referenceMonth`), marked paid/open; `from`/`to` filter by `dueDate` |
+| POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | Pay an open invoice (`bankAccountId`, `categoryId`, `paymentMethodId`, `paidDate`) — creates an `EXPENSE` `Transaction` (`sourceType=CREDIT_CARD_INVOICE_PAYMENT`, `sourceId=creditCardId`) debiting `bankAccountId`, then persists `CreditCardInvoicePayment`; payer is the authenticated user, not a request field |
+| POST | `/credit-cards/{id}/invoices/{referenceMonth}/undo-payment` | Reverse a payment — reverts the bank account balance, hard-deletes the generated `Transaction` (bypassing the normal linked-transaction guard) and the `CreditCardInvoicePayment` row, so the invoice shows as open again |
+
 ### Roles `/roles`
 | Method | Path | Purpose |
 |--------|------|---------|

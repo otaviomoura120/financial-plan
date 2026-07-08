@@ -91,6 +91,20 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     }
 
     @Override
+    public List<CreditCardTransaction> findByCreditCardId(Long creditCardId) {
+        return jpaCreditCardTransactionRepository.findByCreditCard_Id(creditCardId).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<CreditCardTransaction> findByCreditCardIdAndReferenceMonth(Long creditCardId, LocalDate referenceMonth) {
+        return jpaCreditCardTransactionRepository.findByCreditCard_IdAndReferenceMonth(creditCardId, referenceMonth).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public void delete(Long id) {
         jpaCreditCardTransactionRepository.deleteById(id);
     }

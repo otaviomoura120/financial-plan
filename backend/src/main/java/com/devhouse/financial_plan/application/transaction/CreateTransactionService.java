@@ -8,6 +8,7 @@ import com.devhouse.financial_plan.domain.PaymentMethod;
 import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.User;
+import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository;
@@ -47,6 +48,11 @@ public class CreateTransactionService {
 
     @Transactional
     public TransactionResponse execute(CreateTransactionRequest request) {
+        return execute(request, null, null);
+    }
+
+    @Transactional
+    public TransactionResponse execute(CreateTransactionRequest request, TransactionSourceType sourceType, Long sourceId) {
         User user = resolveUser(request.userId());
         BankAccount bankAccount = resolveBankAccount(request.bankAccountId(), "Bank account not found");
         BankAccount destinationBankAccount = null;
@@ -62,7 +68,7 @@ public class CreateTransactionService {
 
         Transaction transaction = new Transaction(null, 0, request.type(), user, bankAccount, destinationBankAccount,
                 category, subCategory, paymentMethod, request.amount(), request.transactionDate(),
-                request.description(), Instant.now(), null, null, null);
+                request.description(), Instant.now(), null, sourceType, sourceId);
         transaction.validate();
         balanceEffectService.apply(transaction);
         Transaction saved = transactionRepository.save(transaction);
