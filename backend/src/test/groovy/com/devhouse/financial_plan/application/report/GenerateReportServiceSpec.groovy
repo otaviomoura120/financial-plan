@@ -8,9 +8,6 @@ import com.devhouse.financial_plan.application.report.dto.ReportResponse
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Bill
 import com.devhouse.financial_plan.domain.Category
-import com.devhouse.financial_plan.domain.CreditCard
-import com.devhouse.financial_plan.domain.CreditCardInvoicePayment
-import com.devhouse.financial_plan.domain.CreditCardTransaction
 import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SubCategory
@@ -22,8 +19,6 @@ import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository
 import com.devhouse.financial_plan.domain.repository.BillRepository
-import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository
-import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository
 import com.devhouse.financial_plan.domain.repository.TransactionRepository
 import spock.lang.Specification
 
@@ -37,12 +32,11 @@ class GenerateReportServiceSpec extends Specification {
     ListCreditCardInvoicesService listCreditCardInvoicesService = Mock()
     EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService = Mock()
     BillRepository billRepository = Mock()
-    CreditCardTransactionRepository creditCardTransactionRepository = Mock()
-    CreditCardInvoicePaymentRepository creditCardInvoicePaymentRepository = Mock()
+    CreditCardInvoiceCategoryMatcher creditCardInvoiceCategoryMatcher = Mock()
 
     GenerateReportService service = new GenerateReportService(transactionRepository, bankAccountRepository,
             listCreditCardInvoicesService, ensureRecurringBillsGeneratedService, billRepository,
-            creditCardTransactionRepository, creditCardInvoicePaymentRepository)
+            creditCardInvoiceCategoryMatcher)
 
     private Space buildSpace() {
         new Space(1L, 0, "My Space", null, Instant.now(), null)
@@ -75,16 +69,6 @@ class GenerateReportServiceSpec extends Specification {
                 dueDate, amount, status, null, null, null, false, Instant.now(), null)
     }
 
-    private CreditCard buildCreditCard(Long id) {
-        new CreditCard(id, 0, buildSpace(), "Nubank", new BigDecimal("1000.00"), 20, 27, true, Instant.now(), null)
-    }
-
-    private CreditCardTransaction buildCreditCardItem(Long creditCardId, LocalDate referenceMonth, Long categoryId, BigDecimal amount) {
-        Category category = new Category(categoryId, 0, null, "Category " + categoryId, true, Instant.now(), null)
-        new CreditCardTransaction(100L, 0, buildCreditCard(creditCardId), buildUser(1L), category, null, amount,
-                referenceMonth, "item", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
-    }
-
     private Transaction buildInvoicePaymentTransaction(Long id, Long creditCardId, BigDecimal amount, LocalDate transactionDate) {
         Category category = new Category(10L, 0, null, "Cartão de Crédito", true, Instant.now(), null)
         PaymentMethod paymentMethod = new PaymentMethod(20L, 0, null, "Cash", true, Instant.now(), null)
@@ -93,9 +77,9 @@ class GenerateReportServiceSpec extends Specification {
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, creditCardId)
     }
 
-    private CreditCardInvoicePayment buildInvoicePayment(Long creditCardId, LocalDate referenceMonth, Long paymentTransactionId) {
-        new CreditCardInvoicePayment(1L, 0, buildCreditCard(creditCardId), referenceMonth, referenceMonth.plusDays(10),
-                new BigDecimal("450.00"), referenceMonth.plusDays(10), paymentTransactionId, 1L, Instant.now(), null)
+    private void stubNoInvoiceMatching() {
+        creditCardInvoiceCategoryMatcher.resolveMatchingInvoiceAmounts(_) >> MatchingInvoiceAmounts.noFilter()
+        creditCardInvoiceCategoryMatcher.resolveInvoiceReferenceMonths(_) >> [:]
     }
 
     def "execute forwards every filter field to the repository, in the expected order"() {
@@ -103,7 +87,7 @@ class GenerateReportServiceSpec extends Specification {
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
-        creditCardTransactionRepository.findByFilter(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31),
                 2L, 3L, 4L, 5L, 6L, TransactionType.EXPENSE)
 
@@ -124,6 +108,7 @@ class GenerateReportServiceSpec extends Specification {
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
 
         when:
@@ -143,6 +128,7 @@ class GenerateReportServiceSpec extends Specification {
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
 
         when:
@@ -175,6 +161,7 @@ class GenerateReportServiceSpec extends Specification {
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filterSpaceOne = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
         ReportFilterRequest filterSpaceTwo = new ReportFilterRequest(2L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
 
@@ -197,6 +184,7 @@ class GenerateReportServiceSpec extends Specification {
                                                      buildAccount(3L, new BigDecimal("1000.00"), false)]
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
 
         when:
@@ -213,6 +201,7 @@ class GenerateReportServiceSpec extends Specification {
         bankAccountRepository.findById(2L) >> buildAccount(2L, new BigDecimal("300.00"))
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, 2L, null, null, null, null)
 
         when:
@@ -230,6 +219,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(1L, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31)) >>
                 [buildInvoice(LocalDate.of(2026, 3, 17), new BigDecimal("450.00"), false)]
         billRepository.findBySpaceAndPeriod(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, null, null, null, null)
 
@@ -249,6 +239,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(1L, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31)) >>
                 [buildInvoice(LocalDate.of(2026, 3, 17), new BigDecimal("450.00"), true)]
         billRepository.findBySpaceAndPeriod(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, null, null, null, null)
 
@@ -269,6 +260,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(1L, null, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30)) >>
                 [buildInvoice(LocalDate.of(2026, 6, 17), new BigDecimal("33.34"), false)]
         billRepository.findBySpaceAndPeriod(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30),
                 null, null, null, null, null, null)
 
@@ -287,6 +279,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31), null, null) >>
                 [buildInstance(LocalDate.of(2026, 3, 10), new BigDecimal("150.00"), BillInstanceStatus.PENDING)]
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, null, null, null, null)
 
@@ -307,6 +300,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31), null, null) >>
                 [buildInstance(LocalDate.of(2026, 3, 10), new BigDecimal("150.00"), BillInstanceStatus.PAID)]
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, null, null, null, null)
 
@@ -326,6 +320,7 @@ class GenerateReportServiceSpec extends Specification {
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31), null, null) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, null, null, null, null)
 
@@ -342,6 +337,7 @@ class GenerateReportServiceSpec extends Specification {
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, null, null, null, null, null, null, null, null)
 
         when:
@@ -357,6 +353,7 @@ class GenerateReportServiceSpec extends Specification {
         bankAccountRepository.findBySpaceId(1L) >> [buildAccount(1L, new BigDecimal("1000.00"))]
         listCreditCardInvoicesService.execute(*_) >> [buildInvoice(LocalDate.of(2026, 3, 17), new BigDecimal("450.00"), false)]
         billRepository.findBySpaceAndPeriod(*_) >> [buildInstance(LocalDate.of(2026, 3, 10), new BigDecimal("150.00"), BillInstanceStatus.PENDING)]
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, null, null, null, null)
 
@@ -374,15 +371,15 @@ class GenerateReportServiceSpec extends Specification {
         given:
         LocalDate referenceMonth = LocalDate.of(2026, 3, 1)
         Transaction paymentTransaction = buildInvoicePaymentTransaction(99L, 5L, new BigDecimal("450.00"), LocalDate.of(2026, 3, 15))
+        MatchingInvoiceAmounts matchingInvoiceAmounts = new MatchingInvoiceAmounts(true,
+                [(new MatchingInvoiceAmounts.InvoiceKey(5L, referenceMonth)): new BigDecimal("120.00")])
         transactionRepository.findByFilter(1L, null, null, 7L, null, null, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31)) >> []
-        transactionRepository.findById(99L) >> paymentTransaction
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
-        creditCardTransactionRepository.findByFilter(1L, null, 7L, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31), null) >>
-                [buildCreditCardItem(5L, referenceMonth, 7L, new BigDecimal("120.00"))]
-        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(5L, referenceMonth) >> buildInvoicePayment(5L, referenceMonth, 99L)
-        creditCardInvoicePaymentRepository.findByPaymentTransactionIdIn([99L]) >> [buildInvoicePayment(5L, referenceMonth, 99L)]
+        creditCardInvoiceCategoryMatcher.resolveMatchingInvoiceAmounts(_) >> matchingInvoiceAmounts
+        creditCardInvoiceCategoryMatcher.mergeWithMatchingInvoicePayments([], matchingInvoiceAmounts, _) >> [paymentTransaction]
+        creditCardInvoiceCategoryMatcher.resolveInvoiceReferenceMonths([paymentTransaction]) >> [(99L): referenceMonth]
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, 7L, null, null, null)
 
@@ -404,16 +401,15 @@ class GenerateReportServiceSpec extends Specification {
         given:
         LocalDate referenceMonth = LocalDate.of(2026, 3, 1)
         Transaction paymentTransaction = buildInvoicePaymentTransaction(99L, 5L, new BigDecimal("450.00"), LocalDate.of(2026, 3, 15))
+        MatchingInvoiceAmounts matchingInvoiceAmounts = new MatchingInvoiceAmounts(true,
+                [(new MatchingInvoiceAmounts.InvoiceKey(5L, referenceMonth)): new BigDecimal("150.00")])
         transactionRepository.findByFilter(*_) >> []
-        transactionRepository.findById(99L) >> paymentTransaction
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
-        creditCardTransactionRepository.findByFilter(1L, null, 7L, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31), null) >>
-                [buildCreditCardItem(5L, referenceMonth, 7L, new BigDecimal("120.00")),
-                 buildCreditCardItem(5L, referenceMonth, 7L, new BigDecimal("30.00"))]
-        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(5L, referenceMonth) >> buildInvoicePayment(5L, referenceMonth, 99L)
-        creditCardInvoicePaymentRepository.findByPaymentTransactionIdIn([99L]) >> [buildInvoicePayment(5L, referenceMonth, 99L)]
+        creditCardInvoiceCategoryMatcher.resolveMatchingInvoiceAmounts(_) >> matchingInvoiceAmounts
+        creditCardInvoiceCategoryMatcher.mergeWithMatchingInvoicePayments(*_) >> [paymentTransaction]
+        creditCardInvoiceCategoryMatcher.resolveInvoiceReferenceMonths([paymentTransaction]) >> [(99L): referenceMonth]
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, 7L, null, null, null)
 
@@ -424,13 +420,15 @@ class GenerateReportServiceSpec extends Specification {
         response.transactions()[0].amount() == new BigDecimal("150.00")
     }
 
-    def "execute does not reconcile invoice payments when no composing item matches the category filter"() {
+    def "execute does not reconcile invoice payments when the matcher finds no matching invoice"() {
         given:
+        MatchingInvoiceAmounts matchingInvoiceAmounts = new MatchingInvoiceAmounts(true, [:])
         transactionRepository.findByFilter(*_) >> []
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
-        creditCardTransactionRepository.findByFilter(*_) >> []
+        creditCardInvoiceCategoryMatcher.resolveMatchingInvoiceAmounts(_) >> matchingInvoiceAmounts
+        creditCardInvoiceCategoryMatcher.resolveInvoiceReferenceMonths(_) >> [:]
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, 7L, null, null, null)
 
@@ -438,13 +436,15 @@ class GenerateReportServiceSpec extends Specification {
         ReportResponse response = service.execute(filter)
 
         then:
+        1 * creditCardInvoiceCategoryMatcher.mergeWithMatchingInvoicePayments([], matchingInvoiceAmounts, filter) >> []
         response.transactions().isEmpty()
-        0 * creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(*_)
     }
 
     def "execute filters pendingCreditCardInvoices to only invoices whose items match the category filter"() {
         given:
         LocalDate referenceMonth = LocalDate.of(2026, 3, 1)
+        MatchingInvoiceAmounts matchingInvoiceAmounts = new MatchingInvoiceAmounts(true,
+                [(new MatchingInvoiceAmounts.InvoiceKey(5L, referenceMonth)): new BigDecimal("120.00")])
         transactionRepository.findByFilter(*_) >> []
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(1L, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31)) >>
@@ -452,8 +452,9 @@ class GenerateReportServiceSpec extends Specification {
                  new CreditCardInvoiceResponse(6L, "Other Card", referenceMonth, LocalDate.of(2026, 3, 10),
                          LocalDate.of(2026, 3, 17), new BigDecimal("200.00"), false, null, null, null)]
         billRepository.findBySpaceAndPeriod(*_) >> []
-        creditCardTransactionRepository.findByFilter(1L, null, 7L, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31), null) >>
-                [buildCreditCardItem(5L, referenceMonth, 7L, new BigDecimal("120.00"))]
+        creditCardInvoiceCategoryMatcher.resolveMatchingInvoiceAmounts(_) >> matchingInvoiceAmounts
+        creditCardInvoiceCategoryMatcher.mergeWithMatchingInvoicePayments(*_) >> []
+        creditCardInvoiceCategoryMatcher.resolveInvoiceReferenceMonths(_) >> [:]
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, 7L, null, null, null)
 
@@ -473,7 +474,7 @@ class GenerateReportServiceSpec extends Specification {
         transactionRepository.findByFilter(*_) >> []
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
-        creditCardTransactionRepository.findByFilter(*_) >> []
+        stubNoInvoiceMatching()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, 7L, 8L, null, null)
 
@@ -492,7 +493,8 @@ class GenerateReportServiceSpec extends Specification {
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
-        creditCardInvoicePaymentRepository.findByPaymentTransactionIdIn([99L]) >> [buildInvoicePayment(5L, referenceMonth, 99L)]
+        creditCardInvoiceCategoryMatcher.resolveMatchingInvoiceAmounts(_) >> MatchingInvoiceAmounts.noFilter()
+        creditCardInvoiceCategoryMatcher.resolveInvoiceReferenceMonths([paymentTransaction]) >> [(99L): referenceMonth]
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, null, null, null, null)
 
