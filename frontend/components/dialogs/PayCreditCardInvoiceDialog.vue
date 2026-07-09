@@ -18,12 +18,26 @@ interface OptionItem {
   active: boolean
 }
 
+interface SubCategoryOption {
+  id: number
+  categoryId: number
+  name: string
+  active: boolean
+}
+
+interface CategoryOption {
+  id: number
+  name: string
+  active: boolean
+  subCategories: SubCategoryOption[]
+}
+
 interface Props {
   isDialogVisible: boolean
   creditCardId: number | null
   referenceMonth: string | null
   bankAccounts: OptionItem[]
-  categories: OptionItem[]
+  categories: CategoryOption[]
   paymentMethods: OptionItem[]
 }
 
@@ -49,6 +63,7 @@ const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 
 const bankAccountId = shallowRef<number | null>(null)
 const categoryId = shallowRef<number | null>(null)
+const subCategoryId = shallowRef<number | null>(null)
 const paymentMethodId = shallowRef<number | null>(null)
 const paidDate = shallowRef<string>('')
 const isLoading = shallowRef(false)
@@ -61,10 +76,18 @@ const bankAccountItems = computed(() => props.bankAccounts.map(ba => ({ ...ba, l
 const categoryItems = computed(() => props.categories.map(c => ({ ...c, label: optionLabel(c) })))
 const paymentMethodItems = computed(() => props.paymentMethods.map(pm => ({ ...pm, label: optionLabel(pm) })))
 
+const selectedCategory = computed(() => props.categories.find(c => c.id === categoryId.value) ?? null)
+const subCategoryItems = computed(() => (selectedCategory.value?.subCategories ?? []).map(sc => ({ ...sc, label: optionLabel(sc) })))
+
 const bankAccountRules = [(v: number | null) => v !== null || 'Conta é obrigatória']
 const categoryRules = [(v: number | null) => v !== null || 'Categoria é obrigatória']
 const paymentMethodRules = [(v: number | null) => v !== null || 'Forma de pagamento é obrigatória']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
+
+watch(categoryId, () => {
+  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value))
+    subCategoryId.value = null
+})
 
 watch(
   () => props.isDialogVisible,
@@ -72,6 +95,7 @@ watch(
     if (visible) {
       bankAccountId.value = null
       categoryId.value = null
+      subCategoryId.value = null
       paymentMethodId.value = null
       paidDate.value = toLocalDateString(new Date())
       clearError()
@@ -96,6 +120,7 @@ async function onSubmit() {
         body: {
           bankAccountId: bankAccountId.value,
           categoryId: categoryId.value,
+          subCategoryId: subCategoryId.value,
           paymentMethodId: paymentMethodId.value,
           paidDate: paidDate.value,
         },
@@ -159,6 +184,16 @@ function onClose() {
               item-title="label"
               item-value="id"
               :rules="categoryRules"
+            />
+
+            <AppSelect
+              v-model="subCategoryId"
+              label="Subcategoria"
+              :items="subCategoryItems"
+              item-title="label"
+              item-value="id"
+              clearable
+              :disabled="!selectedCategory"
             />
 
             <AppSelect
