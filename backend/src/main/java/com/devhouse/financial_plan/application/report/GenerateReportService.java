@@ -32,18 +32,18 @@ public class GenerateReportService {
     private final ListCreditCardInvoicesService listCreditCardInvoicesService;
     private final EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService;
     private final BillRepository billRepository;
-    private final CreditCardInvoiceCategoryMatcher creditCardInvoiceCategoryMatcher;
+    private final CreditCardInvoicePaymentResolver creditCardInvoicePaymentResolver;
 
     public GenerateReportService(TransactionRepository transactionRepository, BankAccountRepository bankAccountRepository,
                                   ListCreditCardInvoicesService listCreditCardInvoicesService,
                                   EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService,
-                                  BillRepository billRepository, CreditCardInvoiceCategoryMatcher creditCardInvoiceCategoryMatcher) {
+                                  BillRepository billRepository, CreditCardInvoicePaymentResolver creditCardInvoicePaymentResolver) {
         this.transactionRepository = transactionRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.listCreditCardInvoicesService = listCreditCardInvoicesService;
         this.ensureRecurringBillsGeneratedService = ensureRecurringBillsGeneratedService;
         this.billRepository = billRepository;
-        this.creditCardInvoiceCategoryMatcher = creditCardInvoiceCategoryMatcher;
+        this.creditCardInvoicePaymentResolver = creditCardInvoicePaymentResolver;
     }
 
     public ReportResponse execute(ReportFilterRequest filter) {
@@ -51,23 +51,18 @@ public class GenerateReportService {
             throw new DomainException("Space is required");
         }
 
-        List<Transaction> directMatches = transactionRepository.findByFilter(
+        List<Transaction> transactions = transactionRepository.findByFilter(
                 filter.spaceId(), filter.userId(), filter.bankAccountId(), filter.categoryId(), filter.subCategoryId(),
                 filter.paymentMethodId(), filter.type(), filter.from(), filter.to());
 
-        MatchingInvoiceAmounts matchingInvoiceAmounts = creditCardInvoiceCategoryMatcher.resolveMatchingInvoiceAmounts(filter);
-        List<Transaction> transactions = matchingInvoiceAmounts.hasCategoryFilter()
-                ? creditCardInvoiceCategoryMatcher.mergeWithMatchingInvoicePayments(directMatches, matchingInvoiceAmounts, filter)
-                : directMatches;
+        Map<Long, LocalDate> referenceMonthByTransactionId = creditCardInvoicePaymentResolver.resolveInvoiceReferenceMonths(transactions);
 
-        Map<Long, LocalDate> referenceMonthByTransactionId = creditCardInvoiceCategoryMatcher.resolveInvoiceReferenceMonths(transactions);
-
-        List<TransactionResponse> responses = buildResponses(transactions, referenceMonthByTransactionId, matchingInvoiceAmounts);
-        BigDecimal totalIncome = sumByType(transactions, referenceMonthByTransactionId, matchingInvoiceAmounts, true);
-        BigDecimal totalExpense = sumByType(transactions, referenceMonthByTransactionId, matchingInvoiceAmounts, false);
+        List<TransactionResponse> responses = buildResponses(transactions, referenceMonthByTransactionId);
+        BigDecimal totalIncome = sumByType(transactions, true);
+        BigDecimal totalExpense = sumByType(transactions, false);
 
         BigDecimal currentBalance = resolveCurrentBalance(filter);
-        List<PendingCreditCardInvoiceResponse> pendingCreditCardInvoices = resolvePendingCreditCardInvoices(filter, matchingInvoiceAmounts);
+        List<PendingCreditCardInvoiceResponse> pendingCreditCardInvoices = resolvePendingCreditCardInvoices(filter);
         BigDecimal pendingCreditCardTotal = sum(pendingCreditCardInvoices, PendingCreditCardInvoiceResponse::amount);
         List<PendingBillInstanceResponse> pendingBillInstances = resolvePendingBillInstances(filter);
         BigDecimal pendingBillTotal = sum(pendingBillInstances, PendingBillInstanceResponse::amount);
@@ -89,20 +84,14 @@ public class GenerateReportService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private List<PendingCreditCardInvoiceResponse> resolvePendingCreditCardInvoices(ReportFilterRequest filter,
-                                                                                      MatchingInvoiceAmounts matchingInvoiceAmounts) {
+    private List<PendingCreditCardInvoiceResponse> resolvePendingCreditCardInvoices(ReportFilterRequest filter) {
         List<PendingCreditCardInvoiceResponse> responses = new ArrayList<>();
         for (CreditCardInvoiceResponse invoice : listCreditCardInvoicesService.execute(filter.spaceId(), null, filter.from(), filter.to())) {
             if (invoice.paid()) {
                 continue;
             }
-            MatchingInvoiceAmounts.InvoiceKey key = new MatchingInvoiceAmounts.InvoiceKey(invoice.creditCardId(), invoice.referenceMonth());
-            if (matchingInvoiceAmounts.excludesInvoice(key)) {
-                continue;
-            }
-            BigDecimal amount = matchingInvoiceAmounts.amountOrDefault(key, invoice.totalAmount());
             responses.add(new PendingCreditCardInvoiceResponse(invoice.creditCardId(), invoice.creditCardName(),
-                    invoice.referenceMonth(), invoice.dueDate(), amount));
+                    invoice.referenceMonth(), invoice.dueDate(), invoice.totalAmount()));
         }
         return responses;
     }
@@ -126,25 +115,22 @@ public class GenerateReportService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private List<TransactionResponse> buildResponses(List<Transaction> transactions, Map<Long, LocalDate> referenceMonthByTransactionId,
-                                                       MatchingInvoiceAmounts matchingInvoiceAmounts) {
+    private List<TransactionResponse> buildResponses(List<Transaction> transactions, Map<Long, LocalDate> referenceMonthByTransactionId) {
         return transactions.stream()
                 .map(t -> new TransactionResponse(t.getId(), t.getVersion(), t.getType(), t.getUser().getId(),
                         t.getBankAccount().getId(), t.getDestinationBankAccount() != null ? t.getDestinationBankAccount().getId() : null,
                         t.getCategory() != null ? t.getCategory().getId() : null,
                         t.getSubCategory() != null ? t.getSubCategory().getId() : null,
                         t.getPaymentMethod() != null ? t.getPaymentMethod().getId() : null,
-                        matchingInvoiceAmounts.effectiveAmountFor(t, referenceMonthByTransactionId.get(t.getId())),
-                        t.getTransactionDate(), t.getDescription(), t.getCreatedDate(), t.getSourceType(), t.getSourceId(),
+                        t.getAmount(), t.getTransactionDate(), t.getDescription(), t.getCreatedDate(), t.getSourceType(), t.getSourceId(),
                         referenceMonthByTransactionId.get(t.getId())))
                 .toList();
     }
 
-    private BigDecimal sumByType(List<Transaction> transactions, Map<Long, LocalDate> referenceMonthByTransactionId,
-                                  MatchingInvoiceAmounts matchingInvoiceAmounts, boolean income) {
+    private BigDecimal sumByType(List<Transaction> transactions, boolean income) {
         return transactions.stream()
                 .filter(t -> income ? t.isIncome() : t.isExpense())
-                .map(t -> matchingInvoiceAmounts.effectiveAmountFor(t, referenceMonthByTransactionId.get(t.getId())))
+                .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }
