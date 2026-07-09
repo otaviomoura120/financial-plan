@@ -322,7 +322,7 @@ function formatDate(isoDate: string) {
             prepend-icon="tabler-plus"
             @click="openCreate"
           >
-            <span class="d-sm-inline">Adicionar Transação</span>
+            <span class="d-sm-inline">Adicionar</span>
           </VBtn>
 
         </div>

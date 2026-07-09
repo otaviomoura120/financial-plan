@@ -342,7 +342,7 @@ function formatDate(isoDate: string) {
             prepend-icon="tabler-plus"
             @click="openAdd"
           >
-            <span class="d-sm-inline">Adicionar Conta</span>
+            <span class="d-sm-inline">Adicionar</span>
           </VBtn>
         </div>
       </VCardText>

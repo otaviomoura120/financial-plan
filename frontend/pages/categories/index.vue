@@ -239,7 +239,7 @@ function activeSubCategoriesCount(category: CategoryResponse) {
           prepend-icon="tabler-plus"
           @click="openCreate"
         >
-          <span class="d-none d-sm-inline">Adicionar Categoria</span>
+          <span class="d-sm-inline">Adicionar</span>
         </VBtn>
 
         <VTextField

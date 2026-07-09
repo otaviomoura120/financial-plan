@@ -182,7 +182,7 @@ function openInvoices(creditCard: CreditCardResponse) {
           prepend-icon="tabler-plus"
           @click="openCreate"
         >
-          <span class="d-none d-sm-inline">Adicionar Cartão</span>
+          <span class="d-sm-inline">Adicionar</span>
         </VBtn>
 
         <VTextField

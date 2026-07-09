@@ -205,7 +205,7 @@ function toggleSearch() {
           prepend-icon="tabler-plus"
           @click="openCreate"
         >
-          <span class="d-none d-sm-inline">Adicionar Meio de Pagamento</span>
+          <span class="d-sm-inline">Adicionar</span>
         </VBtn>
 
         <VTextField

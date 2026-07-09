@@ -214,7 +214,7 @@ function formatBalance(balance: number) {
           prepend-icon="tabler-plus"
           @click="openCreate"
         >
-          <span class="d-none d-sm-inline">Adicionar Conta Bancária</span>
+          <span class="d-sm-inline">Adicionar</span>
         </VBtn>
 
         <VTextField

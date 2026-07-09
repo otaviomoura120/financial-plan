@@ -696,124 +696,129 @@ function formatReferenceMonth(isoDate: string) {
         </VCol>
       </VRow>
 
-      <VCard>
-        <div
-          v-if="isLoading"
-          class="d-flex justify-center py-10"
+      <VRow>
+        <VCol
+          cols="12"
         >
-          <VProgressCircular indeterminate />
-        </div>
 
-        <div
-          v-else
-          style="overflow-x: auto"
-        >
-          <VTable>
-            <thead style="white-space: nowrap">
-              <tr>
-                <th style="width: 40px" />
-                <th>Data</th>
-                <th>Tipo</th>
-                <th>Conta</th>
-                <th style="min-width: 200px">
-                  Categoria / Destino
-                </th>
-                <th>Forma de Pagamento</th>
-                <th>Descrição</th>
-                <th class="text-right" style="min-width: 120px">
-                  Valor
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <template
-                v-for="transaction in sortedTransactions"
-                :key="transaction.id"
-              >
+          <VCard>
+            <div
+              v-if="isLoading"
+              class="d-flex justify-center py-10"
+            >
+              <VProgressCircular indeterminate />
+            </div>
+
+            <div
+              v-else
+              style="overflow-x: auto"
+            >
+              <VTable>
+                <thead style="white-space: nowrap">
                 <tr>
-                  <td>
-                    <VBtn
-                      v-if="isInvoicePaymentRow(transaction)"
-                      icon
-                      size="x-small"
-                      variant="text"
-                      @click="toggleExpand(transaction)"
-                    >
-                      <VIcon :icon="expandedIds.has(transaction.id) ? 'tabler-chevron-down' : 'tabler-chevron-right'" />
-                    </VBtn>
-                  </td>
-                  <td>{{ formatDate(transaction.transactionDate) }}</td>
-                  <td>
-                    <VChip
-                      :color="typeColor[transaction.type]"
-                      size="small"
-                      variant="tonal"
-                    >
-                      {{ typeLabel[transaction.type] }}
-                    </VChip>
-                  </td>
-                  <td>{{ bankAccountName(transaction.bankAccountId) }}</td>
-                  <td>
-                    <template v-if="transaction.type === 'TRANSFER'">
-                      → {{ bankAccountName(transaction.destinationBankAccountId) }}
-                    </template>
-                    <template v-else>
-                      {{ categoryName(transaction.categoryId) }}
-                      <span
-                        v-if="subCategoryName(transaction.subCategoryId)"
-                        class="text-disabled"
+                  <th style="width: 40px" />
+                  <th>Data</th>
+                  <th>Tipo</th>
+                  <th>Conta</th>
+                  <th style="min-width: 200px">
+                    Categoria / Destino
+                  </th>
+                  <th>Forma de Pagamento</th>
+                  <th>Descrição</th>
+                  <th class="text-right" style="min-width: 120px">
+                    Valor
+                  </th>
+                </tr>
+                </thead>
+                <tbody>
+                <template
+                  v-for="transaction in sortedTransactions"
+                  :key="transaction.id"
+                >
+                  <tr>
+                    <td>
+                      <VBtn
+                        v-if="isInvoicePaymentRow(transaction)"
+                        icon
+                        size="x-small"
+                        variant="text"
+                        @click="toggleExpand(transaction)"
                       >
+                        <VIcon :icon="expandedIds.has(transaction.id) ? 'tabler-chevron-down' : 'tabler-chevron-right'" />
+                      </VBtn>
+                    </td>
+                    <td>{{ formatDate(transaction.transactionDate) }}</td>
+                    <td>
+                      <VChip
+                        :color="typeColor[transaction.type]"
+                        size="small"
+                        variant="tonal"
+                      >
+                        {{ typeLabel[transaction.type] }}
+                      </VChip>
+                    </td>
+                    <td>{{ bankAccountName(transaction.bankAccountId) }}</td>
+                    <td>
+                      <template v-if="transaction.type === 'TRANSFER'">
+                        → {{ bankAccountName(transaction.destinationBankAccountId) }}
+                      </template>
+                      <template v-else>
+                        {{ categoryName(transaction.categoryId) }}
+                        <span
+                          v-if="subCategoryName(transaction.subCategoryId)"
+                          class="text-disabled"
+                        >
                         / {{ subCategoryName(transaction.subCategoryId) }}
                       </span>
-                      <VChip
-                        v-if="isReconciledByFilter(transaction)"
-                        size="x-small"
-                        variant="tonal"
-                        color="warning"
-                        class="ms-1"
-                      >
-                        Contém itens do filtro
-                      </VChip>
-                    </template>
-                  </td>
-                  <td>
-                    {{ transaction.type === 'TRANSFER' ? '—' : paymentMethodName(transaction.paymentMethodId) }}
-                  </td>
-                  <td class="text-disabled">
-                    {{ transaction.description || '—' }}
-                  </td>
-                  <td
-                    class="text-right"
-                    :class="{
+                        <VChip
+                          v-if="isReconciledByFilter(transaction)"
+                          size="x-small"
+                          variant="tonal"
+                          color="warning"
+                          class="ms-1"
+                        >
+                          Contém itens do filtro
+                        </VChip>
+                      </template>
+                    </td>
+                    <td>
+                      {{ transaction.type === 'TRANSFER' ? '—' : paymentMethodName(transaction.paymentMethodId) }}
+                    </td>
+                    <td class="text-disabled">
+                      {{ transaction.description || '—' }}
+                    </td>
+                    <td
+                      class="text-right"
+                      :class="{
                       'text-success': transaction.type === 'INCOME',
                       'text-error': transaction.type === 'EXPENSE',
                     }"
-                  >
-                    {{ formatAmount(transaction) }}
-                  </td>
-                </tr>
+                    >
+                      {{ formatAmount(transaction) }}
+                    </td>
+                  </tr>
 
-                <tr v-if="expandedIds.has(transaction.id)">
-                  <td />
-                  <td
-                    colspan="7"
-                    class="pb-4"
-                  >
-                    <div
-                      v-if="loadingInvoiceItems.has(transaction.id)"
-                      class="d-flex justify-center py-4"
+                  <tr v-if="expandedIds.has(transaction.id)">
+                    <td />
+                    <td
+                      colspan="7"
+                      class="pb-4"
                     >
-                      <VProgressCircular
-                        indeterminate
-                        size="24"
-                      />
-                    </div>
-                    <div
-                      v-else
-                      style="overflow-x: auto"
-                    >
-                      <VTable density="compact">
-                        <thead style="white-space: nowrap">
+                      <div
+                        v-if="loadingInvoiceItems.has(transaction.id)"
+                        class="d-flex justify-center py-4"
+                      >
+                        <VProgressCircular
+                          indeterminate
+                          size="24"
+                        />
+                      </div>
+                      <div
+                        v-else
+                        style="overflow-x: auto"
+                      >
+                        <VTable density="compact">
+                          <thead style="white-space: nowrap">
                           <tr>
                             <th>Data</th>
                             <th style="min-width: 200px">
@@ -825,8 +830,8 @@ function formatReferenceMonth(isoDate: string) {
                               Valor
                             </th>
                           </tr>
-                        </thead>
-                        <tbody>
+                          </thead>
+                          <tbody>
                           <tr
                             v-for="item in invoiceItemsCache.get(transaction.id) ?? []"
                             :key="item.id"
@@ -872,29 +877,37 @@ function formatReferenceMonth(isoDate: string) {
                               class="text-center text-disabled py-4"
                             >
                               {{ hasActiveCategoryFilter()
-                                ? 'Nenhum item desta fatura corresponde ao filtro selecionado.'
-                                : 'Nenhum lançamento encontrado nesta fatura.' }}
+                              ? 'Nenhum item desta fatura corresponde ao filtro selecionado.'
+                              : 'Nenhum lançamento encontrado nesta fatura.' }}
                             </td>
                           </tr>
-                        </tbody>
-                      </VTable>
-                    </div>
+                          </tbody>
+                        </VTable>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+
+                <tr v-if="sortedTransactions.length === 0">
+                  <td
+                    colspan="8"
+                    class="text-center text-disabled py-8"
+                  >
+                    Nenhuma transação encontrada para o período e filtros selecionados.
                   </td>
                 </tr>
-              </template>
+                </tbody>
+              </VTable>
+            </div>
+          </VCard>
 
-              <tr v-if="sortedTransactions.length === 0">
-                <td
-                  colspan="8"
-                  class="text-center text-disabled py-8"
-                >
-                  Nenhuma transação encontrada para o período e filtros selecionados.
-                </td>
-              </tr>
-            </tbody>
-          </VTable>
-        </div>
-      </VCard>
+        </VCol>
+
+      </VRow>
+
+
+
+
     </template>
   </div>
 </template>
