@@ -12,10 +12,15 @@ import NavBarI18n from '@core/components/I18n.vue'
 import { VerticalNavLayout } from '@layouts'
 
 const menuStore = useMenuStore()
+
+const navItems = computed(() => [
+  { title: 'Home', icon: { icon: 'tabler-smart-home' }, to: { path: '/' } },
+  ...menuStore.navItems,
+])
 </script>
 
 <template>
-  <VerticalNavLayout :nav-items="menuStore.navItems">
+  <VerticalNavLayout :nav-items="navItems">
     <template #before-vertical-nav-items>
       <SpaceSwitcher />
     </template>

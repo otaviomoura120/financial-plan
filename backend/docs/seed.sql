@@ -121,7 +121,6 @@ INSERT INTO endpoint_permissions
     (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
 VALUES
 
-(1, '/',                    'Início',                1,  'FRONT_PAGE', 'GET', 'Dashboard',    NOW(), NOW()),
 (1, '/transactions',        'Transações',            2,  'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
 (1, '/reports',             'Relatórios',            3,  'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
 (1, '/reports/by-category', 'Relatórios',            14, 'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
@@ -142,11 +141,10 @@ VALUES
 
 INSERT INTO group_menus (name, icon, created_at, updated_at)
 VALUES
-('Dashboard',           'tabler-home',          NOW(), NOW()),
-('Financeiro',          'tabler-cash',          NOW(), NOW()),
-('Contas e Pagamentos', 'tabler-building-bank', NOW(), NOW()),
-('Configurações',       'tabler-category',      NOW(), NOW()),
-('Administração',       'tabler-shield-lock',   NOW(), NOW());
+('Transações',          'tabler-cash',             NOW(), NOW()),
+('Relatórios',          'tabler-report-analytics', NOW(), NOW()),
+('Configurações',       'tabler-category',         NOW(), NOW()),
+('Administração',       'tabler-shield-lock',      NOW(), NOW());
 
 
 -- =============================================================================
@@ -155,30 +153,25 @@ VALUES
 
 INSERT INTO group_menu_children (name, endpoint, icon, group_menu_id, created_at, updated_at)
 
--- Dashboard
-SELECT 'Início',              '/',                    'tabler-smart-home',       id, NOW(), NOW() FROM group_menus WHERE name = 'Dashboard'
+-- Transações
+SELECT 'Despesas e Receitas', '/transactions',        'tabler-arrows-exchange',  id, NOW(), NOW() FROM group_menus WHERE name = 'Transações'
+UNION ALL
+SELECT 'Cartões de Crédito',  '/credit-cards',        'tabler-credit-card',      id, NOW(), NOW() FROM group_menus WHERE name = 'Transações'
+UNION ALL
+SELECT 'Contas a Pagar',      '/bills',               'tabler-calendar-due',     id, NOW(), NOW() FROM group_menus WHERE name = 'Transações'
 
 UNION ALL
 
--- Financeiro
-SELECT 'Transações',          '/transactions',        'tabler-arrows-exchange',  id, NOW(), NOW() FROM group_menus WHERE name = 'Financeiro'
+-- Relatórios
+SELECT 'Extrato Bancário',        '/reports',             'tabler-report-analytics', id, NOW(), NOW() FROM group_menus WHERE name = 'Relatórios'
 UNION ALL
-SELECT 'Relatórios',          '/reports',             'tabler-report-analytics', id, NOW(), NOW() FROM group_menus WHERE name = 'Financeiro'
-UNION ALL
-SELECT 'Relatório por Categoria', '/reports/by-category', 'tabler-chart-pie',    id, NOW(), NOW() FROM group_menus WHERE name = 'Financeiro'
-
-UNION ALL
-
--- Contas e Pagamentos
-SELECT 'Contas Bancárias',    '/bank-accounts',       'tabler-credit-card',      id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
-UNION ALL
-SELECT 'Cartões de Crédito',  '/credit-cards',        'tabler-credit-card',     id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
-UNION ALL
-SELECT 'Contas a Pagar',      '/bills',               'tabler-calendar-due',    id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
+SELECT 'Transações por Categoria', '/reports/by-category', 'tabler-chart-pie',       id, NOW(), NOW() FROM group_menus WHERE name = 'Relatórios'
 
 UNION ALL
 
 -- Configurações
+SELECT 'Contas Bancárias',    '/bank-accounts',       'tabler-credit-card',      id, NOW(), NOW() FROM group_menus WHERE name = 'Configurações'
+UNION ALL
 SELECT 'Categorias',          '/categories',          'tabler-category',         id, NOW(), NOW() FROM group_menus WHERE name = 'Configurações'
 
 UNION ALL
@@ -847,3 +840,76 @@ WHERE r.name = 'MEMBER'
       SELECT 1 FROM role_endpoint_permissions rep
       WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
   );
+
+
+-- =============================================================================
+-- 14. INCREMENTAL — Reorganização do menu (Home fixo / Transações / Relatórios / Configurações)
+--    Para bancos que já rodaram as seções 2-4 na versão anterior (grupos Dashboard,
+--    Financeiro, Contas e Pagamentos, Configurações, Administração). Não mexe em
+--    endpoint_permissions (API ou FRONT_PAGE, exceto a remoção abaixo) nem em
+--    role_endpoint_permissions — todas as rotas envolvidas já tinham FRONT_PAGE
+--    concedido, a mudança é só de agrupamento/rótulo visual. Idempotente: cada
+--    passo só produz efeito se o estado anterior ainda existir.
+--
+--    'Home' passa a ser um item fixo no layout do frontend (fora do GroupMenu),
+--    por isso o grupo 'Dashboard' e a permissão FRONT_PAGE de '/' são removidos.
+--    O grupo 'Contas e Pagamentos' é reaproveitado (renomeado) como 'Relatórios'
+--    em vez de apagado + recriado, para preservar sua posição na listagem (não
+--    há coluna de sequência em group_menus/group_menu_children — a ordem de
+--    exibição segue a ordem de inserção das linhas).
+-- =============================================================================
+
+-- 14.1 — remove o child 'Início' do grupo Dashboard, se existir
+DELETE FROM group_menu_children
+WHERE endpoint = '/'
+  AND group_menu_id IN (SELECT id FROM group_menus WHERE name = 'Dashboard');
+
+-- 14.2 — remove o grupo 'Dashboard', se existir
+DELETE FROM group_menus WHERE name = 'Dashboard';
+
+-- 14.3 — remove a permissão FRONT_PAGE de '/' (cascade limpa role_endpoint_permissions órfãos)
+DELETE FROM endpoint_permissions WHERE endpoint = '/' AND type = 'FRONT_PAGE';
+
+-- 14.4 — renomeia o grupo 'Financeiro' para 'Transações'
+UPDATE group_menus SET name = 'Transações', updated_at = NOW() WHERE name = 'Financeiro';
+
+-- 14.5 — reaproveita a linha do grupo 'Contas e Pagamentos', renomeando para 'Relatórios'
+UPDATE group_menus
+SET name = 'Relatórios', icon = 'tabler-report-analytics', updated_at = NOW()
+WHERE name = 'Contas e Pagamentos';
+
+-- 14.6 — renomeia o child de /transactions
+UPDATE group_menu_children SET name = 'Despesas e Receitas', updated_at = NOW()
+WHERE endpoint = '/transactions' AND name <> 'Despesas e Receitas';
+
+-- 14.7 — renomeia e move o child de /reports para o grupo 'Relatórios'
+UPDATE group_menu_children
+SET name = 'Extrato Bancário',
+    group_menu_id = (SELECT id FROM group_menus WHERE name = 'Relatórios'),
+    updated_at = NOW()
+WHERE endpoint = '/reports' AND name <> 'Extrato Bancário';
+
+-- 14.8 — renomeia e move o child de /reports/by-category para o grupo 'Relatórios'
+UPDATE group_menu_children
+SET name = 'Transações por Categoria',
+    group_menu_id = (SELECT id FROM group_menus WHERE name = 'Relatórios'),
+    updated_at = NOW()
+WHERE endpoint = '/reports/by-category' AND name <> 'Transações por Categoria';
+
+-- 14.9 — move o child de /bank-accounts para o grupo 'Configurações'
+UPDATE group_menu_children
+SET group_menu_id = (SELECT id FROM group_menus WHERE name = 'Configurações'), updated_at = NOW()
+WHERE endpoint = '/bank-accounts'
+  AND group_menu_id <> (SELECT id FROM group_menus WHERE name = 'Configurações');
+
+-- 14.10 — move o child de /credit-cards para o grupo 'Transações'
+UPDATE group_menu_children
+SET group_menu_id = (SELECT id FROM group_menus WHERE name = 'Transações'), updated_at = NOW()
+WHERE endpoint = '/credit-cards'
+  AND group_menu_id <> (SELECT id FROM group_menus WHERE name = 'Transações');
+
+-- 14.11 — move o child de /bills para o grupo 'Transações'
+UPDATE group_menu_children
+SET group_menu_id = (SELECT id FROM group_menus WHERE name = 'Transações'), updated_at = NOW()
+WHERE endpoint = '/bills'
+  AND group_menu_id <> (SELECT id FROM group_menus WHERE name = 'Transações');

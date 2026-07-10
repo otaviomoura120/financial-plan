@@ -11,10 +11,15 @@ import { HorizontalNavLayout } from '@layouts'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 
 const menuStore = useMenuStore()
+
+const navItems = computed(() => [
+  { title: 'Home', icon: { icon: 'tabler-smart-home' }, to: { path: '/' } },
+  ...menuStore.navItems,
+])
 </script>
 
 <template>
-  <HorizontalNavLayout :nav-items="menuStore.navItems">
+  <HorizontalNavLayout :nav-items="navItems">
     <!-- 👉 navbar -->
     <template #navbar>
       <NuxtLink
