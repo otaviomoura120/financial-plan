@@ -11,6 +11,14 @@ interface CreditCardResponse {
   dueDay: number
   active: boolean
   createdDate: string
+  bankAccountId: number | null
+  bankAccountName: string | null
+}
+
+interface BankAccountResponse {
+  id: number
+  name: string
+  active: boolean
 }
 
 interface Props {
@@ -37,7 +45,10 @@ const name = shallowRef('')
 const limit = shallowRef<number | null>(null)
 const closingDay = shallowRef<string>('')
 const dueDay = shallowRef<string>('')
+const bankAccountId = shallowRef<number | null>(null)
+const bankAccounts = ref<BankAccountResponse[]>([])
 const isLoading = shallowRef(false)
+const isLoadingBankAccounts = shallowRef(false)
 
 const isEditMode = computed(() => props.creditCard !== null)
 
@@ -55,6 +66,26 @@ function dayRules(label: string) {
 const closingDayRules = dayRules('Dia de fechamento')
 const dueDayRules = dayRules('Dia de vencimento')
 
+const bankAccountItems = computed(() =>
+  bankAccounts.value.map(ba => ({ title: ba.active ? ba.name : `${ba.name} (inativo)`, value: ba.id })),
+)
+
+async function fetchBankAccounts() {
+  if (!spaceStore.activeSpace)
+    return
+
+  isLoadingBankAccounts.value = true
+
+  try {
+    bankAccounts.value = await $fetch<BankAccountResponse[]>('/api/bank-accounts', {
+      query: { spaceId: spaceStore.activeSpace.id },
+    })
+  }
+  finally {
+    isLoadingBankAccounts.value = false
+  }
+}
+
 watch(
   () => props.isDialogVisible,
   visible => {
@@ -63,7 +94,9 @@ watch(
       limit.value = props.creditCard?.limit ?? null
       closingDay.value = props.creditCard ? String(props.creditCard.closingDay) : ''
       dueDay.value = props.creditCard ? String(props.creditCard.dueDay) : ''
+      bankAccountId.value = props.creditCard?.bankAccountId ?? null
       clearError()
+      fetchBankAccounts()
     }
   },
 )
@@ -85,6 +118,7 @@ async function onSubmit() {
       limit: limit.value,
       closingDay: Number(closingDay.value),
       dueDay: Number(dueDay.value),
+      bankAccountId: bankAccountId.value,
     }
 
     if (isEditMode.value) {
@@ -179,6 +213,16 @@ function onClose() {
               label="Dia de vencimento"
               placeholder="Ex: 27"
               :rules="dueDayRules"
+            />
+
+            <AppSelect
+              v-model="bankAccountId"
+              label="Conta bancária (opcional)"
+              :items="bankAccountItems"
+              clearable
+              :loading="isLoadingBankAccounts"
+              persistent-hint
+              hint="Conta usada para filtrar as compras do cartão nos relatórios"
             />
           </div>
 

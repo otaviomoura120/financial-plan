@@ -82,8 +82,9 @@ Hierarchical UI navigation menu. The menu structure is served to the frontend fi
 ### CreditCard
 First entity of the new **credit card module** (in progress). Tenancy is direct, same pattern as `BankAccount`/`PaymentMethod`:
 - `name`, `limit` (informative only — never blocks a purchase, same philosophy as `BankAccount`'s negative balance), `closingDay`/`dueDay` (1-31, day-of-month of the invoice's closing and due date), `active`
-- `validate()` requires `name`, `space`, a positive `limit`, and `closingDay`/`dueDay` within 1-31
-- `update(name, limit, closingDay, dueDay)` and `deactivate()`; optimistic locking via `setVersion`
+- optional `bankAccount` — the account this card "belongs to". Nullable, validated on create/update to belong to the same space (422 otherwise). Exists so the category report's `bankAccountId` filter can reach card purchases (see `report-by-category.md`, RPTC6); exposed as `bankAccountId`/`bankAccountName` in `CreditCardResponse`
+- `validate()` requires `name`, `space`, a positive `limit`, and `closingDay`/`dueDay` within 1-31 (`bankAccount` is not required)
+- `update(name, limit, closingDay, dueDay, bankAccount)` and `deactivate()`; optimistic locking via `setVersion`
 
 `CreditCardInvoiceCycle` is a stateless calculator (no repository, no persisted state) used to derive which monthly invoice a purchase belongs to and when that invoice is due:
 - `resolveClosingDate(YearMonth, closingDay)` — the closing date within that month, clamped to the month's last day (handles `closingDay=31` in a 28/30-day month)
@@ -205,6 +206,13 @@ balance effect (see transaction-balance-effect.md), so recorded balances stay co
 Both pending lists only include items whose `dueDate` falls within `[from, to]` — a pending invoice or bill instance
 due outside the filtered period simply doesn't affect `projectedBalance`, even though it still exists.
 
+**Report by Category.** `POST /reports/by-category` (`GenerateCategoryReportService`) is a second report on a
+different accrual basis: it groups the period's items by Category → SubCategory, includes credit card purchases by
+`purchaseDate` (never by invoice closing/payment — the matching `CREDIT_CARD_INVOICE_PAYMENT` transactions are
+excluded to avoid double counting), accepts the same filters plus `creditCardId` and a hardcoded
+`paymentMethodId = -1` "credit card" sentinel, and adds per-category percentages. Full contract, filter semantics
+and invariants (RPTC1-RPTC9) in `report-by-category.md`.
+
 ### 4. Access Control Flow
 ```
 Incoming request  (must carry Authorization: Bearer <token> and X-Space-Id: <spaceId>)
@@ -304,14 +312,14 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/?spaceId=` | List credit cards of a space |
-| POST | `/` | Create credit card (`name`, `limit`, `closingDay`, `dueDay`) |
-| PUT | `/{id}` | Update name/limit/closingDay/dueDay |
+| POST | `/` | Create credit card (`name`, `limit`, `closingDay`, `dueDay`, `bankAccountId?` — must belong to the same space) |
+| PUT | `/{id}` | Update name/limit/closingDay/dueDay/bankAccountId |
 | DELETE | `/{id}` | Deactivate credit card (soft delete — `active=false`, no hard delete yet) |
 
 ### Credit Card Transactions `/credit-card-transactions`
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/?spaceId=&creditCardId=&categoryId=&subCategoryId=&from=&to=` | List credit card transactions (filters optional, `from`/`to` match `purchaseDate`) |
+| GET | `/?spaceId=&creditCardId=&categoryId=&subCategoryId=&from=&to=` | List credit card transactions (filters optional, `from`/`to` match `purchaseDate`; the repository also supports a `userId` filter, used internally by the category report) |
 | GET | `/installment-groups/{installmentGroupId}` | List every installment of a purchase, sorted by `installmentNumber` |
 | POST | `/` | Create a purchase (`creditCardId`, `userId`, `categoryId`, `subCategoryId?`, `amount`, `purchaseDate`, `description?`, `totalInstallments?`) — `totalInstallments > 1` creates all N rows at once |
 | PUT | `/{id}` | Update a single installment's `categoryId`/`subCategoryId`/`amount`/`purchaseDate`/`description` (rejects with 422 if its invoice is already paid) |
@@ -357,6 +365,7 @@ Full cycle explained in `backend/docs/recurring-bills.md`. `/bills` itself is `B
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/` | Generate filtered financial report |
+| POST | `/by-category` | Generate the report grouped by category/subcategory — includes credit card purchases by `purchaseDate` with the card identified, excludes invoice-payment transactions and transfers, accepts the same filters plus `creditCardId` and the `paymentMethodId=-1` "credit card" sentinel (see `report-by-category.md`) |
 
 ### Endpoint Permissions `/endpoint-permissions`
 | Method | Path | Purpose |

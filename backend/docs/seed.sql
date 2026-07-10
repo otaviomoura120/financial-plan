@@ -83,6 +83,7 @@ VALUES
 
 -- ReportController — /reports
 (1, '/reports',                               'Relatórios',                 60, 'API', 'POST',       'Financeiro',   NOW(), NOW()),
+(1, '/reports/by-category',                   'Relatórios',                 82, 'API', 'POST',       'Financeiro',   NOW(), NOW()),
 
 -- CreditCardController — /credit-cards
 (1, '/credit-cards',                          'Cartões de Crédito',         65, 'API', 'GET,POST',   'Conta',        NOW(), NOW()),
@@ -128,6 +129,7 @@ VALUES
 (1, '/',                    'Início',                1,  'FRONT_PAGE', 'GET', 'Dashboard',    NOW(), NOW()),
 (1, '/transactions',        'Transações',            2,  'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
 (1, '/reports',             'Relatórios',            3,  'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
+(1, '/reports/by-category', 'Relatórios',            14, 'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
 (1, '/bank-accounts',       'Contas Bancárias',      4,  'FRONT_PAGE', 'GET', 'Conta',        NOW(), NOW()),
 (1, '/payment-methods',     'Formas de Pagamento',   5,  'FRONT_PAGE', 'GET', 'Conta',        NOW(), NOW()),
 (1, '/categories',          'Categorias',            6,  'FRONT_PAGE', 'GET', 'Configuração', NOW(), NOW()),
@@ -168,6 +170,8 @@ UNION ALL
 SELECT 'Transações',          '/transactions',        'tabler-arrows-exchange',  id, NOW(), NOW() FROM group_menus WHERE name = 'Financeiro'
 UNION ALL
 SELECT 'Relatórios',          '/reports',             'tabler-report-analytics', id, NOW(), NOW() FROM group_menus WHERE name = 'Financeiro'
+UNION ALL
+SELECT 'Relatório por Categoria', '/reports/by-category', 'tabler-chart-pie',    id, NOW(), NOW() FROM group_menus WHERE name = 'Financeiro'
 
 UNION ALL
 
@@ -786,6 +790,74 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r
 JOIN endpoint_permissions ep ON ep.endpoint = '/bills/instances/[0-9]+' AND ep.type = 'API'
+WHERE r.name = 'MEMBER'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+
+-- =============================================================================
+-- 13. INCREMENTAL — Relatório por Categoria (POST /reports/by-category)
+--    Mesmo raciocínio das seções 7-12. As duas linhas novas reaproveitam o name
+--    'Relatórios' (já presente nas allow-lists ADMIN/MEMBER da seção 5), então em
+--    um banco novo elas herdam ALLOW sozinhas; esta seção só é necessária para quem
+--    já rodou a seção 5 antes deste endpoint existir. Idempotente via WHERE NOT EXISTS.
+-- =============================================================================
+
+-- 13.1 — endpoint_permissions (API) se ainda não existir
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/reports/by-category' AS endpoint, 'Relatórios' AS name,
+           82 AS sequence, 'API' AS type, 'POST' AS permitted_methods, 'Financeiro' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/reports/by-category' AND type = 'API');
+
+-- 13.2 — endpoint_permissions (FRONT_PAGE) se ainda não existir
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/reports/by-category' AS endpoint, 'Relatórios' AS name,
+           14 AS sequence, 'FRONT_PAGE' AS type, 'GET' AS permitted_methods, 'Financeiro' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/reports/by-category' AND type = 'FRONT_PAGE');
+
+-- 13.3 — group_menu_children: item na sidebar sob 'Financeiro', se ainda não existir
+INSERT INTO group_menu_children (name, endpoint, icon, group_menu_id, created_at, updated_at)
+SELECT 'Relatório por Categoria', '/reports/by-category', 'tabler-chart-pie', gm.id, NOW(), NOW()
+FROM group_menus gm
+WHERE gm.name = 'Financeiro'
+  AND NOT EXISTS (SELECT 1 FROM group_menu_children gmc WHERE gmc.endpoint = '/reports/by-category');
+
+-- 13.4 — role_endpoint_permissions: OWNER ganha ALLOW em 'Relatórios' (cobre as 2 linhas novas)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'OWNER'
+  AND ep.name = 'Relatórios'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 13.5 — role_endpoint_permissions: ADMIN ganha ALLOW em 'Relatórios'
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep ON ep.name = 'Relatórios'
+WHERE r.name = 'ADMIN'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 13.6 — role_endpoint_permissions: MEMBER ganha ALLOW em 'Relatórios'
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep ON ep.name = 'Relatórios'
 WHERE r.name = 'MEMBER'
   AND NOT EXISTS (
       SELECT 1 FROM role_endpoint_permissions rep

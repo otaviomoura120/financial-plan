@@ -26,7 +26,7 @@ class ListCreditCardInvoicesServiceSpec extends Specification {
 
     private CreditCard buildCreditCard(Long id) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        new CreditCard(id, 0, space, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
+        new CreditCard(id, 0, space, null, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
     }
 
     private User buildUser() {

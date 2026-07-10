@@ -16,7 +16,7 @@ class ListCreditCardsServiceSpec extends Specification {
     def "execute returns the credit cards of the space"() {
         given:
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        CreditCard creditCard = new CreditCard(10L, 0, space, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
+        CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
         creditCardRepository.findBySpaceId(1L) >> [creditCard]
 
         when:

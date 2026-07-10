@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.repository;
 
+import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.CreditCard;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
@@ -7,6 +8,7 @@ import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.BankAccountEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.CategoryEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.CreditCardEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.CreditCardTransactionEntityJpa;
@@ -76,8 +78,8 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     }
 
     @Override
-    public List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, LocalDate from, LocalDate to, LocalDate referenceMonth) {
-        Specification<CreditCardTransactionEntityJpa> specification = buildSpecification(spaceId, creditCardId, categoryId, subCategoryId, from, to, referenceMonth);
+    public List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, Long userId, LocalDate from, LocalDate to, LocalDate referenceMonth) {
+        Specification<CreditCardTransactionEntityJpa> specification = buildSpecification(spaceId, creditCardId, categoryId, subCategoryId, userId, from, to, referenceMonth);
         return jpaCreditCardTransactionRepository.findAll(specification).stream()
                 .map(this::toDomain)
                 .toList();
@@ -110,8 +112,8 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     }
 
     private Specification<CreditCardTransactionEntityJpa> buildSpecification(Long spaceId, Long creditCardId, Long categoryId,
-                                                                              Long subCategoryId, LocalDate from, LocalDate to,
-                                                                              LocalDate referenceMonth) {
+                                                                              Long subCategoryId, Long userId, LocalDate from,
+                                                                              LocalDate to, LocalDate referenceMonth) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(root.get("creditCard").get("id").in(creditCardIdsInSpace(spaceId, query, criteriaBuilder)));
@@ -123,6 +125,9 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
             }
             if (subCategoryId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("subCategory").get("id"), subCategoryId));
+            }
+            if (userId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("user").get("id"), userId));
             }
             if (from != null) {
                 predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("purchaseDate"), from));
@@ -178,8 +183,14 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
             return null;
         }
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new CreditCard(entity.getId(), entity.getVersion(), space, entity.getName(), entity.getLimit(),
+        BankAccount bankAccount = entity.getBankAccount() != null ? buildBankAccount(entity.getBankAccount()) : null;
+        return new CreditCard(entity.getId(), entity.getVersion(), space, bankAccount, entity.getName(), entity.getLimit(),
                 entity.getClosingDay(), entity.getDueDay(), entity.isActive(), entity.getCreatedAt(), null);
+    }
+
+    private BankAccount buildBankAccount(BankAccountEntityJpa entity) {
+        return new BankAccount(entity.getId(), entity.getVersion(), null, entity.getName(),
+                entity.getBankName(), entity.getBalance(), entity.isActive(), entity.getCreatedAt(), null);
     }
 
     private User buildUser(UserEntityJpa entity) {

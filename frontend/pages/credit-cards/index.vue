@@ -9,6 +9,8 @@ interface CreditCardResponse {
   dueDay: number
   active: boolean
   createdDate: string
+  bankAccountId: number | null
+  bankAccountName: string | null
 }
 
 const spaceStore = useSpaceStore()
@@ -234,6 +236,7 @@ function openInvoices(creditCard: CreditCardResponse) {
               <th>Limite</th>
               <th>Fechamento</th>
               <th>Vencimento</th>
+              <th>Conta</th>
               <th>Status</th>
               <th class="text-center">
                 Ações
@@ -256,6 +259,9 @@ function openInvoices(creditCard: CreditCardResponse) {
               </td>
               <td class="text-disabled">
                 Dia {{ creditCard.dueDay }}
+              </td>
+              <td class="text-disabled">
+                {{ creditCard.bankAccountName ?? '—' }}
               </td>
               <td>
                 <VChip
@@ -326,7 +332,7 @@ function openInvoices(creditCard: CreditCardResponse) {
 
             <tr v-if="!isLoading && filteredCreditCards.length === 0">
               <td
-                colspan="6"
+                colspan="7"
                 class="text-center text-disabled py-8"
               >
                 {{ search ? 'Nenhum cartão encontrado para a busca.' : 'Nenhum cartão de crédito cadastrado.' }}

@@ -24,7 +24,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
 
     private CreditCardTransaction buildTransaction() {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        CreditCard creditCard = new CreditCard(10L, 0, space, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
+        CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
         Category category = new Category(20L, 0, null, "Food", true, Instant.now(), null)

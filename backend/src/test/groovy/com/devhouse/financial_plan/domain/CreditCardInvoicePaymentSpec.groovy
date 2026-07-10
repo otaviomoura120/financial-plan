@@ -10,7 +10,7 @@ class CreditCardInvoicePaymentSpec extends Specification {
 
     private CreditCard buildCreditCard() {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        new CreditCard(10L, 0, space, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
+        new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
     }
 
     private CreditCardInvoicePayment buildPayment(CreditCard creditCard, LocalDate referenceMonth, LocalDate dueDate, BigDecimal paidAmount) {

@@ -1,9 +1,11 @@
 package com.devhouse.financial_plan.infrastructure.repository;
 
+import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.CreditCard;
 import com.devhouse.financial_plan.domain.CreditCardInvoicePayment;
 import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.BankAccountEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.CreditCardEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.CreditCardInvoicePaymentEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaCreditCardInvoicePaymentRepository;
@@ -82,8 +84,14 @@ public class CreditCardInvoicePaymentRepositoryImpl implements CreditCardInvoice
 
     private CreditCard buildCreditCard(CreditCardEntityJpa entity) {
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new CreditCard(entity.getId(), entity.getVersion(), space, entity.getName(), entity.getLimit(),
+        BankAccount bankAccount = entity.getBankAccount() != null ? buildBankAccount(entity.getBankAccount()) : null;
+        return new CreditCard(entity.getId(), entity.getVersion(), space, bankAccount, entity.getName(), entity.getLimit(),
                 entity.getClosingDay(), entity.getDueDay(), entity.isActive(), entity.getCreatedAt(), null);
+    }
+
+    private BankAccount buildBankAccount(BankAccountEntityJpa entity) {
+        return new BankAccount(entity.getId(), entity.getVersion(), null, entity.getName(),
+                entity.getBankName(), entity.getBalance(), entity.isActive(), entity.getCreatedAt(), null);
     }
 
     private Space buildSpace(SpaceEntityJpa entity) {

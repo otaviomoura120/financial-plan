@@ -17,6 +17,9 @@ public class CreditCardEntityJpa {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "space_id")
     private SpaceEntityJpa space;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bank_account_id")
+    private BankAccountEntityJpa bankAccount;
     private String name;
     @Column(name = "credit_limit")
     private BigDecimal limit;
@@ -33,6 +36,8 @@ public class CreditCardEntityJpa {
     public void setVersion(Integer version) { this.version = version; }
     public SpaceEntityJpa getSpace() { return space; }
     public void setSpace(SpaceEntityJpa space) { this.space = space; }
+    public BankAccountEntityJpa getBankAccount() { return bankAccount; }
+    public void setBankAccount(BankAccountEntityJpa bankAccount) { this.bankAccount = bankAccount; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public BigDecimal getLimit() { return limit; }

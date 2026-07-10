@@ -324,10 +324,7 @@ function formatDate(isoDate: string) {
           >
             <span class="d-sm-inline">Adicionar</span>
           </VBtn>
-
         </div>
-
-
       </VCardText>
 
       <VDivider />
@@ -371,7 +368,10 @@ function formatDate(isoDate: string) {
               </th>
               <th>Forma de Pagamento</th>
               <th>Descrição</th>
-              <th class="text-right" style="min-width: 115px">
+              <th
+                class="text-right"
+                style="min-width: 115px"
+              >
                 Valor
               </th>
               <th class="text-center">

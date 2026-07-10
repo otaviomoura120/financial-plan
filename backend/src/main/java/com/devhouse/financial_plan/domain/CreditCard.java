@@ -12,6 +12,7 @@ public class CreditCard {
     private Long id;
     private Integer version;
     private Space space;
+    private BankAccount bankAccount;
     private String name;
     private BigDecimal limit;
     private Integer closingDay;
@@ -20,10 +21,11 @@ public class CreditCard {
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public CreditCard(Long id, Integer version, Space space, String name, BigDecimal limit, Integer closingDay, Integer dueDay, boolean active, Instant createdDate, Instant updatedDate) {
+    public CreditCard(Long id, Integer version, Space space, BankAccount bankAccount, String name, BigDecimal limit, Integer closingDay, Integer dueDay, boolean active, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
         this.space = space;
+        this.bankAccount = bankAccount;
         this.name = name;
         this.limit = limit;
         this.closingDay = closingDay;
@@ -53,11 +55,12 @@ public class CreditCard {
         }
     }
 
-    public void update(String name, BigDecimal limit, Integer closingDay, Integer dueDay) {
+    public void update(String name, BigDecimal limit, Integer closingDay, Integer dueDay, BankAccount bankAccount) {
         this.name = name;
         this.limit = limit;
         this.closingDay = closingDay;
         this.dueDay = dueDay;
+        this.bankAccount = bankAccount;
         this.updatedDate = Instant.now();
     }
 
@@ -78,6 +81,8 @@ public class CreditCard {
 
     public Space getSpace() { return space; }
     public void setSpace(Space space) { this.space = space; }
+    public BankAccount getBankAccount() { return bankAccount; }
+    public void setBankAccount(BankAccount bankAccount) { this.bankAccount = bankAccount; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public BigDecimal getLimit() { return limit; }

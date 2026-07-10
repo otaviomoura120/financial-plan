@@ -22,8 +22,8 @@ All already implemented with `@PreAuthorize`.
 | Method | Path | Body / Query | Response |
 |---|---|---|---|
 | GET | `/credit-cards` | `spaceId` (query) | `CreditCardResponse[]` |
-| POST | `/credit-cards` | `{ spaceId, name, limit, closingDay, dueDay }` | `CreditCardResponse` |
-| PUT | `/credit-cards/{id}` | `{ version, name, limit, closingDay, dueDay }` | `CreditCardResponse` |
+| POST | `/credit-cards` | `{ spaceId, name, limit, closingDay, dueDay, bankAccountId? }` | `CreditCardResponse` |
+| PUT | `/credit-cards/{id}` | `{ version, name, limit, closingDay, dueDay, bankAccountId? }` | `CreditCardResponse` |
 | DELETE | `/credit-cards/{id}` | — | `204` (soft-deactivate) |
 | GET | `/credit-card-transactions` | `spaceId, creditCardId?, categoryId?, subCategoryId?, from?, to?, referenceMonth?` (query) | `CreditCardTransactionResponse[]` |
 | GET | `/credit-card-transactions/installment-groups/{installmentGroupId}` | — | `CreditCardTransactionResponse[]` (sorted by `installmentNumber`) |
@@ -35,7 +35,13 @@ All already implemented with `@PreAuthorize`.
 | POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | `{ bankAccountId, categoryId, paymentMethodId, paidDate }` | `CreditCardInvoicePaymentResponse` |
 | POST | `/credit-cards/{id}/invoices/{referenceMonth}/undo-payment` | — | `204` |
 
-`CreditCardResponse`: `{ id, version, spaceId, name, limit, closingDay, dueDay, active, createdDate }`.
+`CreditCardResponse`: `{ id, version, spaceId, name, limit, closingDay, dueDay, active, createdDate, bankAccountId, bankAccountName }`.
+
+`bankAccountId` is an **optional** link to a `BankAccount` of the same space (422 if it belongs
+to another space). It exists so the "Conta" filter of the category report can reach card
+purchases — see `backend/docs/report-by-category.md` (RPTC6) and
+[`reports-by-category.md`](./reports-by-category.md). `bankAccountName` is denormalized into the
+response so the list/report don't need an extra lookup.
 
 `CreditCardTransactionResponse`: `{ id, version, creditCardId, userId, categoryId, subCategoryId, amount, purchaseDate, description, referenceMonth, installmentGroupId, installmentNumber, totalInstallments, anticipated, originalReferenceMonth, createdDate }`.
 
@@ -80,6 +86,10 @@ Same pattern as Payment Methods/Bank Accounts: search by name, client-side pagin
 create/edit dialog, delete with `ConfirmDialog` (irreversible, no "Ativar/Inativar" — see the
 gap note above). Row actions: Ver Lançamentos, Ver Fatura, Editar, Excluir — the first two open
 `CreditCardTransactionsDialog`/`CreditCardInvoicesDialog` (see below) instead of navigating.
+The table has a "Conta" column showing `bankAccountName` (`—` when the card has no linked
+account), and `AddEditCreditCardDialog` has a clearable "Conta bancária (opcional)" select
+(options fetched from `/api/bank-accounts` when the dialog opens) with a hint explaining the
+link is used by the category report filters.
 
 ### `CreditCardTransactionsDialog` (FCC2)
 Resolves the card's name via `GET /credit-cards?spaceId=` filtered by the `creditCardId` prop.

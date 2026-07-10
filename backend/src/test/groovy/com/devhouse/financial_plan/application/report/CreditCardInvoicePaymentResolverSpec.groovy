@@ -36,7 +36,7 @@ class CreditCardInvoicePaymentResolverSpec extends Specification {
     }
 
     private CreditCard buildCreditCard(Long id) {
-        new CreditCard(id, 0, buildSpace(), "Card " + id, new BigDecimal("1000.00"), 20, 27, true, Instant.now(), null)
+        new CreditCard(id, 0, buildSpace(), null, "Card " + id, new BigDecimal("1000.00"), 20, 27, true, Instant.now(), null)
     }
 
     private Transaction buildInvoicePaymentTransaction(Long id, Long creditCardId, BigDecimal amount, LocalDate transactionDate) {
