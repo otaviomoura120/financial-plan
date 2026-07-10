@@ -2,7 +2,6 @@ package com.devhouse.financial_plan.infrastructure.repository;
 
 import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.Category;
-import com.devhouse.financial_plan.domain.PaymentMethod;
 import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.Transaction;
@@ -13,11 +12,9 @@ import com.devhouse.financial_plan.infrastructure.repository.jpa.BankAccountEnti
 import com.devhouse.financial_plan.infrastructure.repository.jpa.CategoryEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaBankAccountRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaCategoryRepository;
-import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaPaymentMethodRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaSubCategoryRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaTransactionRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaUserRepository;
-import com.devhouse.financial_plan.infrastructure.repository.jpa.PaymentMethodEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.SpaceEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.SubCategoryEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.TransactionEntityJpa;
@@ -40,17 +37,15 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     private final JpaBankAccountRepository jpaBankAccountRepository;
     private final JpaCategoryRepository jpaCategoryRepository;
     private final JpaSubCategoryRepository jpaSubCategoryRepository;
-    private final JpaPaymentMethodRepository jpaPaymentMethodRepository;
 
     public TransactionRepositoryImpl(JpaTransactionRepository jpaTransactionRepository, JpaUserRepository jpaUserRepository,
                                       JpaBankAccountRepository jpaBankAccountRepository, JpaCategoryRepository jpaCategoryRepository,
-                                      JpaSubCategoryRepository jpaSubCategoryRepository, JpaPaymentMethodRepository jpaPaymentMethodRepository) {
+                                      JpaSubCategoryRepository jpaSubCategoryRepository) {
         this.jpaTransactionRepository = jpaTransactionRepository;
         this.jpaUserRepository = jpaUserRepository;
         this.jpaBankAccountRepository = jpaBankAccountRepository;
         this.jpaCategoryRepository = jpaCategoryRepository;
         this.jpaSubCategoryRepository = jpaSubCategoryRepository;
-        this.jpaPaymentMethodRepository = jpaPaymentMethodRepository;
     }
 
     @Override
@@ -79,9 +74,9 @@ public class TransactionRepositoryImpl implements TransactionRepository {
 
     @Override
     public List<Transaction> findByFilter(Long spaceId, Long userId, Long bankAccountId, Long categoryId, Long subCategoryId,
-                                          Long paymentMethodId, TransactionType type, LocalDate from, LocalDate to) {
+                                          TransactionType type, LocalDate from, LocalDate to) {
         Specification<TransactionEntityJpa> specification = buildSpecification(spaceId, userId, bankAccountId, categoryId,
-                subCategoryId, paymentMethodId, type, from, to);
+                subCategoryId, type, from, to);
         return jpaTransactionRepository.findAll(specification).stream()
                 .map(this::toDomain)
                 .toList();
@@ -107,13 +102,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         return jpaTransactionRepository.existsBySubCategoryId(subCategoryId);
     }
 
-    @Override
-    public boolean existsByPaymentMethodId(Long paymentMethodId) {
-        return jpaTransactionRepository.existsByPaymentMethodId(paymentMethodId);
-    }
-
     private Specification<TransactionEntityJpa> buildSpecification(Long spaceId, Long userId, Long bankAccountId, Long categoryId,
-                                                                     Long subCategoryId, Long paymentMethodId,
+                                                                     Long subCategoryId,
                                                                      TransactionType type, LocalDate from, LocalDate to) {
         return (root, query, criteriaBuilder) -> {
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
@@ -129,9 +119,6 @@ public class TransactionRepositoryImpl implements TransactionRepository {
             }
             if (subCategoryId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("subCategory").get("id"), subCategoryId));
-            }
-            if (paymentMethodId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("paymentMethod").get("id"), paymentMethodId));
             }
             if (type != null) {
                 predicates.add(criteriaBuilder.equal(root.get("type"), type));
@@ -165,8 +152,6 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                 ? jpaCategoryRepository.getReferenceById(transaction.getCategory().getId()) : null);
         entity.setSubCategory(transaction.getSubCategory() != null
                 ? jpaSubCategoryRepository.getReferenceById(transaction.getSubCategory().getId()) : null);
-        entity.setPaymentMethod(transaction.getPaymentMethod() != null
-                ? jpaPaymentMethodRepository.getReferenceById(transaction.getPaymentMethod().getId()) : null);
         entity.setAmount(transaction.getAmount());
         entity.setTransactionDate(transaction.getTransactionDate());
         entity.setDescription(transaction.getDescription());
@@ -180,9 +165,8 @@ public class TransactionRepositoryImpl implements TransactionRepository {
         BankAccount destinationBankAccount = entity.getDestinationBankAccount() != null ? buildBankAccount(entity.getDestinationBankAccount()) : null;
         Category category = entity.getCategory() != null ? buildCategory(entity.getCategory()) : null;
         SubCategory subCategory = entity.getSubCategory() != null ? buildSubCategory(entity.getSubCategory()) : null;
-        PaymentMethod paymentMethod = entity.getPaymentMethod() != null ? buildPaymentMethod(entity.getPaymentMethod()) : null;
         return new Transaction(entity.getId(), entity.getVersion(), entity.getType(), user, bankAccount,
-                destinationBankAccount, category, subCategory, paymentMethod, entity.getAmount(),
+                destinationBankAccount, category, subCategory, entity.getAmount(),
                 entity.getTransactionDate(), entity.getDescription(), entity.getCreatedAt(), null,
                 entity.getSourceType(), entity.getSourceId());
     }
@@ -215,12 +199,6 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     private SubCategory buildSubCategory(SubCategoryEntityJpa entity) {
         Category category = entity.getCategory() != null ? buildCategory(entity.getCategory()) : null;
         return new SubCategory(entity.getId(), entity.getVersion(), category, entity.getName(), entity.isActive(), null, null);
-    }
-
-    private PaymentMethod buildPaymentMethod(PaymentMethodEntityJpa entity) {
-        Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new PaymentMethod(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
-                entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     private Space buildSpace(SpaceEntityJpa entity) {

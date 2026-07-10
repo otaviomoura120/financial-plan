@@ -8,5 +8,4 @@ public interface JpaTransactionRepository extends JpaRepository<TransactionEntit
     boolean existsByBankAccountIdOrDestinationBankAccountId(Long bankAccountId, Long destinationBankAccountId);
     boolean existsByCategoryId(Long categoryId);
     boolean existsBySubCategoryId(Long subCategoryId);
-    boolean existsByPaymentMethodId(Long paymentMethodId);
 }

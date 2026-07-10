@@ -62,7 +62,7 @@ public class PayCreditCardInvoiceService {
         LocalDate dueDate = CreditCardInvoiceCycle.resolveDueDate(referenceMonth, creditCard.getClosingDay(), creditCard.getDueDay());
 
         CreateTransactionRequest transactionRequest = new CreateTransactionRequest(TransactionType.EXPENSE, user.getId(),
-                request.bankAccountId(), null, request.categoryId(), request.subCategoryId(), request.paymentMethodId(), totalAmount,
+                request.bankAccountId(), null, request.categoryId(), request.subCategoryId(), totalAmount,
                 request.paidDate(), "Pagamento de fatura - " + creditCard.getName());
         TransactionResponse paymentTransaction = createTransactionService.execute(transactionRequest,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, creditCard.getId());

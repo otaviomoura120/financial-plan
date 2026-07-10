@@ -14,7 +14,6 @@ interface CategoryReportItemResponse {
   amount: number
   userId: number | null
   bankAccountId: number | null
-  paymentMethodId: number | null
   creditCardId: number | null
   creditCardName: string | null
   installmentNumber: number | null
@@ -68,12 +67,6 @@ interface CategoryResponse {
   subCategories: SubCategoryResponse[]
 }
 
-interface PaymentMethodResponse {
-  id: number
-  name: string
-  active: boolean
-}
-
 interface SpaceMemberResponse {
   memberId: number
   userId: number
@@ -92,8 +85,6 @@ interface FlatReportItem extends CategoryReportItemResponse {
   categoryName: string | null
   subCategoryName: string | null
 }
-
-const CREDIT_CARD_PAYMENT_METHOD = -1
 
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
@@ -120,7 +111,6 @@ function lastDayOfMonth() {
 
 const bankAccounts = ref<BankAccountResponse[]>([])
 const categories = ref<CategoryResponse[]>([])
-const paymentMethods = ref<PaymentMethodResponse[]>([])
 const members = ref<SpaceMemberResponse[]>([])
 const creditCards = ref<CreditCardResponse[]>([])
 
@@ -130,7 +120,6 @@ const userId = shallowRef<number | null>(null)
 const bankAccountId = shallowRef<number | null>(null)
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
-const paymentMethodId = shallowRef<number | null>(null)
 const creditCardId = shallowRef<number | null>(null)
 const type = shallowRef<TransactionType | null>(null)
 const groupByCategory = shallowRef(true)
@@ -170,17 +159,11 @@ const subCategoryItems = computed(() =>
   (selectedCategory.value?.subCategories ?? []).map(sc => ({ title: sc.active ? sc.name : `${sc.name} (inativo)`, value: sc.id })),
 )
 
-const paymentMethodItems = computed(() => [
-  ...paymentMethods.value.map(pm => ({ title: pm.active ? pm.name : `${pm.name} (inativo)`, value: pm.id })),
-  { title: 'Cartão de Crédito', value: CREDIT_CARD_PAYMENT_METHOD },
-])
-
 const creditCardItems = computed(() =>
   creditCards.value.map(cc => ({ title: cc.active ? cc.name : `${cc.name} (inativo)`, value: cc.id })),
 )
 
 const bankAccountsById = computed(() => new Map(bankAccounts.value.map(ba => [ba.id, ba])))
-const paymentMethodsById = computed(() => new Map(paymentMethods.value.map(pm => [pm.id, pm])))
 
 const expandedCategories = ref(new Set<string>())
 const expandedSubGroups = ref(new Set<string>())
@@ -242,7 +225,6 @@ watch(
     else {
       bankAccounts.value = []
       categories.value = []
-      paymentMethods.value = []
       members.value = []
       creditCards.value = []
       report.value = null
@@ -260,17 +242,15 @@ async function fetchFilterData() {
   try {
     const spaceId = spaceStore.activeSpace.id
 
-    const [bankAccountsResult, categoriesResult, paymentMethodsResult, membersResult, creditCardsResult] = await Promise.all([
+    const [bankAccountsResult, categoriesResult, membersResult, creditCardsResult] = await Promise.all([
       $fetch<BankAccountResponse[]>('/api/bank-accounts', { query: { spaceId } }),
       $fetch<CategoryResponse[]>('/api/categories', { query: { spaceId } }),
-      $fetch<PaymentMethodResponse[]>('/api/payment-methods', { query: { spaceId } }),
       $fetch<SpaceMemberResponse[]>(`/api/spaces/${spaceId}/members`),
       $fetch<CreditCardResponse[]>('/api/credit-cards', { query: { spaceId } }),
     ])
 
     bankAccounts.value = bankAccountsResult
     categories.value = categoriesResult
-    paymentMethods.value = paymentMethodsResult
     members.value = membersResult
     creditCards.value = creditCardsResult
   }
@@ -306,7 +286,6 @@ async function generateReport() {
         bankAccountId: bankAccountId.value,
         categoryId: categoryId.value,
         subCategoryId: subCategoryId.value,
-        paymentMethodId: paymentMethodId.value,
         type: type.value,
         creditCardId: creditCardId.value,
       },
@@ -325,13 +304,6 @@ function bankAccountName(id: number | null) {
     return '—'
 
   return bankAccountsById.value.get(id)?.name ?? '—'
-}
-
-function paymentMethodName(id: number | null) {
-  if (id === null)
-    return '—'
-
-  return paymentMethodsById.value.get(id)?.name ?? '—'
 }
 
 function formatSignedAmount(itemType: TransactionType, amount: number) {
@@ -454,21 +426,6 @@ function formatDate(isoDate: string) {
                 :items="subCategoryItems"
                 clearable
                 :disabled="!selectedCategory"
-              />
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="3"
-            >
-              <AppSelect
-                v-model="paymentMethodId"
-                label="Forma de pagamento"
-                :items="paymentMethodItems"
-                clearable
-                :loading="isLoadingFilters"
-                persistent-hint
-                hint="Use 'Cartão de Crédito' para ver apenas as compras no cartão"
               />
             </VCol>
 
@@ -713,9 +670,6 @@ function formatDate(isoDate: string) {
                                       </template>
                                       <template v-else>
                                         {{ bankAccountName(item.bankAccountId) }}
-                                        <span class="text-disabled">
-                                          · {{ paymentMethodName(item.paymentMethodId) }}
-                                        </span>
                                       </template>
                                     </td>
                                     <td class="text-disabled">
@@ -807,9 +761,6 @@ function formatDate(isoDate: string) {
                       </template>
                       <template v-else>
                         {{ bankAccountName(item.bankAccountId) }}
-                        <span class="text-disabled">
-                          · {{ paymentMethodName(item.paymentMethodId) }}
-                        </span>
                       </template>
                     </td>
                     <td class="text-disabled">

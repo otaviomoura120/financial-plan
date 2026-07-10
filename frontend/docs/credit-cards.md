@@ -4,8 +4,8 @@ Status: **implemented and working** (backend already existed; this doc covers th
 piece — Grupos FCC1/FCC2/FCC3 of `backend/IMPLEMENTATION_PLAN.md`).
 
 **Important gap inherited from the backend:** `CreditCard` never went through the hard-delete /
-activate-deactivate refactor (`REF1-4`/`DEL1-4`) that `BankAccount`/`Category`/`SubCategory`/
-`PaymentMethod` got later. `domain/CreditCard.java` only has `deactivate()` (no `activate()`),
+activate-deactivate refactor (`REF1-4`/`DEL1-4`) that `BankAccount`/`Category`/`SubCategory`
+got later. `domain/CreditCard.java` only has `deactivate()` (no `activate()`),
 and the single `DELETE /credit-cards/{id}` does a soft-deactivate via `DeactivateCreditCardService`
 — there is no `PATCH .../status` and no real hard delete. `ListCreditCardsService` returns every
 card (active and inactive), so the "Excluir" action here is a **one-way, irreversible-in-the-UI**
@@ -32,7 +32,7 @@ All already implemented with `@PreAuthorize`.
 | PUT | `/credit-card-transactions/{id}` | `{ version, categoryId, subCategoryId, amount, purchaseDate, description }` | `CreditCardTransactionResponse` |
 | DELETE | `/credit-card-transactions/{id}` | — | `204` (rejected with `422` if the reference month is already paid) |
 | GET | `/credit-cards/invoices` | `spaceId, creditCardId?, from?, to?` (query) | `CreditCardInvoiceResponse[]` |
-| POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | `{ bankAccountId, categoryId, paymentMethodId, paidDate }` | `CreditCardInvoicePaymentResponse` |
+| POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | `{ bankAccountId, categoryId, subCategoryId, paidDate }` | `CreditCardInvoicePaymentResponse` |
 | POST | `/credit-cards/{id}/invoices/{referenceMonth}/undo-payment` | — | `204` |
 
 `CreditCardResponse`: `{ id, version, spaceId, name, limit, closingDay, dueDay, active, createdDate, bankAccountId, bankAccountName }`.
@@ -67,7 +67,7 @@ param just reuses the spaceId-scoped `findByFilter` specification instead.
 | `components/dialogs/AddEditCreditCardDialog.vue` | Create/edit dialog for `CreditCard` |
 | `components/dialogs/AddEditCreditCardTransactionDialog.vue` | Create/edit dialog for `CreditCardTransaction`, with an installments field only shown when creating |
 | `components/dialogs/AnticipateInstallmentsDialog.vue` | Anticipates the last N installments of a group into the current open invoice |
-| `components/dialogs/PayCreditCardInvoiceDialog.vue` | Pay-invoice dialog (`bankAccountId`, `categoryId`, `paymentMethodId`, `paidDate`) |
+| `components/dialogs/PayCreditCardInvoiceDialog.vue` | Pay-invoice dialog (`bankAccountId`, `categoryId`, `subCategoryId`, `paidDate`) |
 | `components/dialogs/ConfirmDialog.vue` | Reused for delete and undo-payment confirmations |
 | `server/api/credit-cards/*` | Card CRUD proxy routes |
 | `server/api/credit-card-transactions/*` | Transaction CRUD + installment-group + anticipate proxy routes |

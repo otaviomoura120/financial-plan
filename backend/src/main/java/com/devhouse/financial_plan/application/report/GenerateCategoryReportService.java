@@ -54,11 +54,11 @@ public class GenerateCategoryReportService {
     }
 
     private List<CategoryReportEntry> transactionEntries(CategoryReportFilterRequest filter) {
-        if (filter.isCreditCardPaymentMethod() || filter.creditCardId() != null) {
+        if (filter.creditCardId() != null) {
             return List.of();
         }
         return transactionRepository.findByFilter(filter.spaceId(), filter.userId(), filter.bankAccountId(),
-                        filter.categoryId(), filter.subCategoryId(), filter.paymentMethodId(), filter.type(),
+                        filter.categoryId(), filter.subCategoryId(), filter.type(),
                         filter.from(), filter.to()).stream()
                 .filter(transaction -> !transaction.isTransfer())
                 .filter(transaction -> !TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT.equals(transaction.getSourceType()))
@@ -68,8 +68,7 @@ public class GenerateCategoryReportService {
 
     private List<CategoryReportEntry> creditCardEntries(CategoryReportFilterRequest filter) {
         boolean typeAllows = filter.type() == null || TransactionType.EXPENSE.equals(filter.type());
-        boolean paymentMethodAllows = filter.paymentMethodId() == null || filter.isCreditCardPaymentMethod();
-        if (!typeAllows || !paymentMethodAllows) {
+        if (!typeAllows) {
             return List.of();
         }
         return creditCardTransactionRepository.findByFilter(filter.spaceId(), filter.creditCardId(), filter.categoryId(),
@@ -92,7 +91,6 @@ public class GenerateCategoryReportService {
                 CategoryReportItemSource.TRANSACTION, transaction.getType(), transaction.getTransactionDate(),
                 transaction.getDescription(), transaction.getAmount(), transaction.getUser().getId(),
                 transaction.getBankAccount().getId(),
-                transaction.getPaymentMethod() != null ? transaction.getPaymentMethod().getId() : null,
                 null, null, null, null);
         return new CategoryReportEntry(transaction.getCategory(), transaction.getSubCategory(), item);
     }
@@ -104,7 +102,7 @@ public class GenerateCategoryReportService {
                 CategoryReportItemSource.CREDIT_CARD, TransactionType.EXPENSE, purchase.getPurchaseDate(),
                 purchase.getDescription(), purchase.getAmount(),
                 purchase.getUser() != null ? purchase.getUser().getId() : null,
-                bankAccount != null ? bankAccount.getId() : null, null,
+                bankAccount != null ? bankAccount.getId() : null,
                 creditCard != null ? creditCard.getId() : null,
                 creditCard != null ? creditCard.getName() : null,
                 purchase.getInstallmentNumber(), purchase.getTotalInstallments());

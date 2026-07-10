@@ -20,7 +20,6 @@ public class Transaction {
     private BankAccount destinationBankAccount;
     private Category category;
     private SubCategory subCategory;
-    private PaymentMethod paymentMethod;
     private BigDecimal amount;
     private LocalDate transactionDate;
     private String description;
@@ -29,7 +28,7 @@ public class Transaction {
     private TransactionSourceType sourceType;
     private Long sourceId;
 
-    public Transaction(Long id, Integer version, TransactionType type, User user, BankAccount bankAccount, BankAccount destinationBankAccount, Category category, SubCategory subCategory, PaymentMethod paymentMethod, BigDecimal amount, LocalDate transactionDate, String description, Instant createdDate, Instant updatedDate, TransactionSourceType sourceType, Long sourceId) {
+    public Transaction(Long id, Integer version, TransactionType type, User user, BankAccount bankAccount, BankAccount destinationBankAccount, Category category, SubCategory subCategory, BigDecimal amount, LocalDate transactionDate, String description, Instant createdDate, Instant updatedDate, TransactionSourceType sourceType, Long sourceId) {
         this.id = id;
         this.version = version;
         this.type = type;
@@ -38,7 +37,6 @@ public class Transaction {
         this.destinationBankAccount = destinationBankAccount;
         this.category = category;
         this.subCategory = subCategory;
-        this.paymentMethod = paymentMethod;
         this.amount = amount;
         this.transactionDate = transactionDate;
         this.description = description;
@@ -75,20 +73,16 @@ public class Transaction {
             if (category == null) {
                 throw new DomainException("Category is required");
             }
-            if (paymentMethod == null) {
-                throw new DomainException("Payment method is required");
-            }
         }
     }
 
     public void update(TransactionType type, BankAccount bankAccount, BankAccount destinationBankAccount, Category category, SubCategory subCategory,
-                       PaymentMethod paymentMethod, BigDecimal amount, LocalDate transactionDate, String description) {
+                       BigDecimal amount, LocalDate transactionDate, String description) {
         this.type = type;
         this.bankAccount = bankAccount;
         this.destinationBankAccount = destinationBankAccount;
         this.category = category;
         this.subCategory = subCategory;
-        this.paymentMethod = paymentMethod;
         this.amount = amount;
         this.transactionDate = transactionDate;
         this.description = description;
@@ -134,8 +128,6 @@ public class Transaction {
     public void setCategory(Category category) { this.category = category; }
     public SubCategory getSubCategory() { return subCategory; }
     public void setSubCategory(SubCategory subCategory) { this.subCategory = subCategory; }
-    public PaymentMethod getPaymentMethod() { return paymentMethod; }
-    public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public LocalDate getTransactionDate() { return transactionDate; }

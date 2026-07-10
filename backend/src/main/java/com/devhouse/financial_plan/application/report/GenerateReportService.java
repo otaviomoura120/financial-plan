@@ -53,7 +53,7 @@ public class GenerateReportService {
 
         List<Transaction> transactions = transactionRepository.findByFilter(
                 filter.spaceId(), filter.userId(), filter.bankAccountId(), filter.categoryId(), filter.subCategoryId(),
-                filter.paymentMethodId(), filter.type(), filter.from(), filter.to());
+                filter.type(), filter.from(), filter.to());
 
         Map<Long, LocalDate> referenceMonthByTransactionId = creditCardInvoicePaymentResolver.resolveInvoiceReferenceMonths(transactions);
 
@@ -121,7 +121,6 @@ public class GenerateReportService {
                         t.getBankAccount().getId(), t.getDestinationBankAccount() != null ? t.getDestinationBankAccount().getId() : null,
                         t.getCategory() != null ? t.getCategory().getId() : null,
                         t.getSubCategory() != null ? t.getSubCategory().getId() : null,
-                        t.getPaymentMethod() != null ? t.getPaymentMethod().getId() : null,
                         t.getAmount(), t.getTransactionDate(), t.getDescription(), t.getCreatedDate(), t.getSourceType(), t.getSourceId(),
                         referenceMonthByTransactionId.get(t.getId())))
                 .toList();

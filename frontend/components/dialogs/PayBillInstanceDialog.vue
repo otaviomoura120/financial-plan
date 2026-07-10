@@ -30,7 +30,6 @@ interface Props {
   isDialogVisible: boolean
   billInstance: BillInstanceResponse | null
   bankAccounts: OptionItem[]
-  paymentMethods: OptionItem[]
 }
 
 interface Emit {
@@ -54,7 +53,6 @@ function toLocalDateString(date: Date) {
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 
 const bankAccountId = shallowRef<number | null>(null)
-const paymentMethodId = shallowRef<number | null>(null)
 const paidDate = shallowRef<string>('')
 const isLoading = shallowRef(false)
 
@@ -63,10 +61,8 @@ function optionLabel(item: OptionItem) {
 }
 
 const bankAccountItems = computed(() => props.bankAccounts.map(ba => ({ ...ba, label: optionLabel(ba) })))
-const paymentMethodItems = computed(() => props.paymentMethods.map(pm => ({ ...pm, label: optionLabel(pm) })))
 
 const bankAccountRules = [(v: number | null) => v !== null || 'Conta é obrigatória']
-const paymentMethodRules = [(v: number | null) => v !== null || 'Forma de pagamento é obrigatória']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
 watch(
@@ -74,7 +70,6 @@ watch(
   visible => {
     if (visible) {
       bankAccountId.value = null
-      paymentMethodId.value = null
       paidDate.value = toLocalDateString(new Date())
       clearError()
     }
@@ -95,7 +90,6 @@ async function onSubmit() {
       method: 'POST',
       body: {
         bankAccountId: bankAccountId.value,
-        paymentMethodId: paymentMethodId.value,
         paidDate: paidDate.value,
       },
     })
@@ -148,15 +142,6 @@ function onClose() {
               item-title="label"
               item-value="id"
               :rules="bankAccountRules"
-            />
-
-            <AppSelect
-              v-model="paymentMethodId"
-              label="Forma de pagamento"
-              :items="paymentMethodItems"
-              item-title="label"
-              item-value="id"
-              :rules="paymentMethodRules"
             />
 
             <AppTextField

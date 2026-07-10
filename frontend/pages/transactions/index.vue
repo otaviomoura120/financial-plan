@@ -10,7 +10,6 @@ interface TransactionResponse {
   destinationBankAccountId: number | null
   categoryId: number | null
   subCategoryId: number | null
-  paymentMethodId: number | null
   amount: number
   transactionDate: string
   description?: string | null
@@ -35,12 +34,6 @@ interface CategoryResponse {
   name: string
   active: boolean
   subCategories: SubCategoryResponse[]
-}
-
-interface PaymentMethodResponse {
-  id: number
-  name: string
-  active: boolean
 }
 
 const spaceStore = useSpaceStore()
@@ -70,7 +63,6 @@ function lastDayOfMonth() {
 const transactions = ref<TransactionResponse[]>([])
 const bankAccounts = ref<BankAccountResponse[]>([])
 const categories = ref<CategoryResponse[]>([])
-const paymentMethods = ref<PaymentMethodResponse[]>([])
 
 const from = shallowRef(firstDayOfMonth())
 const to = shallowRef(lastDayOfMonth())
@@ -87,7 +79,6 @@ const selectedTransaction = shallowRef<TransactionResponse | null>(null)
 
 const bankAccountsById = computed(() => new Map(bankAccounts.value.map(ba => [ba.id, ba])))
 const categoriesById = computed(() => new Map(categories.value.map(c => [c.id, c])))
-const paymentMethodsById = computed(() => new Map(paymentMethods.value.map(pm => [pm.id, pm])))
 
 const subCategoriesById = computed(() => {
   const map = new Map<number, SubCategoryResponse>()
@@ -132,7 +123,6 @@ watch(
       transactions.value = []
       bankAccounts.value = []
       categories.value = []
-      paymentMethods.value = []
     }
   },
   { immediate: true },
@@ -148,15 +138,13 @@ async function fetchDropdownData() {
 
   const spaceId = spaceStore.activeSpace.id
 
-  const [bankAccountsResult, categoriesResult, paymentMethodsResult] = await Promise.all([
+  const [bankAccountsResult, categoriesResult] = await Promise.all([
     $fetch<BankAccountResponse[]>('/api/bank-accounts', { query: { spaceId } }),
     $fetch<CategoryResponse[]>('/api/categories', { query: { spaceId } }),
-    $fetch<PaymentMethodResponse[]>('/api/payment-methods', { query: { spaceId } }),
   ])
 
   bankAccounts.value = bankAccountsResult
   categories.value = categoriesResult
-  paymentMethods.value = paymentMethodsResult
 }
 
 async function fetchTransactions() {
@@ -248,13 +236,6 @@ function subCategoryName(id: number | null) {
     return null
 
   return subCategoriesById.value.get(id)?.name ?? null
-}
-
-function paymentMethodName(id: number | null) {
-  if (id === null)
-    return '—'
-
-  return paymentMethodsById.value.get(id)?.name ?? '—'
 }
 
 function formatAmount(transaction: TransactionResponse) {
@@ -366,7 +347,6 @@ function formatDate(isoDate: string) {
               <th style="min-width: 200px">
                 Categoria / Destino
               </th>
-              <th>Forma de Pagamento</th>
               <th>Descrição</th>
               <th
                 class="text-right"
@@ -409,9 +389,6 @@ function formatDate(isoDate: string) {
                     / {{ subCategoryName(transaction.subCategoryId) }}
                   </span>
                 </template>
-              </td>
-              <td>
-                {{ transaction.type === 'TRANSFER' ? '—' : paymentMethodName(transaction.paymentMethodId) }}
               </td>
               <td class="text-disabled">
                 {{ transaction.description || '—' }}
@@ -459,7 +436,7 @@ function formatDate(isoDate: string) {
 
             <tr v-if="!isLoading && transactions.length === 0">
               <td
-                colspan="8"
+                colspan="7"
                 class="text-center text-disabled py-8"
               >
                 Nenhuma transação encontrada para o período selecionado.
@@ -483,7 +460,6 @@ function formatDate(isoDate: string) {
       :transaction="selectedTransaction"
       :bank-accounts="bankAccounts"
       :categories="categories"
-      :payment-methods="paymentMethods"
       @saved="onTransactionSaved"
     />
 

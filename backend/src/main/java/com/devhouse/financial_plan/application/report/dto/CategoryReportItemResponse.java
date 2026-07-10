@@ -14,7 +14,6 @@ public record CategoryReportItemResponse(
         BigDecimal amount,
         Long userId,
         Long bankAccountId,
-        Long paymentMethodId,
         Long creditCardId,
         String creditCardName,
         Integer installmentNumber,

@@ -86,7 +86,6 @@ const creditCard = ref<CreditCardResponse | null>(null)
 const invoices = ref<CreditCardInvoiceResponse[]>([])
 const bankAccounts = ref<OptionItem[]>([])
 const categories = ref<CategoryResponse[]>([])
-const paymentMethods = ref<OptionItem[]>([])
 
 const from = shallowRef(defaultFrom())
 const to = shallowRef(defaultTo())
@@ -116,7 +115,6 @@ watch(
       invoices.value = []
       bankAccounts.value = []
       categories.value = []
-      paymentMethods.value = []
       clearError()
     }
   },
@@ -151,15 +149,13 @@ async function fetchDropdownData() {
 
   const spaceId = spaceStore.activeSpace.id
 
-  const [bankAccountsResult, categoriesResult, paymentMethodsResult] = await Promise.all([
+  const [bankAccountsResult, categoriesResult] = await Promise.all([
     $fetch<OptionItem[]>('/api/bank-accounts', { query: { spaceId } }),
     $fetch<CategoryResponse[]>('/api/categories', { query: { spaceId } }),
-    $fetch<OptionItem[]>('/api/payment-methods', { query: { spaceId } }),
   ])
 
   bankAccounts.value = bankAccountsResult
   categories.value = categoriesResult
-  paymentMethods.value = paymentMethodsResult
 }
 
 async function fetchInvoices() {
@@ -444,7 +440,6 @@ function onClose() {
       :reference-month="selectedInvoice?.referenceMonth ?? null"
       :bank-accounts="bankAccounts"
       :categories="categories"
-      :payment-methods="paymentMethods"
       @paid="onPaid"
     />
 

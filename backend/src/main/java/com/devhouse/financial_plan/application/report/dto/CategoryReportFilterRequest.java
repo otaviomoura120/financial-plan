@@ -12,13 +12,6 @@ public record CategoryReportFilterRequest(
         Long bankAccountId,
         Long categoryId,
         Long subCategoryId,
-        Long paymentMethodId,
         TransactionType type,
         Long creditCardId
-) {
-    public static final long CREDIT_CARD_PAYMENT_METHOD = -1L;
-
-    public boolean isCreditCardPaymentMethod() {
-        return paymentMethodId != null && paymentMethodId == CREDIT_CARD_PAYMENT_METHOD;
-    }
-}
+) {}

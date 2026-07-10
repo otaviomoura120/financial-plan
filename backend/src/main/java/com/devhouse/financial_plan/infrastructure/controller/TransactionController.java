@@ -40,13 +40,12 @@ public class TransactionController {
                                            @RequestParam(required = false) Long bankAccountId,
                                            @RequestParam(required = false) Long categoryId,
                                            @RequestParam(required = false) Long subCategoryId,
-                                           @RequestParam(required = false) Long paymentMethodId,
                                            @RequestParam(required = false) TransactionType type,
                                            @RequestParam(required = false) LocalDate from,
                                            @RequestParam(required = false) LocalDate to,
                                            Authentication authentication, HttpServletRequest request) {
         return listTransactionsService.execute(spaceId, userId, bankAccountId, categoryId, subCategoryId,
-                paymentMethodId, type, from, to);
+                type, from, to);
     }
 
     @PostMapping

@@ -65,7 +65,6 @@ function lastDayOfMonth() {
 const bills = ref<BillInstanceResponse[]>([])
 const bankAccounts = ref<OptionItem[]>([])
 const categories = ref<CategoryOption[]>([])
-const paymentMethods = ref<OptionItem[]>([])
 
 const from = shallowRef(firstDayOfMonth())
 const to = shallowRef(lastDayOfMonth())
@@ -118,7 +117,6 @@ watch(
       bills.value = []
       bankAccounts.value = []
       categories.value = []
-      paymentMethods.value = []
     }
   },
   { immediate: true },
@@ -134,15 +132,13 @@ async function fetchDropdownData() {
 
   const spaceId = spaceStore.activeSpace.id
 
-  const [bankAccountsResult, categoriesResult, paymentMethodsResult] = await Promise.all([
+  const [bankAccountsResult, categoriesResult] = await Promise.all([
     $fetch<OptionItem[]>('/api/bank-accounts', { query: { spaceId } }),
     $fetch<CategoryOption[]>('/api/categories', { query: { spaceId } }),
-    $fetch<OptionItem[]>('/api/payment-methods', { query: { spaceId } }),
   ])
 
   bankAccounts.value = bankAccountsResult
   categories.value = categoriesResult
-  paymentMethods.value = paymentMethodsResult
 }
 
 async function fetchBills() {
@@ -516,7 +512,6 @@ function formatDate(isoDate: string) {
       v-model:is-dialog-visible="isPayDialogVisible"
       :bill-instance="selectedBill"
       :bank-accounts="bankAccounts"
-      :payment-methods="paymentMethods"
       @paid="onPaid"
     />
 

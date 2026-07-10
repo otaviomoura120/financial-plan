@@ -23,20 +23,16 @@ class TransactionSpec extends Specification {
         id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
     }
 
-    private PaymentMethod buildPaymentMethod(Long id) {
-        id == null ? null : new PaymentMethod(id, 0, null, "Method " + id, true, Instant.now(), null)
-    }
-
     private Transaction buildTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId,
-                                          Long categoryId, Long paymentMethodId) {
+                                          Long categoryId) {
         new Transaction(null, 0, type, buildUser(1L), buildBankAccount(bankAccountId), buildBankAccount(destinationBankAccountId),
-                buildCategory(categoryId), null, buildPaymentMethod(paymentMethodId), new BigDecimal("100.00"),
+                buildCategory(categoryId), null, new BigDecimal("100.00"),
                 LocalDate.now(), "desc", Instant.now(), null, null, null)
     }
 
-    def "validate passes for INCOME with category and payment method"() {
+    def "validate passes for INCOME with category"() {
         given:
-        Transaction transaction = buildTransaction(TransactionType.INCOME, 1L, null, 10L, 20L)
+        Transaction transaction = buildTransaction(TransactionType.INCOME, 1L, null, 10L)
 
         when:
         transaction.validate()
@@ -45,9 +41,9 @@ class TransactionSpec extends Specification {
         noExceptionThrown()
     }
 
-    def "validate passes for EXPENSE with category and payment method"() {
+    def "validate passes for EXPENSE with category"() {
         given:
-        Transaction transaction = buildTransaction(TransactionType.EXPENSE, 1L, null, 10L, 20L)
+        Transaction transaction = buildTransaction(TransactionType.EXPENSE, 1L, null, 10L)
 
         when:
         transaction.validate()
@@ -58,7 +54,7 @@ class TransactionSpec extends Specification {
 
     def "validate throws DomainException when INCOME/EXPENSE is missing category"() {
         given:
-        Transaction transaction = buildTransaction(type, 1L, null, null, 20L)
+        Transaction transaction = buildTransaction(type, 1L, null, null)
 
         when:
         transaction.validate()
@@ -70,23 +66,9 @@ class TransactionSpec extends Specification {
         type << [TransactionType.INCOME, TransactionType.EXPENSE]
     }
 
-    def "validate throws DomainException when INCOME/EXPENSE is missing payment method"() {
+    def "validate passes for TRANSFER without category when destination differs from origin"() {
         given:
-        Transaction transaction = buildTransaction(type, 1L, null, 10L, null)
-
-        when:
-        transaction.validate()
-
-        then:
-        thrown(DomainException)
-
-        where:
-        type << [TransactionType.INCOME, TransactionType.EXPENSE]
-    }
-
-    def "validate passes for TRANSFER without category/payment method when destination differs from origin"() {
-        given:
-        Transaction transaction = buildTransaction(TransactionType.TRANSFER, 1L, 2L, null, null)
+        Transaction transaction = buildTransaction(TransactionType.TRANSFER, 1L, 2L, null)
 
         when:
         transaction.validate()
@@ -97,7 +79,7 @@ class TransactionSpec extends Specification {
 
     def "validate throws DomainException for TRANSFER without destination bank account"() {
         given:
-        Transaction transaction = buildTransaction(TransactionType.TRANSFER, 1L, null, null, null)
+        Transaction transaction = buildTransaction(TransactionType.TRANSFER, 1L, null, null)
 
         when:
         transaction.validate()
@@ -108,7 +90,7 @@ class TransactionSpec extends Specification {
 
     def "validate throws DomainException for TRANSFER when destination equals origin"() {
         given:
-        Transaction transaction = buildTransaction(TransactionType.TRANSFER, 1L, 1L, null, null)
+        Transaction transaction = buildTransaction(TransactionType.TRANSFER, 1L, 1L, null)
 
         when:
         transaction.validate()
@@ -119,9 +101,9 @@ class TransactionSpec extends Specification {
 
     def "isIncome/isExpense/isTransfer reflect the transaction type"() {
         given:
-        Transaction income = buildTransaction(TransactionType.INCOME, 1L, null, 10L, 20L)
-        Transaction expense = buildTransaction(TransactionType.EXPENSE, 1L, null, 10L, 20L)
-        Transaction transfer = buildTransaction(TransactionType.TRANSFER, 1L, 2L, null, null)
+        Transaction income = buildTransaction(TransactionType.INCOME, 1L, null, 10L)
+        Transaction expense = buildTransaction(TransactionType.EXPENSE, 1L, null, 10L)
+        Transaction transfer = buildTransaction(TransactionType.TRANSFER, 1L, 2L, null)
 
         expect:
         income.isIncome() && !income.isExpense() && !income.isTransfer()
@@ -131,7 +113,7 @@ class TransactionSpec extends Specification {
 
     def "isLinkedToSource is false when sourceType is not set"() {
         given:
-        Transaction transaction = buildTransaction(TransactionType.EXPENSE, 1L, null, 10L, 20L)
+        Transaction transaction = buildTransaction(TransactionType.EXPENSE, 1L, null, 10L)
 
         expect:
         !transaction.isLinkedToSource()
@@ -140,7 +122,7 @@ class TransactionSpec extends Specification {
     def "isLinkedToSource is true when sourceType is set"() {
         given:
         Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L), buildBankAccount(1L), null,
-                buildCategory(10L), null, buildPaymentMethod(20L), new BigDecimal("100.00"), LocalDate.now(), "desc",
+                buildCategory(10L), null, new BigDecimal("100.00"), LocalDate.now(), "desc",
                 Instant.now(), null, TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 99L)
 
         expect:

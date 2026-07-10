@@ -34,9 +34,6 @@ public class TransactionEntityJpa {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sub_category_id")
     private SubCategoryEntityJpa subCategory;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_method_id")
-    private PaymentMethodEntityJpa paymentMethod;
     private BigDecimal amount;
     @Column(name = "transaction_date")
     private LocalDate transactionDate;
@@ -64,8 +61,6 @@ public class TransactionEntityJpa {
     public void setCategory(CategoryEntityJpa category) { this.category = category; }
     public SubCategoryEntityJpa getSubCategory() { return subCategory; }
     public void setSubCategory(SubCategoryEntityJpa subCategory) { this.subCategory = subCategory; }
-    public PaymentMethodEntityJpa getPaymentMethod() { return paymentMethod; }
-    public void setPaymentMethod(PaymentMethodEntityJpa paymentMethod) { this.paymentMethod = paymentMethod; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public LocalDate getTransactionDate() { return transactionDate; }

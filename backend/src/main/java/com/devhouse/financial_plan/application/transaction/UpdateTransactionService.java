@@ -4,14 +4,12 @@ import com.devhouse.financial_plan.application.transaction.dto.TransactionRespon
 import com.devhouse.financial_plan.application.transaction.dto.UpdateTransactionRequest;
 import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.Category;
-import com.devhouse.financial_plan.domain.PaymentMethod;
 import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
-import com.devhouse.financial_plan.domain.repository.PaymentMethodRepository;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -24,18 +22,15 @@ public class UpdateTransactionService {
     private final BankAccountRepository bankAccountRepository;
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
-    private final PaymentMethodRepository paymentMethodRepository;
     private final TransactionBalanceEffectService balanceEffectService;
 
     public UpdateTransactionService(TransactionRepository transactionRepository, BankAccountRepository bankAccountRepository,
                                      CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository,
-                                     PaymentMethodRepository paymentMethodRepository,
                                      TransactionBalanceEffectService balanceEffectService) {
         this.transactionRepository = transactionRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
-        this.paymentMethodRepository = paymentMethodRepository;
         this.balanceEffectService = balanceEffectService;
     }
 
@@ -51,18 +46,16 @@ public class UpdateTransactionService {
         BankAccount bankAccount = resolveBankAccount(request.bankAccountId(), "Bank account not found");
         BankAccount destinationBankAccount = null;
         Category category = null;
-        PaymentMethod paymentMethod = null;
         if (TransactionType.TRANSFER.equals(request.type())) {
             destinationBankAccount = resolveBankAccount(request.destinationBankAccountId(), "Destination bank account not found");
         } else {
             category = resolveCategory(request.categoryId());
-            paymentMethod = resolvePaymentMethod(request.paymentMethodId());
         }
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
 
         balanceEffectService.revert(old);
 
-        transaction.update(request.type(), bankAccount, destinationBankAccount, category, subCategory, paymentMethod,
+        transaction.update(request.type(), bankAccount, destinationBankAccount, category, subCategory,
                 request.amount(), request.transactionDate(), request.description());
         transaction.validate();
         balanceEffectService.apply(transaction);
@@ -74,7 +67,7 @@ public class UpdateTransactionService {
     private Transaction snapshot(Transaction transaction) {
         return new Transaction(transaction.getId(), transaction.getVersion(), transaction.getType(), transaction.getUser(),
                 transaction.getBankAccount(), transaction.getDestinationBankAccount(), transaction.getCategory(),
-                transaction.getSubCategory(), transaction.getPaymentMethod(), transaction.getAmount(),
+                transaction.getSubCategory(), transaction.getAmount(),
                 transaction.getTransactionDate(), transaction.getDescription(), transaction.getCreatedDate(),
                 transaction.getUpdatedDate(), transaction.getSourceType(), transaction.getSourceId());
     }
@@ -95,14 +88,6 @@ public class UpdateTransactionService {
         return category;
     }
 
-    private PaymentMethod resolvePaymentMethod(Long paymentMethodId) {
-        PaymentMethod paymentMethod = paymentMethodId != null ? paymentMethodRepository.findById(paymentMethodId) : null;
-        if (paymentMethod == null) {
-            throw new DomainException("Payment method not found");
-        }
-        return paymentMethod;
-    }
-
     private SubCategory resolveSubCategory(Long subCategoryId) {
         if (subCategoryId == null) {
             return null;
@@ -118,8 +103,7 @@ public class UpdateTransactionService {
         return new TransactionResponse(t.getId(), t.getVersion(), t.getType(), t.getUser().getId(), t.getBankAccount().getId(),
                 t.getDestinationBankAccount() != null ? t.getDestinationBankAccount().getId() : null,
                 t.getCategory() != null ? t.getCategory().getId() : null,
-                t.getSubCategory() != null ? t.getSubCategory().getId() : null,
-                t.getPaymentMethod() != null ? t.getPaymentMethod().getId() : null, t.getAmount(),
+                t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(),
                 t.getTransactionDate(), t.getDescription(), t.getCreatedDate(), t.getSourceType(), t.getSourceId(), null);
     }
 }

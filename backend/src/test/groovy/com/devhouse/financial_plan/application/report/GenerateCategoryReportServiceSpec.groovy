@@ -7,7 +7,6 @@ import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardTransaction
-import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SubCategory
 import com.devhouse.financial_plan.domain.Transaction
@@ -32,24 +31,23 @@ class GenerateCategoryReportServiceSpec extends Specification {
     User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
             null, null, Instant.now(), null, false)
     BankAccount bankAccount = new BankAccount(5L, 0, space, "Conta Corrente", "Nubank", BigDecimal.ZERO, true, Instant.now(), null)
-    PaymentMethod paymentMethod = new PaymentMethod(7L, 0, space, "Pix", true, Instant.now(), null)
     Category food = new Category(20L, 0, space, "Alimentação", true, Instant.now(), null)
     Category salary = new Category(21L, 0, space, "Salário", true, Instant.now(), null)
     SubCategory restaurants = new SubCategory(30L, 0, food, "Restaurantes", true, Instant.now(), null)
 
     private CategoryReportFilterRequest filter(Map overrides = [:]) {
         Map values = [spaceId: 1L, from: LocalDate.of(2026, 7, 1), to: LocalDate.of(2026, 7, 31), userId: null,
-                      bankAccountId: null, categoryId: null, subCategoryId: null, paymentMethodId: null,
+                      bankAccountId: null, categoryId: null, subCategoryId: null,
                       type: null, creditCardId: null] + overrides
         new CategoryReportFilterRequest(values.spaceId, values.from, values.to, values.userId, values.bankAccountId,
-                values.categoryId, values.subCategoryId, values.paymentMethodId, values.type, values.creditCardId)
+                values.categoryId, values.subCategoryId, values.type, values.creditCardId)
     }
 
     private Transaction transaction(Map overrides = [:]) {
         Map values = [id: 100L, type: TransactionType.EXPENSE, category: food, subCategory: null,
                       amount: new BigDecimal("50.00"), date: LocalDate.of(2026, 7, 10), sourceType: null] + overrides
         new Transaction(values.id, 0, values.type, user, bankAccount, null, values.category, values.subCategory,
-                paymentMethod, values.amount, values.date, "desc", Instant.now(), null, values.sourceType, null)
+                values.amount, values.date, "desc", Instant.now(), null, values.sourceType, null)
     }
 
     private CreditCard creditCard(Map overrides = [:]) {
@@ -77,7 +75,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
 
     def "execute groups items by category and subcategory with a null-subcategory bucket"() {
         given:
-        transactionRepository.findByFilter(1L, null, null, null, null, null, null, _, _) >>
+        transactionRepository.findByFilter(1L, null, null, null, null, null, _, _) >>
                 [transaction(id: 100L, amount: new BigDecimal("50.00")),
                  transaction(id: 101L, amount: new BigDecimal("30.00"), subCategory: restaurants)]
         creditCardTransactionRepository.findByFilter(1L, null, null, null, null, _, _, null) >>
@@ -100,7 +98,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
 
     def "execute excludes credit card invoice payment transactions and transfers"() {
         given:
-        transactionRepository.findByFilter(1L, null, null, null, null, null, null, _, _) >>
+        transactionRepository.findByFilter(1L, null, null, null, null, null, _, _) >>
                 [transaction(id: 100L),
                  transaction(id: 101L, sourceType: TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, amount: new BigDecimal("999.00")),
                  transaction(id: 102L, type: TransactionType.TRANSFER, category: null, amount: new BigDecimal("500.00"))]
@@ -137,32 +135,6 @@ class GenerateCategoryReportServiceSpec extends Specification {
         }
     }
 
-    def "execute returns only credit card items when the credit card payment method sentinel is used"() {
-        given:
-        creditCardTransactionRepository.findByFilter(*_) >> [purchase()]
-
-        when:
-        CategoryReportResponse response = service.execute(filter(paymentMethodId: CategoryReportFilterRequest.CREDIT_CARD_PAYMENT_METHOD))
-
-        then:
-        0 * transactionRepository.findByFilter(*_)
-        response.totalExpense() == new BigDecimal("80.00")
-        response.groups()[0].subGroups()[0].items()[0].source() == CategoryReportItemSource.CREDIT_CARD
-    }
-
-    def "execute returns only regular transactions when a real payment method is filtered"() {
-        given:
-        transactionRepository.findByFilter(1L, null, null, null, null, 7L, null, _, _) >> [transaction()]
-
-        when:
-        CategoryReportResponse response = service.execute(filter(paymentMethodId: 7L))
-
-        then:
-        0 * creditCardTransactionRepository.findByFilter(*_)
-        response.totalExpense() == new BigDecimal("50.00")
-        response.groups()[0].subGroups()[0].items()[0].source() == CategoryReportItemSource.TRANSACTION
-    }
-
     def "execute returns only purchases of the given credit card when creditCardId is filtered"() {
         given:
         creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, _, _, null) >> [purchase()]
@@ -177,7 +149,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
 
     def "execute omits credit card items when filtering by income"() {
         given:
-        transactionRepository.findByFilter(1L, null, null, null, null, null, TransactionType.INCOME, _, _) >>
+        transactionRepository.findByFilter(1L, null, null, null, null, TransactionType.INCOME, _, _) >>
                 [transaction(id: 100L, type: TransactionType.INCOME, category: salary, amount: new BigDecimal("1000.00"))]
 
         when:
@@ -208,7 +180,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
 
     def "execute forwards the userId filter to the credit card repository"() {
         given:
-        transactionRepository.findByFilter(1L, 1L, null, null, null, null, null, _, _) >> []
+        transactionRepository.findByFilter(1L, 1L, null, null, null, null, _, _) >> []
 
         when:
         service.execute(filter(userId: 1L))

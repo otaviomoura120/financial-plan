@@ -42,7 +42,7 @@ Called internally by `ListBillInstancesService` and by Reports' `GenerateReportS
 
 ## Paying an occurrence — `PayBillInstanceService`
 
-`POST /bills/instances/{id}/pay` — body: `{bankAccountId, paymentMethodId, paidDate}` (no `categoryId` — see below).
+`POST /bills/instances/{id}/pay` — body: `{bankAccountId, paidDate}` (no `categoryId` — see below).
 
 1. Resolve the `Bill` (`DomainException` if missing) and reject if it is not `PENDING` (`"Bill instance is already paid"`).
 2. Resolve the authenticated user the same way `PayCreditCardInvoiceService` does — from `authentication.getName()` via `UserRepository.findByAuth0Sub(...)`, never from the request body.

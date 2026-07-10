@@ -29,7 +29,7 @@ Both `@PreAuthorize`-protected; see `backend/docs/seed.sql` section 12 for the e
 | POST | `/bills/instances` | `{ spaceId, name, categoryId, subCategoryId, amount, dueDate }` | `BillInstanceResponse` (creates a standalone `Bill`, no `BillRecurring`) |
 | PUT | `/bills/instances/{id}` | `{ version, name, categoryId, subCategoryId, amount, dueDate }` | `BillInstanceResponse` (rejected `422` if already `PAID`) |
 | DELETE | `/bills/instances/{id}` | — | `204` (soft-delete, rejected `422` if already `PAID`) |
-| POST | `/bills/instances/{id}/pay` | `{ bankAccountId, paymentMethodId, paidDate }` | `BillInstanceResponse` |
+| POST | `/bills/instances/{id}/pay` | `{ bankAccountId, paidDate }` | `BillInstanceResponse` |
 | POST | `/bills/instances/{id}/undo-payment` | — | `204` |
 
 `BillResponse` (`BillRecurring`): `{ id, version, spaceId, name, categoryId, subCategoryId, defaultAmount, startDate, active, createdDate }`.
@@ -49,7 +49,7 @@ A recurring `BillRecurring` only produces `Bill` rows lazily, the first time a p
 | `components/dialogs/EditBillInstanceDialog.vue` | Full edit of a single `Bill` occurrence (`name`/`categoryId`/`subCategoryId`/`amount`/`dueDate`) — only while `PENDING`, never touches the `BillRecurring` |
 | `components/dialogs/RecurrenceSettingsDialog.vue` | Modal (not a page) listing `BillRecurring` rows via `GET /bills`; row actions: Editar (`AddEditBillDialog` edit mode), Editar Agenda (`UpdateBillScheduleDialog`), Desativar (`ConfirmDialog` + `DELETE /bills/{id}`) |
 | `components/dialogs/UpdateBillScheduleDialog.vue` | Dedicated action to change only `startDate` on an existing `BillRecurring` |
-| `components/dialogs/PayBillInstanceDialog.vue` | Pay dialog — `bankAccountId`, `paymentMethodId`, `paidDate` only (no category field; the bill's own category/subCategory are used server-side) |
+| `components/dialogs/PayBillInstanceDialog.vue` | Pay dialog — `bankAccountId`, `paidDate` only (no category field; the bill's own category/subCategory are used server-side) |
 | `components/dialogs/ConfirmDialog.vue` | Reused for delete, deactivate and undo-payment confirmations |
 | `server/api/bills/*` | `BillRecurring` CRUD + schedule proxy routes |
 | `server/api/bills/instances/*` | `Bill` list/create/update/delete/pay/undo-payment proxy routes |

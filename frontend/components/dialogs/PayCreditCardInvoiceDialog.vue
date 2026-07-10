@@ -38,7 +38,6 @@ interface Props {
   referenceMonth: string | null
   bankAccounts: OptionItem[]
   categories: CategoryOption[]
-  paymentMethods: OptionItem[]
 }
 
 interface Emit {
@@ -64,7 +63,6 @@ const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 const bankAccountId = shallowRef<number | null>(null)
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
-const paymentMethodId = shallowRef<number | null>(null)
 const paidDate = shallowRef<string>('')
 const isLoading = shallowRef(false)
 
@@ -74,14 +72,12 @@ function optionLabel(item: OptionItem) {
 
 const bankAccountItems = computed(() => props.bankAccounts.map(ba => ({ ...ba, label: optionLabel(ba) })))
 const categoryItems = computed(() => props.categories.map(c => ({ ...c, label: optionLabel(c) })))
-const paymentMethodItems = computed(() => props.paymentMethods.map(pm => ({ ...pm, label: optionLabel(pm) })))
 
 const selectedCategory = computed(() => props.categories.find(c => c.id === categoryId.value) ?? null)
 const subCategoryItems = computed(() => (selectedCategory.value?.subCategories ?? []).map(sc => ({ ...sc, label: optionLabel(sc) })))
 
 const bankAccountRules = [(v: number | null) => v !== null || 'Conta é obrigatória']
 const categoryRules = [(v: number | null) => v !== null || 'Categoria é obrigatória']
-const paymentMethodRules = [(v: number | null) => v !== null || 'Forma de pagamento é obrigatória']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
 watch(categoryId, () => {
@@ -96,7 +92,6 @@ watch(
       bankAccountId.value = null
       categoryId.value = null
       subCategoryId.value = null
-      paymentMethodId.value = null
       paidDate.value = toLocalDateString(new Date())
       clearError()
     }
@@ -121,7 +116,6 @@ async function onSubmit() {
           bankAccountId: bankAccountId.value,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
-          paymentMethodId: paymentMethodId.value,
           paidDate: paidDate.value,
         },
       },
@@ -194,15 +188,6 @@ function onClose() {
               item-value="id"
               clearable
               :disabled="!selectedCategory"
-            />
-
-            <AppSelect
-              v-model="paymentMethodId"
-              label="Forma de pagamento"
-              :items="paymentMethodItems"
-              item-title="label"
-              item-value="id"
-              :rules="paymentMethodRules"
             />
 
             <AppTextField

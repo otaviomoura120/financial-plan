@@ -4,7 +4,6 @@ import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardInvoicePayment
-import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
@@ -41,9 +40,8 @@ class CreditCardInvoicePaymentResolverSpec extends Specification {
 
     private Transaction buildInvoicePaymentTransaction(Long id, Long creditCardId, BigDecimal amount, LocalDate transactionDate) {
         Category category = new Category(10L, 0, null, "Cartão de Crédito", true, Instant.now(), null)
-        PaymentMethod paymentMethod = new PaymentMethod(20L, 0, null, "Cash", true, Instant.now(), null)
         new Transaction(id, 0, TransactionType.EXPENSE, buildUser(1L), buildAccount(1L), null, category, null,
-                paymentMethod, amount, transactionDate, "Pagamento de fatura", Instant.now(), null,
+                amount, transactionDate, "Pagamento de fatura", Instant.now(), null,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, creditCardId)
     }
 

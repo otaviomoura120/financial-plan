@@ -12,7 +12,6 @@ public record UpdateTransactionRequest(
         Long destinationBankAccountId,
         Long categoryId,
         Long subCategoryId,
-        Long paymentMethodId,
         BigDecimal amount,
         LocalDate transactionDate,
         String description

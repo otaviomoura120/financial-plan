@@ -8,7 +8,6 @@ import com.devhouse.financial_plan.application.report.dto.ReportResponse
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Bill
 import com.devhouse.financial_plan.domain.Category
-import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SubCategory
 import com.devhouse.financial_plan.domain.Transaction
@@ -53,10 +52,9 @@ class GenerateReportServiceSpec extends Specification {
 
     private Transaction buildTransaction(TransactionType type, BigDecimal amount, Long destinationBankAccountId = null) {
         Category category = TransactionType.TRANSFER.equals(type) ? null : new Category(10L, 0, null, "Food", true, Instant.now(), null)
-        PaymentMethod paymentMethod = TransactionType.TRANSFER.equals(type) ? null : new PaymentMethod(20L, 0, null, "Cash", true, Instant.now(), null)
         new Transaction(1L, 0, type, buildUser(1L), buildAccount(1L),
                 destinationBankAccountId != null ? buildAccount(destinationBankAccountId) : null,
-                category, null, paymentMethod, amount, LocalDate.now(), "desc", Instant.now(), null, null, null)
+                category, null, amount, LocalDate.now(), "desc", Instant.now(), null, null, null)
     }
 
     private CreditCardInvoiceResponse buildInvoice(LocalDate dueDate, BigDecimal amount, boolean paid) {
@@ -71,9 +69,8 @@ class GenerateReportServiceSpec extends Specification {
 
     private Transaction buildInvoicePaymentTransaction(Long id, Long creditCardId, BigDecimal amount, LocalDate transactionDate) {
         Category category = new Category(10L, 0, null, "Cartão de Crédito", true, Instant.now(), null)
-        PaymentMethod paymentMethod = new PaymentMethod(20L, 0, null, "Cash", true, Instant.now(), null)
         new Transaction(id, 0, TransactionType.EXPENSE, buildUser(1L), buildAccount(1L), null, category, null,
-                paymentMethod, amount, transactionDate, "Pagamento de fatura", Instant.now(), null,
+                amount, transactionDate, "Pagamento de fatura", Instant.now(), null,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, creditCardId)
     }
 
@@ -88,13 +85,13 @@ class GenerateReportServiceSpec extends Specification {
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31),
-                2L, 3L, 4L, 5L, 6L, TransactionType.EXPENSE)
+                2L, 3L, 4L, 5L, TransactionType.EXPENSE)
 
         when:
         service.execute(filter)
 
         then:
-        1 * transactionRepository.findByFilter(1L, 2L, 3L, 4L, 5L, 6L, TransactionType.EXPENSE,
+        1 * transactionRepository.findByFilter(1L, 2L, 3L, 4L, 5L, TransactionType.EXPENSE,
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)) >> []
     }
 
@@ -108,7 +105,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
-        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -128,7 +125,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
-        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -142,7 +139,7 @@ class GenerateReportServiceSpec extends Specification {
 
     def "execute throws DomainException when spaceId is missing"() {
         given:
-        ReportFilterRequest filter = new ReportFilterRequest(null, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+        ReportFilterRequest filter = new ReportFilterRequest(null, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
         service.execute(filter)
@@ -155,14 +152,14 @@ class GenerateReportServiceSpec extends Specification {
     def "execute isolates results per space and never mixes totals across spaces"() {
         given:
         Transaction spaceOneIncome = buildTransaction(TransactionType.INCOME, new BigDecimal("100.00"))
-        transactionRepository.findByFilter(1L, _, _, _, _, _, _, _, _) >> [spaceOneIncome]
-        transactionRepository.findByFilter(2L, _, _, _, _, _, _, _, _) >> []
+        transactionRepository.findByFilter(1L, _, _, _, _, _, _, _) >> [spaceOneIncome]
+        transactionRepository.findByFilter(2L, _, _, _, _, _, _, _) >> []
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
-        ReportFilterRequest filterSpaceOne = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
-        ReportFilterRequest filterSpaceTwo = new ReportFilterRequest(2L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+        ReportFilterRequest filterSpaceOne = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
+        ReportFilterRequest filterSpaceTwo = new ReportFilterRequest(2L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
         ReportResponse responseSpaceOne = service.execute(filterSpaceOne)
@@ -184,7 +181,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
-        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null, null)
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -201,7 +198,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
-        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, 2L, null, null, null, null)
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, 2L, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -220,7 +217,7 @@ class GenerateReportServiceSpec extends Specification {
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, null, null, null, null)
+                null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -240,7 +237,7 @@ class GenerateReportServiceSpec extends Specification {
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, null, null, null, null)
+                null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -261,7 +258,7 @@ class GenerateReportServiceSpec extends Specification {
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30),
-                null, null, null, null, null, null)
+                null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -280,7 +277,7 @@ class GenerateReportServiceSpec extends Specification {
                 [buildInstance(LocalDate.of(2026, 3, 10), new BigDecimal("150.00"), BillInstanceStatus.PENDING)]
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, null, null, null, null)
+                null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -301,7 +298,7 @@ class GenerateReportServiceSpec extends Specification {
                 [buildInstance(LocalDate.of(2026, 3, 10), new BigDecimal("150.00"), BillInstanceStatus.PAID)]
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, null, null, null, null)
+                null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -321,7 +318,7 @@ class GenerateReportServiceSpec extends Specification {
         billRepository.findBySpaceAndPeriod(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31), null, null) >> []
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, null, null, null, null)
+                null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -337,7 +334,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
-        ReportFilterRequest filter = new ReportFilterRequest(1L, null, null, null, null, null, null, null, null)
+        ReportFilterRequest filter = new ReportFilterRequest(1L, null, null, null, null, null, null, null)
 
         when:
         service.execute(filter)
@@ -354,7 +351,7 @@ class GenerateReportServiceSpec extends Specification {
         billRepository.findBySpaceAndPeriod(*_) >> [buildInstance(LocalDate.of(2026, 3, 10), new BigDecimal("150.00"), BillInstanceStatus.PENDING)]
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, null, null, null, null)
+                null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -370,13 +367,13 @@ class GenerateReportServiceSpec extends Specification {
         given:
         // The repository is the single source of truth for the category filter now: the service no longer
         // reaches into the invoice's composing items to reconcile a payment transaction that doesn't match itself.
-        transactionRepository.findByFilter(1L, null, null, 7L, null, null, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31)) >> []
+        transactionRepository.findByFilter(1L, null, null, 7L, null, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31)) >> []
         bankAccountRepository.findBySpaceId(_) >> []
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, 7L, null, null, null)
+                null, null, 7L, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -396,7 +393,7 @@ class GenerateReportServiceSpec extends Specification {
         billRepository.findBySpaceAndPeriod(*_) >> []
         creditCardInvoicePaymentResolver.resolveInvoiceReferenceMonths([paymentTransaction]) >> [(99L): referenceMonth]
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, 7L, null, null, null)
+                null, null, 7L, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -419,7 +416,7 @@ class GenerateReportServiceSpec extends Specification {
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, 7L, null, null, null)
+                null, null, 7L, null, null)
 
         when:
         ReportResponse response = service.execute(filter)
@@ -438,7 +435,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         stubInvoiceReferenceMonths()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, 7L, 8L, null, null)
+                null, null, 7L, 8L, null)
 
         when:
         service.execute(filter)
@@ -457,7 +454,7 @@ class GenerateReportServiceSpec extends Specification {
         billRepository.findBySpaceAndPeriod(*_) >> []
         creditCardInvoicePaymentResolver.resolveInvoiceReferenceMonths([paymentTransaction]) >> [(99L): referenceMonth]
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
-                null, null, null, null, null, null)
+                null, null, null, null, null)
 
         when:
         ReportResponse response = service.execute(filter)

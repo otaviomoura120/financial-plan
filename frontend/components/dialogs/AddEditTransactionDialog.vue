@@ -12,7 +12,6 @@ interface TransactionResponse {
   destinationBankAccountId: number | null
   categoryId: number | null
   subCategoryId: number | null
-  paymentMethodId: number | null
   amount: number
   transactionDate: string
   description?: string | null
@@ -39,18 +38,11 @@ interface CategoryOption {
   subCategories: SubCategoryOption[]
 }
 
-interface PaymentMethodOption {
-  id: number
-  name: string
-  active: boolean
-}
-
 interface Props {
   isDialogVisible: boolean
   transaction?: TransactionResponse | null
   bankAccounts: BankAccountOption[]
   categories: CategoryOption[]
-  paymentMethods: PaymentMethodOption[]
 }
 
 interface Emit {
@@ -82,7 +74,6 @@ const bankAccountId = shallowRef<number | null>(null)
 const destinationBankAccountId = shallowRef<number | null>(null)
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
-const paymentMethodId = shallowRef<number | null>(null)
 const amount = shallowRef<number | null>(null)
 const transactionDate = shallowRef<string>('')
 const description = shallowRef('')
@@ -121,10 +112,6 @@ const subCategoryItems = computed(() =>
   (selectedCategory.value?.subCategories ?? []).map(sc => ({ ...sc, label: optionLabel(sc) })),
 )
 
-const paymentMethodItems = computed(() =>
-  props.paymentMethods.map(pm => ({ ...pm, label: optionLabel(pm) })),
-)
-
 const typeRules = [(v: string) => !!v || 'Tipo é obrigatório']
 const bankAccountRules = [(v: number | null) => v !== null || 'Conta de origem é obrigatória']
 
@@ -134,7 +121,6 @@ const destinationRules = [
 ]
 
 const categoryRules = [(v: number | null) => isTransfer.value || v !== null || 'Categoria é obrigatória']
-const paymentMethodRules = [(v: number | null) => isTransfer.value || v !== null || 'Forma de pagamento é obrigatória']
 const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
@@ -142,7 +128,6 @@ watch(type, () => {
   if (isTransfer.value) {
     categoryId.value = null
     subCategoryId.value = null
-    paymentMethodId.value = null
   }
   else {
     destinationBankAccountId.value = null
@@ -165,7 +150,6 @@ watch(
       destinationBankAccountId.value = t?.destinationBankAccountId ?? null
       categoryId.value = t?.categoryId ?? null
       subCategoryId.value = t?.subCategoryId ?? null
-      paymentMethodId.value = t?.paymentMethodId ?? null
       amount.value = t?.amount ?? null
       transactionDate.value = t?.transactionDate ?? toLocalDateString(new Date())
       description.value = t?.description ?? ''
@@ -192,7 +176,6 @@ async function onSubmit() {
       destinationBankAccountId: isTransfer.value ? destinationBankAccountId.value : null,
       categoryId: isTransfer.value ? null : categoryId.value,
       subCategoryId: isTransfer.value ? null : subCategoryId.value,
-      paymentMethodId: isTransfer.value ? null : paymentMethodId.value,
       amount: amount.value,
       transactionDate: transactionDate.value,
       description: description.value || undefined,
@@ -338,17 +321,6 @@ function onClose() {
                   item-value="id"
                   clearable
                   :disabled="!selectedCategory"
-                />
-              </VCol>
-
-              <VCol cols="12">
-                <AppSelect
-                  v-model="paymentMethodId"
-                  label="Forma de pagamento"
-                  :items="paymentMethodItems"
-                  item-title="label"
-                  item-value="id"
-                  :rules="paymentMethodRules"
                 />
               </VCol>
             </template>

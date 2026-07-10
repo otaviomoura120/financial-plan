@@ -14,7 +14,6 @@ interface TransactionResponse {
   destinationBankAccountId: number | null
   categoryId: number | null
   subCategoryId: number | null
-  paymentMethodId: number | null
   amount: number
   transactionDate: string
   description?: string | null
@@ -95,12 +94,6 @@ interface CategoryResponse {
   subCategories: SubCategoryResponse[]
 }
 
-interface PaymentMethodResponse {
-  id: number
-  name: string
-  active: boolean
-}
-
 interface SpaceMemberResponse {
   memberId: number
   userId: number
@@ -132,7 +125,6 @@ function lastDayOfMonth() {
 
 const bankAccounts = ref<BankAccountResponse[]>([])
 const categories = ref<CategoryResponse[]>([])
-const paymentMethods = ref<PaymentMethodResponse[]>([])
 const members = ref<SpaceMemberResponse[]>([])
 
 const from = shallowRef(firstDayOfMonth())
@@ -141,7 +133,6 @@ const userId = shallowRef<number | null>(null)
 const bankAccountId = shallowRef<number | null>(null)
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
-const paymentMethodId = shallowRef<number | null>(null)
 const type = shallowRef<TransactionType | null>(null)
 
 const report = ref<ReportResponse | null>(null)
@@ -180,13 +171,8 @@ const subCategoryItems = computed(() =>
   (selectedCategory.value?.subCategories ?? []).map(sc => ({ title: sc.active ? sc.name : `${sc.name} (inativo)`, value: sc.id })),
 )
 
-const paymentMethodItems = computed(() =>
-  paymentMethods.value.map(pm => ({ title: pm.active ? pm.name : `${pm.name} (inativo)`, value: pm.id })),
-)
-
 const bankAccountsById = computed(() => new Map(bankAccounts.value.map(ba => [ba.id, ba])))
 const categoriesById = computed(() => new Map(categories.value.map(c => [c.id, c])))
-const paymentMethodsById = computed(() => new Map(paymentMethods.value.map(pm => [pm.id, pm])))
 
 const subCategoriesById = computed(() => {
   const map = new Map<number, SubCategoryResponse>()
@@ -278,7 +264,6 @@ watch(
     else {
       bankAccounts.value = []
       categories.value = []
-      paymentMethods.value = []
       members.value = []
       report.value = null
     }
@@ -295,16 +280,14 @@ async function fetchFilterData() {
   try {
     const spaceId = spaceStore.activeSpace.id
 
-    const [bankAccountsResult, categoriesResult, paymentMethodsResult, membersResult] = await Promise.all([
+    const [bankAccountsResult, categoriesResult, membersResult] = await Promise.all([
       $fetch<BankAccountResponse[]>('/api/bank-accounts', { query: { spaceId } }),
       $fetch<CategoryResponse[]>('/api/categories', { query: { spaceId } }),
-      $fetch<PaymentMethodResponse[]>('/api/payment-methods', { query: { spaceId } }),
       $fetch<SpaceMemberResponse[]>(`/api/spaces/${spaceId}/members`),
     ])
 
     bankAccounts.value = bankAccountsResult
     categories.value = categoriesResult
-    paymentMethods.value = paymentMethodsResult
     members.value = membersResult
   }
   finally {
@@ -340,7 +323,6 @@ async function generateReport() {
         bankAccountId: bankAccountId.value,
         categoryId: categoryId.value,
         subCategoryId: subCategoryId.value,
-        paymentMethodId: paymentMethodId.value,
         type: type.value,
       },
     })
@@ -372,13 +354,6 @@ function subCategoryName(id: number | null) {
     return null
 
   return subCategoriesById.value.get(id)?.name ?? null
-}
-
-function paymentMethodName(id: number | null) {
-  if (id === null)
-    return '—'
-
-  return paymentMethodsById.value.get(id)?.name ?? '—'
 }
 
 function formatAmount(transaction: TransactionResponse) {
@@ -496,19 +471,6 @@ function formatReferenceMonth(isoDate: string) {
                 :items="subCategoryItems"
                 clearable
                 :disabled="!selectedCategory"
-              />
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="3"
-            >
-              <AppSelect
-                v-model="paymentMethodId"
-                label="Forma de pagamento"
-                :items="paymentMethodItems"
-                clearable
-                :loading="isLoadingFilters"
               />
             </VCol>
           </VRow>
@@ -694,7 +656,6 @@ function formatReferenceMonth(isoDate: string) {
                     <th style="min-width: 200px">
                       Categoria / Destino
                     </th>
-                    <th>Forma de Pagamento</th>
                     <th>Descrição</th>
                     <th
                       class="text-right"
@@ -746,9 +707,6 @@ function formatReferenceMonth(isoDate: string) {
                           </span>
                         </template>
                       </td>
-                      <td>
-                        {{ transaction.type === 'TRANSFER' ? '—' : paymentMethodName(transaction.paymentMethodId) }}
-                      </td>
                       <td class="text-disabled">
                         {{ transaction.description || '—' }}
                       </td>
@@ -766,7 +724,7 @@ function formatReferenceMonth(isoDate: string) {
                     <tr v-if="expandedIds.has(transaction.id)">
                       <td />
                       <td
-                        colspan="7"
+                        colspan="6"
                         class="pb-4"
                       >
                         <div
@@ -853,7 +811,7 @@ function formatReferenceMonth(isoDate: string) {
 
                   <tr v-if="sortedTransactions.length === 0">
                     <td
-                      colspan="8"
+                      colspan="7"
                       class="text-center text-disabled py-8"
                     >
                       Nenhuma transação encontrada para o período e filtros selecionados.

@@ -23,7 +23,7 @@ To let the frontend list the actual transactions composing one invoice (rather t
 
 ## Paying an invoice — `PayCreditCardInvoiceService`
 
-`POST /credit-cards/{id}/invoices/{referenceMonth}/pay` — body: `{bankAccountId, categoryId, subCategoryId, paymentMethodId, paidDate}`.
+`POST /credit-cards/{id}/invoices/{referenceMonth}/pay` — body: `{bankAccountId, categoryId, subCategoryId, paidDate}`.
 
 1. Resolve the `CreditCard` (404-style `DomainException` if missing) and the authenticated user — the payer is **derived from the session**, not the request body: the controller passes `authentication.getName()` (the Auth0 sub) through, and the service resolves it via `UserRepository.findByAuth0Sub(...)`, the same pattern already used by `AcceptInviteService`/`ListMyInvitesService` for the same reason (an invoice payment isn't something the client should be able to attribute to an arbitrary `userId`).
 2. Reject if `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` already returns a row (`"Invoice already paid"`).

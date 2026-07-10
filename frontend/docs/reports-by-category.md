@@ -1,9 +1,13 @@
 # Report by Category (Relatório por Categoria)
 
 Status: **implemented and working**. Read-only page — no create/edit/delete. Reuses the same
-filter form as [`reports.md`](./reports.md), plus a credit-card filter, a hardcoded
-"Cartão de Crédito" payment-method option, and a "Agrupar por categoria" toggle. Backend
-counterpart is documented in `backend/docs/report-by-category.md` (invariants RPTC1-RPTC9).
+filter form as [`reports.md`](./reports.md), plus a credit-card filter and a "Agrupar por
+categoria" toggle. Backend counterpart is documented in `backend/docs/report-by-category.md`
+(invariants RPTC1-RPTC9). There is no `PaymentMethod` concept anywhere in the app anymore —
+it used to have a payment-method filter here with a hardcoded "Cartão de Crédito" sentinel
+option; that filter was removed along with the rest of the `PaymentMethod` feature. Credit
+card purchases now simply show up by default alongside regular transactions; the `creditCardId`
+filter (a separate, still-existing dropdown) narrows to one specific card's purchases.
 
 ## Backend
 
@@ -11,17 +15,16 @@ counterpart is documented in `backend/docs/report-by-category.md` (invariants RP
 |---|---|---|---|
 | POST | `/reports/by-category` | `CategoryReportFilterRequest` | `CategoryReportResponse` |
 
-`CategoryReportFilterRequest`: the same 9 fields as `ReportFilterRequest`
-(`spaceId, from, to, userId, bankAccountId, categoryId, subCategoryId, paymentMethodId, type`)
+`CategoryReportFilterRequest`: the same 8 fields as `ReportFilterRequest`
+(`spaceId, from, to, userId, bankAccountId, categoryId, subCategoryId, type`)
 **plus `creditCardId`**. Only `spaceId` is enforced server-side; `from`/`to` being
 "obrigatórios" is the same frontend-only UX decision as `/reports`.
 
 Special filter semantics (full rationale in the backend doc):
 
-- `paymentMethodId = -1` is a **hardcoded sentinel** meaning "Cartão de Crédito" — the report
-  returns only credit-card purchase items. A real (positive) `paymentMethodId` returns only
-  regular transactions (card purchases have no payment method).
-- `creditCardId` set — only purchases of that card.
+- `creditCardId` set — only purchases of that card, and regular transactions are excluded
+  altogether. When no filter narrows either source, credit card purchases and regular
+  transactions both appear together by default.
 - `type` — card items only appear for `null` (Todos) or `EXPENSE`; `TRANSFER` is excluded from
   this report entirely (the Tipo select has no "Transferência" option here).
 - `bankAccountId` reaches card purchases through the card's linked bank account
@@ -42,7 +45,7 @@ Special filter semantics (full rationale in the backend doc):
       items: [{
         id, source,                      // 'TRANSACTION' | 'CREDIT_CARD' (ids may collide across sources)
         type, date, description, amount,
-        userId, bankAccountId, paymentMethodId,
+        userId, bankAccountId,
         creditCardId, creditCardName,    // filled for CREDIT_CARD items — "which card"
         installmentNumber, totalInstallments
       }]
@@ -62,16 +65,15 @@ double counting.
 | `pages/reports/by-category/index.vue` | The entire feature — filter form, summary cards, grouped/flat table |
 | `server/api/reports/by-category.post.ts` | Proxies `POST /reports/by-category` |
 
-Filter dropdowns reuse `/api/bank-accounts`, `/api/categories`, `/api/payment-methods`,
-`/api/spaces/{id}/members`, plus `/api/credit-cards` for the new "Cartão de Crédito" filter.
+Filter dropdowns reuse `/api/bank-accounts`, `/api/categories`,
+`/api/spaces/{id}/members`, plus `/api/credit-cards` for the "Cartão de Crédito" filter.
 
 ## Page behavior
 
 - On mount / `spaceStore.activeSpace` change: fetches filter data then auto-generates the
   report for the current month (same as `/reports`).
 - Filters: `De`/`Até` (required), `Membro`, `Tipo` (Todos/Receita/Despesa — no Transferência),
-  `Conta`, `Categoria` → `Subcategoria` (cascading), `Forma de pagamento` (real methods plus
-  the hardcoded **Cartão de Crédito** option, value `-1`, with a persistent hint),
+  `Conta`, `Categoria` → `Subcategoria` (cascading),
   **Cartão de Crédito** (specific card, with a hint that it narrows to that card's purchases),
   and the **Agrupar por categoria** checkbox (default on).
 - Summary cards (`CardStatisticsVerticalSimple`): Total de Receitas, Total de Despesas, Saldo
@@ -86,7 +88,7 @@ Filter dropdowns reuse `/api/bank-accounts`, `/api/categories`, `/api/payment-me
   origin, description, signed/colored amount.
 - **Origin column**: `CREDIT_CARD` items render a chip with the `tabler-credit-card` icon and
   the card name, plus an `n/total` installment chip when parceled; `TRANSACTION` items render
-  "account · payment method" resolved via the local lookup maps.
+  the bank account name resolved via the local lookup map.
 - **Flat mode** (checkbox off): presentation-only — the same response is flattened client-side
   into a single table (date, category/subcategory, origin, description, amount) sorted by date
   desc. No new request is made when toggling.
@@ -100,7 +102,7 @@ No frontend test suite — verified manually: `pnpm dev`, open `/reports/by-cate
 Create a regular transaction, a card purchase inside the period (invoice due next month) and
 pay an invoice, then confirm: the purchase appears under its category with the card chip; the
 invoice-payment transaction does **not** appear; totals and percentages match. Exercise the
-filters: a real payment method hides card items; "Cartão de Crédito" shows only card items;
-the card filter narrows to one card; Tipo=Receita hides card items; Conta keeps only purchases
-of cards linked to that account. Toggle "Agrupar por categoria" and confirm the flat list is
-date-sorted with the same items.
+filters: with no filter, both the transaction and the card purchase appear together; the card
+filter narrows to only that card's purchases and excludes regular transactions; Tipo=Receita
+hides card items; Conta keeps only purchases of cards linked to that account. Toggle "Agrupar
+por categoria" and confirm the flat list is date-sorted with the same items.

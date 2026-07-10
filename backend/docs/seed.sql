@@ -72,11 +72,6 @@ VALUES
 (1, '/categories/[0-9]+/status',              'Categorias',                 63, 'API', 'PATCH',      'Configuração', NOW(), NOW()),
 (1, '/categories/subcategories/[0-9]+/status','Categorias',                 64, 'API', 'PATCH',      'Configuração', NOW(), NOW()),
 
--- PaymentMethodController — /payment-methods
-(1, '/payment-methods',                       'Formas de Pagamento',        56, 'API', 'GET,POST',   'Conta',        NOW(), NOW()),
-(1, '/payment-methods/[0-9]+',                'Formas de Pagamento',        57, 'API', 'PUT,DELETE', 'Conta',        NOW(), NOW()),
-(1, '/payment-methods/[0-9]+/status',         'Formas de Pagamento',        62, 'API', 'PATCH',      'Conta',        NOW(), NOW()),
-
 -- TransactionController — /transactions
 (1, '/transactions',                          'Transações',                 58, 'API', 'GET,POST',   'Financeiro',   NOW(), NOW()),
 (1, '/transactions/[0-9]+',                   'Transações',                 59, 'API', 'PUT,DELETE', 'Financeiro',   NOW(), NOW()),
@@ -131,7 +126,6 @@ VALUES
 (1, '/reports',             'Relatórios',            3,  'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
 (1, '/reports/by-category', 'Relatórios',            14, 'FRONT_PAGE', 'GET', 'Financeiro',   NOW(), NOW()),
 (1, '/bank-accounts',       'Contas Bancárias',      4,  'FRONT_PAGE', 'GET', 'Conta',        NOW(), NOW()),
-(1, '/payment-methods',     'Formas de Pagamento',   5,  'FRONT_PAGE', 'GET', 'Conta',        NOW(), NOW()),
 (1, '/categories',          'Categorias',            6,  'FRONT_PAGE', 'GET', 'Configuração', NOW(), NOW()),
 (1, '/users',               'Usuários',              7,  'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
 (1, '/spaces',              'Espaços',               8,  'FRONT_PAGE', 'GET', 'Administração',NOW(), NOW()),
@@ -178,8 +172,6 @@ UNION ALL
 -- Contas e Pagamentos
 SELECT 'Contas Bancárias',    '/bank-accounts',       'tabler-credit-card',      id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
 UNION ALL
-SELECT 'Formas de Pagamento', '/payment-methods',     'tabler-wallet',           id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
-UNION ALL
 SELECT 'Cartões de Crédito',  '/credit-cards',        'tabler-credit-card',     id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
 UNION ALL
 SELECT 'Contas a Pagar',      '/bills',               'tabler-calendar-due',    id, NOW(), NOW() FROM group_menus WHERE name = 'Contas e Pagamentos'
@@ -224,7 +216,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name IN ('Página Inicial', 'Listar Funções', 'Transações', 'Relatórios',
-                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
+                   'Contas Bancárias', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
                    'Listar Espaços do Usuário', 'Listar Membros do Espaço', 'Listar Convites do Espaço')
 WHERE r.name = 'ADMIN';
 
@@ -233,7 +225,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'DENY', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name NOT IN ('Página Inicial', 'Listar Funções', 'Transações', 'Relatórios',
-                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
+                       'Contas Bancárias', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
                        'Listar Espaços do Usuário', 'Listar Membros do Espaço', 'Listar Convites do Espaço')
 WHERE r.name = 'ADMIN';
 
@@ -242,7 +234,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name IN ('Página Inicial', 'Transações', 'Relatórios',
-                   'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
+                   'Contas Bancárias', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
                    'Listar Espaços do Usuário', 'Listar Membros do Espaço')
 WHERE r.name = 'MEMBER';
 
@@ -251,7 +243,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'DENY', NOW(), NOW()
 FROM roles r JOIN endpoint_permissions ep
     ON ep.name NOT IN ('Página Inicial', 'Transações', 'Relatórios',
-                       'Contas Bancárias', 'Formas de Pagamento', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
+                       'Contas Bancárias', 'Categorias', 'Cartões de Crédito', 'Contas a Pagar',
                        'Listar Espaços do Usuário', 'Listar Membros do Espaço')
 WHERE r.name = 'MEMBER';
 
@@ -291,14 +283,6 @@ WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/bank-acc
 
 INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
 SELECT * FROM (
-    SELECT 1 AS version, '/payment-methods/[0-9]+/status' AS endpoint, 'Formas de Pagamento' AS name,
-           62 AS sequence, 'API' AS type, 'PATCH' AS permitted_methods, 'Conta' AS ep_group,
-           NOW() AS created_at, NOW() AS updated_at
-) AS tmp
-WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/payment-methods/[0-9]+/status' AND type = 'API');
-
-INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
-SELECT * FROM (
     SELECT 1 AS version, '/categories/[0-9]+/status' AS endpoint, 'Categorias' AS name,
            63 AS sequence, 'API' AS type, 'PATCH' AS permitted_methods, 'Configuração' AS ep_group,
            NOW() AS created_at, NOW() AS updated_at
@@ -329,7 +313,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r
 JOIN endpoint_permissions ep
-    ON ep.endpoint IN ('/bank-accounts/[0-9]+/status', '/payment-methods/[0-9]+/status',
+    ON ep.endpoint IN ('/bank-accounts/[0-9]+/status',
                         '/categories/[0-9]+/status', '/categories/subcategories/[0-9]+/status')
 WHERE r.name = 'ADMIN'
   AND NOT EXISTS (
@@ -342,7 +326,7 @@ INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id,
 SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
 FROM roles r
 JOIN endpoint_permissions ep
-    ON ep.endpoint IN ('/bank-accounts/[0-9]+/status', '/payment-methods/[0-9]+/status',
+    ON ep.endpoint IN ('/bank-accounts/[0-9]+/status',
                         '/categories/[0-9]+/status', '/categories/subcategories/[0-9]+/status')
 WHERE r.name = 'MEMBER'
   AND NOT EXISTS (

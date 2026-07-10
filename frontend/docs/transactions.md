@@ -2,8 +2,10 @@
 
 Status: **implemented and working** (backend already existed; this doc covers the frontend
 piece — Grupo F4 of `backend/IMPLEMENTATION_PLAN.md`). This is the main day-to-day page of the
-app and the most complex form so far — it depends on F1 (Payment Methods), F2 (Bank Accounts)
-and F3 (Categories/SubCategories) to populate its selects.
+app and the most complex form so far — it depends on F2 (Bank Accounts)
+and F3 (Categories/SubCategories) to populate its selects. There is no `PaymentMethod` concept
+anywhere in the app anymore — it used to also depend on F1 (Payment Methods) for a required
+"Forma de pagamento" field; that field and the entire Payment Methods module were removed.
 
 ## Backend
 
@@ -12,21 +14,21 @@ and F3 (Categories/SubCategories) to populate its selects.
 
 | Method | Path | Body / Query | Response |
 |---|---|---|---|
-| GET | `/transactions` | `spaceId` (required), `from`, `to`, `userId`, `bankAccountId`, `categoryId`, `subCategoryId`, `paymentMethodId`, `type` (all optional) | `TransactionResponse[]` |
+| GET | `/transactions` | `spaceId` (required), `from`, `to`, `userId`, `bankAccountId`, `categoryId`, `subCategoryId`, `type` (all optional) | `TransactionResponse[]` |
 | POST | `/transactions` | `CreateTransactionRequest` | `TransactionResponse` |
 | PUT | `/transactions/{id}` | `UpdateTransactionRequest` | `TransactionResponse` |
 | DELETE | `/transactions/{id}` | — | `204 No Content` |
 
 `TransactionResponse`: `{ id, version, type, userId, bankAccountId, destinationBankAccountId,
-categoryId, subCategoryId, paymentMethodId, amount, transactionDate, description, createdDate }`
+categoryId, subCategoryId, amount, transactionDate, description, createdDate }`
 — **flat IDs only**, no nested/denormalized names. The frontend joins against the already-fetched
-Bank Accounts/Categories/Payment Methods lists to render human-readable labels.
+Bank Accounts/Categories lists to render human-readable labels.
 
 `type` is one of `INCOME` / `EXPENSE` / `TRANSFER`. Validation branches on it
 (`Transaction.validate()` in the domain):
-- `TRANSFER`: requires `destinationBankAccountId` (different from `bankAccountId`); `categoryId`/
-  `paymentMethodId` are not used.
-- `INCOME`/`EXPENSE`: requires `categoryId` and `paymentMethodId`; `subCategoryId` stays optional.
+- `TRANSFER`: requires `destinationBankAccountId` (different from `bankAccountId`); `categoryId`
+  is not used.
+- `INCOME`/`EXPENSE`: requires `categoryId`; `subCategoryId` stays optional.
 
 **No soft delete here** — `Transaction` has no `active` field; `DELETE` is a real hard delete
 (and reverts the balance effect on the bank account(s) involved). The frontend removes the row
@@ -52,16 +54,16 @@ who a transaction belongs to).
 
 ## Page behavior (`pages/transactions/index.vue`)
 
-- On mount / `spaceStore.activeSpace` change, fetches **four** things in parallel: the
-  transactions for the current filter, and the full Bank Accounts / Categories / Payment
-  Methods lists (needed both for the table's name lookups and to populate the dialog's selects).
+- On mount / `spaceStore.activeSpace` change, fetches **three** things in parallel: the
+  transactions for the current filter, and the full Bank Accounts / Categories
+  lists (needed both for the table's name lookups and to populate the dialog's selects).
 - Period filter: `De`/`Até` date inputs, defaulting to the **first and last day of the current
   month**. Refetching is an explicit "Filtrar" button click (not reactive on every keystroke),
   to avoid firing a request per date-picker interaction.
 - Table is sorted by `transactionDate` descending (client-side, since the backend doesn't sort).
   Columns: Data, Tipo (chip, colored by type), Conta, "Categoria / Destino" (shows `→ conta
-  destino` for `TRANSFER`, otherwise `categoria / subcategoria`), Forma de Pagamento (`—` for
-  `TRANSFER`), Descrição, Valor (signed and colored: green `+` for `INCOME`, red `-` for
+  destino` for `TRANSFER`, otherwise `categoria / subcategoria`),
+  Descrição, Valor (signed and colored: green `+` for `INCOME`, red `-` for
   `EXPENSE`, neutral for `TRANSFER`), Ações.
 - Deleting shows a warning that the account balance will be reverted (matches the backend's
   `TransactionBalanceEffectService.revert()` behavior on delete) and removes the row on success
@@ -73,14 +75,13 @@ who a transaction belongs to).
   - `TRANSFER`: `Conta de origem` + `Conta de destino` (same bank account list, destination
     excludes whichever is picked as origin).
   - `INCOME`/`EXPENSE`: `Conta`, `Categoria`, `Subcategoria` (cascades from the selected
-    category's `subCategories`, cleared automatically if the category changes), `Forma de
-    pagamento`.
+    category's `subCategories`, cleared automatically if the category changes).
   - `Data` (native date input) and optional `Descrição` always shown.
-- Select options include inactive Bank Accounts/Categories/SubCategories/Payment Methods too
+- Select options include inactive Bank Accounts/Categories/SubCategories too
   (suffixed "(inativo)") — this matters when **editing** an old transaction that references
   something since deactivated; the option list still needs to show and keep that value selected.
 - Switching `Tipo` away from `TRANSFER` clears `destinationBankAccountId`; switching to
-  `TRANSFER` clears `categoryId`/`subCategoryId`/`paymentMethodId` (mirrors the backend's
+  `TRANSFER` clears `categoryId`/`subCategoryId` (mirrors the backend's
   branching validation, avoiding a 422 from stale fields).
 
 ## Navigation

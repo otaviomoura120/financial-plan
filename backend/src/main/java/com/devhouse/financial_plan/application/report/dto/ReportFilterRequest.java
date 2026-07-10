@@ -12,6 +12,5 @@ public record ReportFilterRequest(
         Long bankAccountId,
         Long categoryId,
         Long subCategoryId,
-        Long paymentMethodId,
         TransactionType type
 ) {}

@@ -43,7 +43,7 @@ public class PayBillInstanceService {
 
         CreateTransactionRequest transactionRequest = new CreateTransactionRequest(TransactionType.EXPENSE, user.getId(),
                 request.bankAccountId(), null, category.getId(), subCategory != null ? subCategory.getId() : null,
-                request.paymentMethodId(), bill.getAmount(), request.paidDate(), "Pagamento de conta - " + bill.getName());
+                bill.getAmount(), request.paidDate(), "Pagamento de conta - " + bill.getName());
         TransactionResponse paymentTransaction = createTransactionService.execute(transactionRequest,
                 TransactionSourceType.BILL_INSTANCE_PAYMENT, bill.getId());
 

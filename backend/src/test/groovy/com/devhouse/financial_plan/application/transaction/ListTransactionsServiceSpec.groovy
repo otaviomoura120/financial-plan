@@ -3,7 +3,6 @@ package com.devhouse.financial_plan.application.transaction
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
-import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
@@ -33,13 +32,12 @@ class ListTransactionsServiceSpec extends Specification {
         given:
         Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L), buildAccount(1L), null,
                 new Category(10L, 0, null, "Food", true, Instant.now(), null), null,
-                new PaymentMethod(20L, 0, null, "Cash", true, Instant.now(), null),
                 new BigDecimal("100.00"), LocalDate.of(2026, 1, 15), "desc", Instant.now(), null, null, null)
-        transactionRepository.findByFilter(1L, null, null, null, null, null, null,
+        transactionRepository.findByFilter(1L, null, null, null, null, null,
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)) >> [transaction]
 
         when:
-        List<TransactionResponse> responses = service.execute(1L, null, null, null, null, null, null,
+        List<TransactionResponse> responses = service.execute(1L, null, null, null, null, null,
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31))
 
         then:
@@ -53,7 +51,7 @@ class ListTransactionsServiceSpec extends Specification {
         transactionRepository.findByFilter(*_) >> []
 
         when:
-        List<TransactionResponse> responses = service.execute(99L, null, null, null, null, null, null, null, null)
+        List<TransactionResponse> responses = service.execute(99L, null, null, null, null, null, null, null)
 
         then:
         responses.isEmpty()

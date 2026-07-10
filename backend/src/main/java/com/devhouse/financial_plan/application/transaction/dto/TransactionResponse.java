@@ -16,7 +16,6 @@ public record TransactionResponse(
         Long destinationBankAccountId,
         Long categoryId,
         Long subCategoryId,
-        Long paymentMethodId,
         BigDecimal amount,
         LocalDate transactionDate,
         String description,

@@ -12,7 +12,7 @@
 
 ## Request
 
-`CategoryReportFilterRequest` = the 9 fields of `ReportFilterRequest` (`spaceId, from, to, userId, bankAccountId, categoryId, subCategoryId, paymentMethodId, type`) **plus `creditCardId`**. Only `spaceId` is mandatory (`DomainException` → 422). The record also carries the constant `CREDIT_CARD_PAYMENT_METHOD = -1` and the helper `isCreditCardPaymentMethod()` — see RPTC4.
+`CategoryReportFilterRequest` = the 8 fields of `ReportFilterRequest` (`spaceId, from, to, userId, bankAccountId, categoryId, subCategoryId, type`) **plus `creditCardId`**. Only `spaceId` is mandatory (`DomainException` → 422).
 
 ## Response shape
 
@@ -29,7 +29,7 @@ CategoryReportResponse
         └── items: CategoryReportItemResponse[]      (ordered by date desc)
 ```
 
-`CategoryReportItemResponse`: `{ id, source (TRANSACTION|CREDIT_CARD), type, date, description, amount, userId, bankAccountId, paymentMethodId, creditCardId, creditCardName, installmentNumber, totalInstallments }`. `id`s can collide across the two sources — consumers must key on `source + id`. For `CREDIT_CARD` items, `type` is always `EXPENSE`, `date` is the `purchaseDate`, `bankAccountId` comes from the card's linked account (nullable) and `paymentMethodId` is always `null`; `creditCardId`/`creditCardName` satisfy the "which card" requirement.
+`CategoryReportItemResponse`: `{ id, source (TRANSACTION|CREDIT_CARD), type, date, description, amount, userId, bankAccountId, creditCardId, creditCardName, installmentNumber, totalInstallments }`. `id`s can collide across the two sources — consumers must key on `source + id`. For `CREDIT_CARD` items, `type` is always `EXPENSE`, `date` is the `purchaseDate`, `bankAccountId` comes from the card's linked account (nullable); `creditCardId`/`creditCardName` satisfy the "which card" requirement.
 
 Grouping and sums happen **in memory** (stream + `LinkedHashMap` after sorting), same philosophy as `ListCreditCardInvoicesService` — no SQL `GROUP BY` anywhere in this codebase.
 
@@ -38,7 +38,7 @@ Grouping and sums happen **in memory** (stream + `LinkedHashMap` after sorting),
 - **RPTC1 — purchase-date accrual.** Credit card purchases enter the report by `CreditCardTransaction.purchaseDate` (via the same spaceId-scoped `findByFilter` specification used by `GET /credit-card-transactions`), never by invoice closing or payment date. An installment appears in the month its row's `purchaseDate` falls in.
 - **RPTC2 — no double counting.** Regular transactions with `sourceType = CREDIT_CARD_INVOICE_PAYMENT` are excluded. The expense already entered through RPTC1; also counting the invoice payment would count it twice. `BILL_INSTANCE_PAYMENT` transactions stay in — they *are* the real expense.
 - **RPTC3 — no transfers.** `TRANSFER` transactions are excluded entirely (they carry no category and are already excluded from the sums of `POST /reports`). `type=TRANSFER` therefore yields an empty report.
-- **RPTC4 — payment-method sentinel.** `paymentMethodId = -1` (`CREDIT_CARD_PAYMENT_METHOD`) is a hardcoded "Cartão de Crédito" option: the report returns **only** credit card items and skips the `Transaction` query. A real (positive) `paymentMethodId` returns **only** regular transactions with that payment method — a card purchase has no payment method, so it can never match one.
+- **RPTC4 — no payment method concept (removed).** `PaymentMethod` and `paymentMethodId` were removed from the whole app. There used to be a `paymentMethodId = -1` sentinel here to isolate credit card items via the payment-method filter; it's gone. Credit card purchases now simply show up by default alongside regular transactions whenever no filter narrows them out (see RPTC5/RPTC7 below) — the only way to see *only* card purchases is `creditCardId` (RPTC7), and the only way to see *only* regular transactions is... there isn't one anymore; use the flat report (`POST /reports`) instead if that's needed.
 - **RPTC5 — type vs card items.** Card items are implicitly expenses (`CreditCardTransaction` has no type field), so they are only included when `type` is `null` or `EXPENSE`.
 - **RPTC6 — bank account reaches the card.** `CreditCard` gained an optional `bankAccount` relation (`bank_account_id` FK, validated on create/update to belong to the card's space). When `bankAccountId` is filtered, a card item is kept only if its card's linked account matches; a card with no linked account is excluded. Applied in memory after the query (the linkage lives on the card, not the purchase).
 - **RPTC7 — specific card filter.** `creditCardId` narrows the report to that card's purchases and excludes regular transactions altogether (filtering by a card means "this card's spending"). It is passed straight to `CreditCardTransactionRepository.findByFilter`, which already supported it.

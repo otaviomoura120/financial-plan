@@ -5,7 +5,6 @@ import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardInvoicePayment
-import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
@@ -44,8 +43,7 @@ class UndoCreditCardInvoicePaymentServiceSpec extends Specification {
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
         Category category = new Category(30L, 0, null, "Cartão", true, Instant.now(), null)
-        PaymentMethod paymentMethod = new PaymentMethod(40L, 0, null, "Débito Automático", true, Instant.now(), null)
-        new Transaction(99L, 0, TransactionType.EXPENSE, user, bankAccount, null, category, null, paymentMethod,
+        new Transaction(99L, 0, TransactionType.EXPENSE, user, bankAccount, null, category, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), "Pagamento de fatura - Nubank", Instant.now(), null,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 10L)
     }

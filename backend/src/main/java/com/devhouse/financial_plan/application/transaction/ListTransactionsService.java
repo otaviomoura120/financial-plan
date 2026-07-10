@@ -19,10 +19,10 @@ public class ListTransactionsService {
     }
 
     public List<TransactionResponse> execute(Long spaceId, Long userId, Long bankAccountId, Long categoryId,
-                                              Long subCategoryId, Long paymentMethodId, TransactionType type,
+                                              Long subCategoryId, TransactionType type,
                                               LocalDate from, LocalDate to) {
         return transactionRepository.findByFilter(spaceId, userId, bankAccountId, categoryId, subCategoryId,
-                        paymentMethodId, type, from, to).stream()
+                        type, from, to).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -31,8 +31,7 @@ public class ListTransactionsService {
         return new TransactionResponse(t.getId(), t.getVersion(), t.getType(), t.getUser().getId(), t.getBankAccount().getId(),
                 t.getDestinationBankAccount() != null ? t.getDestinationBankAccount().getId() : null,
                 t.getCategory() != null ? t.getCategory().getId() : null,
-                t.getSubCategory() != null ? t.getSubCategory().getId() : null,
-                t.getPaymentMethod() != null ? t.getPaymentMethod().getId() : null, t.getAmount(),
+                t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(),
                 t.getTransactionDate(), t.getDescription(), t.getCreatedDate(), t.getSourceType(), t.getSourceId(), null);
     }
 }

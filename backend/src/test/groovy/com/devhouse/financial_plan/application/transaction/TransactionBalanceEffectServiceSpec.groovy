@@ -2,7 +2,6 @@ package com.devhouse.financial_plan.application.transaction
 
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
-import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
@@ -32,16 +31,11 @@ class TransactionBalanceEffectServiceSpec extends Specification {
         id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
     }
 
-    private PaymentMethod buildPaymentMethodObj(Long id) {
-        id == null ? null : new PaymentMethod(id, 0, null, "Method " + id, true, Instant.now(), null)
-    }
-
     private Transaction buildTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId) {
         Long categoryId = TransactionType.TRANSFER.equals(type) ? null : 10L
-        Long paymentMethodId = TransactionType.TRANSFER.equals(type) ? null : 20L
         new Transaction(1L, 0, type, buildUser(1L), buildAccount(bankAccountId, BigDecimal.ZERO),
                 destinationBankAccountId != null ? buildAccount(destinationBankAccountId, BigDecimal.ZERO) : null,
-                buildCategoryObj(categoryId), null, buildPaymentMethodObj(paymentMethodId),
+                buildCategoryObj(categoryId), null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
     }
 

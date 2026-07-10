@@ -4,7 +4,6 @@ import com.devhouse.financial_plan.application.transaction.dto.TransactionRespon
 import com.devhouse.financial_plan.application.transaction.dto.UpdateTransactionRequest
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
-import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
@@ -13,7 +12,6 @@ import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository
 import com.devhouse.financial_plan.domain.repository.CategoryRepository
-import com.devhouse.financial_plan.domain.repository.PaymentMethodRepository
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository
 import com.devhouse.financial_plan.domain.repository.TransactionRepository
 import spock.lang.Specification
@@ -27,11 +25,10 @@ class UpdateTransactionServiceSpec extends Specification {
     BankAccountRepository bankAccountRepository = Mock()
     CategoryRepository categoryRepository = Mock()
     SubCategoryRepository subCategoryRepository = Mock()
-    PaymentMethodRepository paymentMethodRepository = Mock()
     TransactionBalanceEffectService balanceEffectService = new TransactionBalanceEffectService(bankAccountRepository)
 
     UpdateTransactionService service = new UpdateTransactionService(transactionRepository, bankAccountRepository,
-            categoryRepository, subCategoryRepository, paymentMethodRepository, balanceEffectService)
+            categoryRepository, subCategoryRepository, balanceEffectService)
 
     private BankAccount buildAccount(Long id, BigDecimal balance) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
@@ -47,17 +44,12 @@ class UpdateTransactionServiceSpec extends Specification {
         id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
     }
 
-    private PaymentMethod buildPaymentMethodObj(Long id) {
-        id == null ? null : new PaymentMethod(id, 0, null, "Method " + id, true, Instant.now(), null)
-    }
-
     private Transaction buildExistingTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId,
                                                   BigDecimal amount) {
         Long categoryId = TransactionType.TRANSFER.equals(type) ? null : 10L
-        Long paymentMethodId = TransactionType.TRANSFER.equals(type) ? null : 20L
         new Transaction(1L, 0, type, buildUser(1L), buildAccount(bankAccountId, BigDecimal.ZERO),
                 destinationBankAccountId != null ? buildAccount(destinationBankAccountId, BigDecimal.ZERO) : null,
-                buildCategoryObj(categoryId), null, buildPaymentMethodObj(paymentMethodId),
+                buildCategoryObj(categoryId), null,
                 amount, LocalDate.now(), "desc", Instant.now(), null, null, null)
     }
 
@@ -69,8 +61,7 @@ class UpdateTransactionServiceSpec extends Specification {
         BankAccount account = buildAccount(1L, new BigDecimal("400.00"))
         bankAccountRepository.findById(1L) >> account
         categoryRepository.findById(10L) >> Mock(Category)
-        paymentMethodRepository.findById(20L) >> Mock(PaymentMethod)
-        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null, 20L,
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null,
                 new BigDecimal("150.00"), LocalDate.now(), "desc")
 
         when:
@@ -90,8 +81,7 @@ class UpdateTransactionServiceSpec extends Specification {
         BankAccount account = buildAccount(1L, new BigDecimal("600.00"))
         bankAccountRepository.findById(1L) >> account
         categoryRepository.findById(10L) >> Mock(Category)
-        paymentMethodRepository.findById(20L) >> Mock(PaymentMethod)
-        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null, 20L,
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 
         when:
@@ -113,8 +103,7 @@ class UpdateTransactionServiceSpec extends Specification {
         bankAccountRepository.findById(1L) >> origin
         bankAccountRepository.findById(2L) >> destination
         categoryRepository.findById(10L) >> Mock(Category)
-        paymentMethodRepository.findById(20L) >> Mock(PaymentMethod)
-        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 2L, null, 10L, null, 20L,
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 2L, null, 10L, null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 
         when:
@@ -136,7 +125,7 @@ class UpdateTransactionServiceSpec extends Specification {
         bankAccountRepository.findById(1L) >> origin
         bankAccountRepository.findById(2L) >> oldDestination
         bankAccountRepository.findById(3L) >> newDestination
-        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.TRANSFER, 1L, 3L, null, null, null,
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.TRANSFER, 1L, 3L, null, null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 
         when:
@@ -153,7 +142,7 @@ class UpdateTransactionServiceSpec extends Specification {
         Transaction existing = buildExistingTransaction(TransactionType.EXPENSE, 1L, null, new BigDecimal("100.00"))
         transactionRepository.findById(1L) >> existing
         bankAccountRepository.findById(1L) >> null
-        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null, 20L,
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 
         when:
@@ -168,11 +157,11 @@ class UpdateTransactionServiceSpec extends Specification {
     def "execute throws DomainException when transaction is linked to a source (bill/invoice payment)"() {
         given:
         Transaction existing = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L),
-                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
+                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null,
                 TransactionSourceType.BILL_INSTANCE_PAYMENT, 50L)
         transactionRepository.findById(1L) >> existing
-        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null, 20L,
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null,
                 new BigDecimal("150.00"), LocalDate.now(), "desc")
 
         when:

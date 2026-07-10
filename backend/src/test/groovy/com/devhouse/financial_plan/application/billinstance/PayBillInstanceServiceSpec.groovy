@@ -49,7 +49,7 @@ class PayBillInstanceServiceSpec extends Specification {
         billRepository.findById(1L) >> buildInstance(category, BillInstanceStatus.PENDING, subCategory)
         userRepository.findByAuth0Sub("auth0|1") >> buildUser()
         TransactionResponse transactionResponse = new TransactionResponse(99L, 0, TransactionType.EXPENSE, 1L, 2L, null,
-                20L, 30L, 40L, new BigDecimal("150.00"), LocalDate.of(2026, 3, 9), "Pagamento de conta - Energy Bill", Instant.now(),
+                20L, 30L, new BigDecimal("150.00"), LocalDate.of(2026, 3, 9), "Pagamento de conta - Energy Bill", Instant.now(),
                 null, null, null)
         CreateTransactionRequest capturedRequest = null
         createTransactionService.execute(_, TransactionSourceType.BILL_INSTANCE_PAYMENT, 1L) >> { CreateTransactionRequest req, srcType, srcId ->
@@ -57,7 +57,7 @@ class PayBillInstanceServiceSpec extends Specification {
             transactionResponse
         }
         billRepository.update(_) >> { Bill i -> i }
-        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, 40L, LocalDate.of(2026, 3, 9))
+        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
         def response = service.execute(1L, request, "auth0|1")
@@ -77,7 +77,7 @@ class PayBillInstanceServiceSpec extends Specification {
     def "execute throws DomainException when the instance does not exist"() {
         given:
         billRepository.findById(99L) >> null
-        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, 40L, LocalDate.of(2026, 3, 9))
+        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
         service.execute(99L, request, "auth0|1")
@@ -91,7 +91,7 @@ class PayBillInstanceServiceSpec extends Specification {
         given:
         Category category = new Category(20L, 0, buildSpace(), "Utilities", true, Instant.now(), null)
         billRepository.findById(1L) >> buildInstance(category, BillInstanceStatus.PAID)
-        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, 40L, LocalDate.of(2026, 3, 9))
+        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
         service.execute(1L, request, "auth0|1")
@@ -106,7 +106,7 @@ class PayBillInstanceServiceSpec extends Specification {
         Category category = new Category(20L, 0, buildSpace(), "Utilities", true, Instant.now(), null)
         billRepository.findById(1L) >> buildInstance(category, BillInstanceStatus.PENDING)
         userRepository.findByAuth0Sub("auth0|unknown") >> null
-        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, 40L, LocalDate.of(2026, 3, 9))
+        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
         service.execute(1L, request, "auth0|unknown")
@@ -120,7 +120,7 @@ class PayBillInstanceServiceSpec extends Specification {
         given:
         billRepository.findById(1L) >> buildInstance(null, BillInstanceStatus.PENDING)
         userRepository.findByAuth0Sub("auth0|1") >> buildUser()
-        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, 40L, LocalDate.of(2026, 3, 9))
+        PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
         service.execute(1L, request, "auth0|1")

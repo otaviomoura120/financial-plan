@@ -51,19 +51,18 @@ Represents a real financial account (bank, digital wallet, etc.). Tracks a runni
 ### Category + SubCategory
 Two-level classification hierarchy for transactions. Example: Category = "Food", SubCategory = "Groceries". Both are scoped to a Space and can be deactivated (soft delete).
 
-### PaymentMethod
-Defines how a transaction was paid — cash, credit card, debit card, pix, check, etc. Scoped to a Space.
-
 ### Transaction
 The **central entity** of the system. Represents a single financial event:
 - `type`: `INCOME`, `EXPENSE` or `TRANSFER`
 - `amount`: positive `BigDecimal`
 - `transactionDate`: `LocalDate` of when it happened
-- Links: `userId`, `bankAccountId`, `destinationBankAccountId`, `categoryId`, `subCategoryId`, `paymentMethodId`
+- Links: `userId`, `bankAccountId`, `destinationBankAccountId`, `categoryId`, `subCategoryId`
 - `description`: optional notes
 - `sourceType` / `sourceId`: optional traceability of an external origin (`TransactionSourceType`: `CREDIT_CARD_INVOICE_PAYMENT`, `BILL_INSTANCE_PAYMENT`). Both are `null` for a transaction created directly through `POST /transactions`; they are only populated when a transaction is generated automatically by paying a credit card invoice or a bill instance (credit card/bills modules)
 
-For `INCOME`/`EXPENSE`, `categoryId` and `paymentMethodId` are required and `destinationBankAccountId` must be null. For `TRANSFER`, `destinationBankAccountId` is required and must differ from `bankAccountId`; `categoryId`/`paymentMethodId` are not required. `TRANSFER` moves money between two bank accounts within the same space and is excluded from `totalIncome`/`totalExpense`/`balance` in Reports (see below), though it still appears in the transaction list.
+For `INCOME`/`EXPENSE`, `categoryId` is required and `destinationBankAccountId` must be null. For `TRANSFER`, `destinationBankAccountId` is required and must differ from `bankAccountId`; `categoryId` is not required. `TRANSFER` moves money between two bank accounts within the same space and is excluded from `totalIncome`/`totalExpense`/`balance` in Reports (see below), though it still appears in the transaction list.
+
+> There used to be a `PaymentMethod` entity (`/payment-methods`) recording how a transaction was paid. It was removed entirely — the concept no longer exists anywhere in the app (Transaction, Bill payment, Credit Card Invoice payment, Reports).
 
 `Transaction.isLinkedToSource()` returns `true` when `sourceType` is set. `UpdateTransactionService`/`DeleteTransactionService` reject (`DomainException`, HTTP 422) any edit or delete attempt on a linked transaction through the regular `/transactions` endpoints — reverting the balance effect of that kind of transaction is only allowed through a dedicated "undo payment" action in the module that created it (no cascade from the generic Transaction flow).
 
@@ -80,7 +79,7 @@ For `INCOME`/`EXPENSE`, `categoryId` and `paymentMethodId` are required and `des
 Hierarchical UI navigation menu. The menu structure is served to the frontend filtered by the authenticated user's permissions, so each user sees only the sections they can access.
 
 ### CreditCard
-First entity of the new **credit card module** (in progress). Tenancy is direct, same pattern as `BankAccount`/`PaymentMethod`:
+First entity of the new **credit card module** (in progress). Tenancy is direct, same pattern as `BankAccount`:
 - `name`, `limit` (informative only — never blocks a purchase, same philosophy as `BankAccount`'s negative balance), `closingDay`/`dueDay` (1-31, day-of-month of the invoice's closing and due date), `active`
 - optional `bankAccount` — the account this card "belongs to". Nullable, validated on create/update to belong to the same space (422 otherwise). Exists so the category report's `bankAccountId` filter can reach card purchases (see `report-by-category.md`, RPTC6); exposed as `bankAccountId`/`bankAccountName` in `CreditCardResponse`
 - `validate()` requires `name`, `space`, a positive `limit`, and `closingDay`/`dueDay` within 1-31 (`bankAccount` is not required)
@@ -91,11 +90,11 @@ First entity of the new **credit card module** (in progress). Tenancy is direct,
 - `resolveReferenceMonth(purchaseDate, closingDay)` — first day of the invoice month a purchase falls into: the purchase's own month if made on or before that month's closing date, otherwise the next month
 - `resolveDueDate(referenceMonth, closingDay, dueDay)` — if `dueDay <= closingDay` the due date falls in the month **after** `referenceMonth` (the due date always trails the closing date by construction), otherwise within `referenceMonth` itself; always clamped to the resulting month's length
 
-CRUD is exposed via `CreditCardController` (`/credit-cards`, see REST API Reference below), protected by `@PreAuthorize` from the start — unlike the core module, this credit card controller never had the T10 authorization gap. `DELETE /credit-cards/{id}` maps to `DeactivateCreditCardService`, which soft-deletes (`active=false`, same as `BankAccount`/`PaymentMethod` before their DEL2/DEL3 hard-delete rework) rather than removing the row — no hard delete/`existsBy` FK-guard exists yet for this entity. `seed.sql` grants `'Cartões de Crédito'` `ALLOW` to OWNER/ADMIN/MEMBER and adds its sidebar entry under the existing `'Contas e Pagamentos'` group.
+CRUD is exposed via `CreditCardController` (`/credit-cards`, see REST API Reference below), protected by `@PreAuthorize` from the start — unlike the core module, this credit card controller never had the T10 authorization gap. `DELETE /credit-cards/{id}` maps to `DeactivateCreditCardService`, which soft-deletes (`active=false`, same as `BankAccount` before its DEL2 hard-delete rework) rather than removing the row — no hard delete/`existsBy` FK-guard exists yet for this entity. `seed.sql` grants `'Cartões de Crédito'` `ALLOW` to OWNER/ADMIN/MEMBER and adds its sidebar entry under the existing `'Contas e Pagamentos'` group.
 
 ### CreditCardTransaction
 A single purchase (or a single installment of a parcelled purchase) made on a `CreditCard`. Tenancy is **indirect** — same pattern as `Transaction`/`SubCategory`: it holds a `CreditCard` (which itself belongs to a `Space`), not a `Space` directly.
-- Links: `creditCard`, `user`, `category`, `subCategory` (optional) — all resolved as domain objects with a real FK, matching the project's current convention (see REF1-4 in `IMPLEMENTATION_PLAN.md`); there is no `paymentMethod` (it's implicitly "this credit card") and no `bankAccount` (a credit card purchase never touches a bank account balance directly — only paying the invoice does, see `CreditCardInvoicePayment`)
+- Links: `creditCard`, `user`, `category`, `subCategory` (optional) — all resolved as domain objects with a real FK, matching the project's current convention (see REF1-4 in `IMPLEMENTATION_PLAN.md`); there is no `bankAccount` (a credit card purchase never touches a bank account balance directly — only paying the invoice does, see `CreditCardInvoicePayment`)
 - `amount` (positive `BigDecimal`), `purchaseDate` (`LocalDate`), `description` (optional)
 - No soft-delete — hard delete, like `Transaction`
 - **Paid-invoice guard:** `UpdateCreditCardTransactionService`/`DeleteCreditCardTransactionService` reject with `DomainException` ("cannot modify/delete a transaction from a paid invoice") whenever a `CreditCardInvoicePayment` already exists for `(creditCard, transaction.referenceMonth)`. `CreateCreditCardTransactionService` applies the same check against every installment's `referenceMonth` before creating any row — a new purchase can never land inside an invoice that's already paid.
@@ -149,15 +148,14 @@ POST /users          → create User (linked to Auth0 sub)
 POST /spaces         → create Space → auto-creates OWNER role → adds creator as SpaceMember(OWNER)
 POST /bank-accounts  → add bank account to the space
 POST /categories     → add categories (and subcategories)
-POST /payment-methods → add payment methods
 ```
 
 ### 2. Recording a Transaction
 ```
 POST /transactions
-  body: { type, userId, bankAccountId, destinationBankAccountId, categoryId, subCategoryId, paymentMethodId, amount, transactionDate, description }
+  body: { type, userId, bankAccountId, destinationBankAccountId, categoryId, subCategoryId, amount, transactionDate, description }
   → CreateTransactionService validates that every referenced FK exists (userId, bankAccountId always;
-    destinationBankAccountId only for TRANSFER; categoryId/paymentMethodId only for INCOME/EXPENSE;
+    destinationBankAccountId only for TRANSFER; categoryId only for INCOME/EXPENSE;
     subCategoryId only when informed) → 422 DomainException if any is missing
   → Transaction.validate() checks required fields per type and amount > 0
   → TransactionBalanceEffectService.apply() credits/debits the bank account(s) involved (see transaction-balance-effect.md)
@@ -171,7 +169,7 @@ leaves the affected bank account(s) with the correct resulting balance.
 ### 3. Financial Report
 ```
 POST /reports
-  body: { spaceId, from, to, userId?, bankAccountId?, categoryId?, subCategoryId?, paymentMethodId?, type? }
+  body: { spaceId, from, to, userId?, bankAccountId?, categoryId?, subCategoryId?, type? }
   → spaceId is required (422 DomainException if missing)
   → queries transactions matching all filters, scoped to bank accounts of that space
   → returns: { transactions[], totalIncome, totalExpense, balance,
@@ -209,9 +207,8 @@ due outside the filtered period simply doesn't affect `projectedBalance`, even t
 **Report by Category.** `POST /reports/by-category` (`GenerateCategoryReportService`) is a second report on a
 different accrual basis: it groups the period's items by Category → SubCategory, includes credit card purchases by
 `purchaseDate` (never by invoice closing/payment — the matching `CREDIT_CARD_INVOICE_PAYMENT` transactions are
-excluded to avoid double counting), accepts the same filters plus `creditCardId` and a hardcoded
-`paymentMethodId = -1` "credit card" sentinel, and adds per-category percentages. Full contract, filter semantics
-and invariants (RPTC1-RPTC9) in `report-by-category.md`.
+excluded to avoid double counting), accepts the same filters plus `creditCardId`, and adds per-category
+percentages. Full contract, filter semantics and invariants (RPTC1-RPTC9) in `report-by-category.md`.
 
 ### 4. Access Control Flow
 ```
@@ -227,12 +224,12 @@ Incoming request  (must carry Authorization: Bearer <token> and X-Space-Id: <spa
       → userHasPermissionForRole  (space derived from role ID)
   → allowed or 403
 ```
-All 5 core financial controllers (`BankAccountController`, `CategoryController`, `PaymentMethodController`,
+All core financial controllers (`BankAccountController`, `CategoryController`,
 `TransactionController`, `ReportController` — including their new `GET` list endpoints) now use
 `@PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")` on every method, the same
 pattern as `EndpointPermissionController`/`GroupMenuController`. Each endpoint has a corresponding `API` row in
 `endpoint_permissions` (see `seed.sql`, section 1) reusing the same `name` as the entity's existing `FRONT_PAGE` row
-(`'Contas Bancárias'`, `'Categorias'`, `'Formas de Pagamento'`, `'Transações'`, `'Relatórios'`), so ADMIN/MEMBER
+(`'Contas Bancárias'`, `'Categorias'`, `'Transações'`, `'Relatórios'`), so ADMIN/MEMBER
 inherit `ALLOW` automatically through the existing `ep.name IN (...)` joins — no change needed to the ADMIN/MEMBER
 seed blocks. OWNER gets `ALLOW` on everything via the existing `CROSS JOIN`.
 
@@ -272,7 +269,7 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 ### Transactions `/transactions`
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/?spaceId=&userId=&bankAccountId=&categoryId=&subCategoryId=&paymentMethodId=&type=&from=&to=` | List transactions of a space (spaceId required, all other filters optional; no `from`/`to` = all transactions) |
+| GET | `/?spaceId=&userId=&bankAccountId=&categoryId=&subCategoryId=&type=&from=&to=` | List transactions of a space (spaceId required, all other filters optional; no `from`/`to` = all transactions) |
 | POST | `/` | Record income, expense or transfer |
 | PUT | `/{id}` | Update transaction |
 | DELETE | `/{id}` | Delete transaction |
@@ -299,15 +296,6 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | PATCH | `/{id}/status` | Activate/deactivate account (`{active: boolean}`) |
 | DELETE | `/{id}` | Delete account (hard delete; rejects with 422 if linked transactions exist) |
 
-### Payment Methods `/payment-methods`
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/?spaceId=` | List payment methods of a space |
-| POST | `/` | Create payment method |
-| PUT | `/{id}` | Rename payment method |
-| PATCH | `/{id}/status` | Activate/deactivate payment method (`{active: boolean}`) |
-| DELETE | `/{id}` | Delete payment method (hard delete; rejects with 422 if linked transactions exist) |
-
 ### Credit Cards `/credit-cards`
 | Method | Path | Purpose |
 |--------|------|---------|
@@ -332,7 +320,7 @@ Full cycle explained in `backend/docs/credit-card-invoice.md` — an invoice is 
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/credit-cards/invoices?spaceId=&creditCardId=&from=&to=` | List invoices (grouped in memory from `CreditCardTransaction.referenceMonth`), marked paid/open; `from`/`to` filter by `dueDate` |
-| POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | Pay an open invoice (`bankAccountId`, `categoryId`, `paymentMethodId`, `paidDate`) — creates an `EXPENSE` `Transaction` (`sourceType=CREDIT_CARD_INVOICE_PAYMENT`, `sourceId=creditCardId`) debiting `bankAccountId`, then persists `CreditCardInvoicePayment`; payer is the authenticated user, not a request field |
+| POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | Pay an open invoice (`bankAccountId`, `categoryId`, `subCategoryId`, `paidDate`) — creates an `EXPENSE` `Transaction` (`sourceType=CREDIT_CARD_INVOICE_PAYMENT`, `sourceId=creditCardId`) debiting `bankAccountId`, then persists `CreditCardInvoicePayment`; payer is the authenticated user, not a request field |
 | POST | `/credit-cards/{id}/invoices/{referenceMonth}/undo-payment` | Reverse a payment — reverts the bank account balance, hard-deletes the generated `Transaction` (bypassing the normal linked-transaction guard) and the `CreditCardInvoicePayment` row, so the invoice shows as open again |
 
 ### Bills `/bills`
@@ -349,7 +337,7 @@ Full cycle explained in `backend/docs/recurring-bills.md`. `/bills` itself is `B
 | POST | `/instances` | Create a standalone `Bill` directly (`spaceId`, `name`, `categoryId?`, `subCategoryId?`, `amount`, `dueDate`) — no `BillRecurring` involved |
 | PUT | `/instances/{id}` | Update a pending `Bill`'s `name`/`categoryId`/`subCategoryId`/`amount`/`dueDate` (rejects with 422 if already paid); never touches a parent `BillRecurring` |
 | DELETE | `/instances/{id}` | Soft-delete a pending `Bill` (rejects with 422 if already paid) |
-| POST | `/instances/{id}/pay` | Pay a pending bill (`bankAccountId`, `paymentMethodId`, `paidDate` — no category override) — creates an `EXPENSE` `Transaction` (`sourceType=BILL_INSTANCE_PAYMENT`, `sourceId=bill.id`) debiting `bankAccountId` using the bill's own category/subCategory, then marks it `PAID`; payer is the authenticated user, not a request field |
+| POST | `/instances/{id}/pay` | Pay a pending bill (`bankAccountId`, `paidDate` — no category override) — creates an `EXPENSE` `Transaction` (`sourceType=BILL_INSTANCE_PAYMENT`, `sourceId=bill.id`) debiting `bankAccountId` using the bill's own category/subCategory, then marks it `PAID`; payer is the authenticated user, not a request field |
 | POST | `/instances/{id}/undo-payment` | Reverse a payment — reverts the bank account balance, hard-deletes the generated `Transaction` (bypassing the normal linked-transaction guard) and flips the bill back to `PENDING` |
 
 ### Roles `/roles`
@@ -365,7 +353,7 @@ Full cycle explained in `backend/docs/recurring-bills.md`. `/bills` itself is `B
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/` | Generate filtered financial report |
-| POST | `/by-category` | Generate the report grouped by category/subcategory — includes credit card purchases by `purchaseDate` with the card identified, excludes invoice-payment transactions and transfers, accepts the same filters plus `creditCardId` and the `paymentMethodId=-1` "credit card" sentinel (see `report-by-category.md`) |
+| POST | `/by-category` | Generate the report grouped by category/subcategory — includes credit card purchases by `purchaseDate` with the card identified, excludes invoice-payment transactions and transfers, accepts the same filters plus `creditCardId` (see `report-by-category.md`) |
 
 ### Endpoint Permissions `/endpoint-permissions`
 | Method | Path | Purpose |

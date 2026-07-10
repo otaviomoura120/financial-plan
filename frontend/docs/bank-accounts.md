@@ -1,8 +1,8 @@
 # Bank Accounts
 
 Status: **implemented and working** (backend already existed; this doc covers the frontend
-piece — Grupo F2 of `backend/IMPLEMENTATION_PLAN.md`). Same CRUD pattern as
-[`payment-methods.md`](./payment-methods.md) (F1, the pilot), with one extra rule: `balance`
+piece — Grupo F2 of `backend/IMPLEMENTATION_PLAN.md`). Follows the same simple CRUD pattern
+established by the (now-removed) Payment Methods pilot screen, with one extra rule: `balance`
 is never directly editable — it only changes as a side effect of transactions (see
 `backend/IMPLEMENTATION_PLAN.md`, "Spec por entidade" → `BankAccount`).
 
@@ -21,7 +21,7 @@ is never directly editable — it only changes as a side effect of transactions 
 
 `BankAccountResponse`: `{ id, version, spaceId, name, bankName, balance, active, createdDate }`.
 
-Same hard-delete behavior as Payment Methods: `DeleteBankAccountService` checks for linked
+Same hard-delete behavior as Categories: `DeleteBankAccountService` checks for linked
 `Transaction`s (as origin or destination) via `TransactionRepository.existsByBankAccountId`
 and rejects with a `422` if any exist; otherwise the row is removed for good. Activating/
 deactivating is a separate, reversible action via `PATCH .../status`
@@ -41,11 +41,11 @@ deactivating is a separate, reversible action via `PATCH .../status`
 | `server/api/bank-accounts/[id].delete.ts` | Proxies `DELETE /bank-accounts/{id}` — catches backend errors and re-throws via `createError({statusCode, statusMessage, data})` so the real `DomainException` message reaches the client |
 
 Nitro routes follow the same `useAuth0(event).getAccessToken()` + `buildBackendHeaders` +
-`config.public.apiBaseUrl` pattern as `server/api/payment-methods/*` / `server/api/roles/*`.
+`config.public.apiBaseUrl` pattern as `server/api/categories/*` / `server/api/roles/*`.
 
 ## Page behavior
 
-- Fetches on mount and on every `spaceStore.activeSpace` change, same as Payment Methods/Roles.
+- Fetches on mount and on every `spaceStore.activeSpace` change, same as Categories/Roles.
 - Client-side search matches `name` **or** `bankName` (case-insensitive substring).
 - Table columns: **Nome**, **Banco**, **Saldo** (formatted as BRL via `Intl.NumberFormat`),
   **Status** (chip), **Ações** (Editar, Ativar/Inativar, Excluir).

@@ -16,7 +16,7 @@ report entity.
 | POST | `/reports` | `ReportFilterRequest` | `ReportResponse` |
 
 `ReportFilterRequest`: `{ spaceId, from, to, userId, bankAccountId, categoryId, subCategoryId,
-paymentMethodId, type }` — only `spaceId` is enforced server-side (`GenerateReportService`
+type }` — only `spaceId` is enforced server-side (`GenerateReportService`
 throws if missing); everything else, including `from`/`to`, is optional as far as the backend
 is concerned. `from`/`to` being "obrigatórios" is a **frontend-only** UX decision (per the
 plan) — enforced client-side via `VForm` validation before the request is sent.
@@ -49,8 +49,8 @@ totals. `balance = totalIncome - totalExpense`.
 | `pages/reports/index.vue` | The entire feature — filter form, summary cards, transaction table (no dialogs, no row actions) |
 | `server/api/reports/index.post.ts` | Proxies `POST /reports` |
 
-Filter dropdowns reuse the same list endpoints as F1-F4 (`/api/bank-accounts`,
-`/api/categories`, `/api/payment-methods`), plus `GET /api/spaces/{id}/members` (already built
+Filter dropdowns reuse the same list endpoints as F2-F4 (`/api/bank-accounts`,
+`/api/categories`), plus `GET /api/spaces/{id}/members` (already built
 for `pages/users/index.vue`) for the "Membro" filter.
 
 ## Page behavior
@@ -60,7 +60,7 @@ for `pages/users/index.vue`) for the "Membro" filter.
   empty on first load.
 - Filter form (`Filtros` card): `De`/`Até` (required dates, defaulting to the current month),
   `Membro`, `Tipo` (Todos/Receita/Despesa/Transferência), `Conta`, `Categoria` → `Subcategoria`
-  (cascading, same pattern as F4), `Forma de pagamento` — all optional except the date range.
+  (cascading, same pattern as F4) — all optional except the date range.
   "Gerar Relatório" validates the form (blocks on missing `from`/`to`) and re-POSTs.
 - Summary cards use the template's existing `CardStatisticsVerticalSimple` component (reused,
   not reinvented) for **Total de Receitas** (green), **Total de Despesas** (red), and **Saldo do
@@ -68,7 +68,7 @@ for `pages/users/index.vue`) for the "Membro" filter.
   not alarming, per `PRODUCT.md`'s "errors are informative, not alarming" principle applied to
   a negative balance.
 - Transaction table columns and formatting are identical to F4's list (date, type chip,
-  account, category/destination, payment method, description, signed/colored amount) minus the
+  account, category/destination, description, signed/colored amount) minus the
   "Ações" column — this page has no edit/delete.
 - A second `VRow` below the period cards shows **Saldo Atual** (`currentBalance`) and **Saldo
   Previsto** (`projectedBalance`, `success`/`error` by sign, same calm-not-alarming convention as

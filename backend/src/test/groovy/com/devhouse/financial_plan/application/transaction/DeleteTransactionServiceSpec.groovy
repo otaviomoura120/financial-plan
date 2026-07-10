@@ -2,7 +2,6 @@ package com.devhouse.financial_plan.application.transaction
 
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
-import com.devhouse.financial_plan.domain.PaymentMethod
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
@@ -38,14 +37,10 @@ class DeleteTransactionServiceSpec extends Specification {
         id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
     }
 
-    private PaymentMethod buildPaymentMethodObj(Long id) {
-        id == null ? null : new PaymentMethod(id, 0, null, "Method " + id, true, Instant.now(), null)
-    }
-
     def "execute reverts the EXPENSE effect and deletes the transaction"() {
         given:
         Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L),
-                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
+                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
         transactionRepository.findById(1L) >> transaction
         BankAccount account = buildAccount(1L, new BigDecimal("400.00"))
@@ -63,7 +58,7 @@ class DeleteTransactionServiceSpec extends Specification {
     def "execute reverts the TRANSFER effect on both accounts and deletes the transaction"() {
         given:
         Transaction transaction = new Transaction(2L, 0, TransactionType.TRANSFER, buildUser(1L),
-                buildAccount(1L, BigDecimal.ZERO), buildAccount(2L, BigDecimal.ZERO), null, null, null,
+                buildAccount(1L, BigDecimal.ZERO), buildAccount(2L, BigDecimal.ZERO), null, null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
         transactionRepository.findById(2L) >> transaction
         BankAccount origin = buildAccount(1L, new BigDecimal("400.00"))
@@ -96,7 +91,7 @@ class DeleteTransactionServiceSpec extends Specification {
     def "execute throws DomainException when transaction is linked to a source (bill/invoice payment)"() {
         given:
         Transaction transaction = new Transaction(3L, 0, TransactionType.EXPENSE, buildUser(1L),
-                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null, buildPaymentMethodObj(20L),
+                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 50L)
         transactionRepository.findById(3L) >> transaction
