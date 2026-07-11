@@ -50,8 +50,7 @@ totals. `balance = totalIncome - totalExpense`.
 | `server/api/reports/index.post.ts` | Proxies `POST /reports` |
 
 Filter dropdowns reuse the same list endpoints as F2-F4 (`/api/bank-accounts`,
-`/api/categories`), plus `GET /api/spaces/{id}/members` (already built
-for `pages/users/index.vue`) for the "Membro" filter.
+`/api/categories`).
 
 ## Page behavior
 
@@ -59,8 +58,10 @@ for `pages/users/index.vue`) for the "Membro" filter.
   immediately generates a report for the default period (current month) so the page isn't
   empty on first load.
 - Filter form (`Filtros` card): `De`/`Até` (required dates, defaulting to the current month),
-  `Membro`, `Tipo` (Todos/Receita/Despesa/Transferência), `Conta`, `Categoria` → `Subcategoria`
-  (cascading, same pattern as F4) — all optional except the date range.
+  `Tipo` (Todos/Receita/Despesa/Transferência), `Conta`, `Categoria` → `Subcategoria`
+  (cascading, same pattern as F4) — all optional except the date range. The `userId` field on
+  `ReportFilterRequest` still exists on the backend but is no longer exposed in the UI (the
+  "Membro" filter was removed as unused).
   "Gerar Relatório" validates the form (blocks on missing `from`/`to`) and re-POSTs.
 - Summary cards use the template's existing `CardStatisticsVerticalSimple` component (reused,
   not reinvented) for **Total de Receitas** (green), **Total de Despesas** (red), and **Saldo do

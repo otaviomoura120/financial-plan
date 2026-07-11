@@ -66,13 +66,13 @@ double counting.
 | `server/api/reports/by-category.post.ts` | Proxies `POST /reports/by-category` |
 
 Filter dropdowns reuse `/api/bank-accounts`, `/api/categories`,
-`/api/spaces/{id}/members`, plus `/api/credit-cards` for the "Cartão de Crédito" filter.
+plus `/api/credit-cards` for the "Cartão de Crédito" filter.
 
 ## Page behavior
 
 - On mount / `spaceStore.activeSpace` change: fetches filter data then auto-generates the
   report for the current month (same as `/reports`).
-- Filters: `De`/`Até` (required), `Membro`, `Tipo` (Todos/Receita/Despesa — no Transferência),
+- Filters: `De`/`Até` (required), `Tipo` (Todos/Receita/Despesa — no Transferência),
   `Conta`, `Categoria` → `Subcategoria` (cascading),
   **Cartão de Crédito** (specific card, with a hint that it narrows to that card's purchases),
   and the **Agrupar por categoria** checkbox (default on).

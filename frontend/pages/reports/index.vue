@@ -94,12 +94,6 @@ interface CategoryResponse {
   subCategories: SubCategoryResponse[]
 }
 
-interface SpaceMemberResponse {
-  memberId: number
-  userId: number
-  userName: string
-}
-
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
@@ -125,11 +119,9 @@ function lastDayOfMonth() {
 
 const bankAccounts = ref<BankAccountResponse[]>([])
 const categories = ref<CategoryResponse[]>([])
-const members = ref<SpaceMemberResponse[]>([])
 
 const from = shallowRef(firstDayOfMonth())
 const to = shallowRef(lastDayOfMonth())
-const userId = shallowRef<number | null>(null)
 const bankAccountId = shallowRef<number | null>(null)
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
@@ -150,10 +142,6 @@ const typeItems = [
   { title: 'Despesa', value: 'EXPENSE' },
   { title: 'Transferência', value: 'TRANSFER' },
 ]
-
-const memberItems = computed(() =>
-  members.value.map(m => ({ title: m.userName, value: m.userId })),
-)
 
 const bankAccountItems = computed(() =>
   bankAccounts.value.map(ba => ({ title: ba.active ? ba.name : `${ba.name} (inativo)`, value: ba.id })),
@@ -264,7 +252,6 @@ watch(
     else {
       bankAccounts.value = []
       categories.value = []
-      members.value = []
       report.value = null
     }
   },
@@ -280,15 +267,13 @@ async function fetchFilterData() {
   try {
     const spaceId = spaceStore.activeSpace.id
 
-    const [bankAccountsResult, categoriesResult, membersResult] = await Promise.all([
+    const [bankAccountsResult, categoriesResult] = await Promise.all([
       $fetch<BankAccountResponse[]>('/api/bank-accounts', { query: { spaceId } }),
       $fetch<CategoryResponse[]>('/api/categories', { query: { spaceId } }),
-      $fetch<SpaceMemberResponse[]>(`/api/spaces/${spaceId}/members`),
     ])
 
     bankAccounts.value = bankAccountsResult
     categories.value = categoriesResult
-    members.value = membersResult
   }
   finally {
     isLoadingFilters.value = false
@@ -319,7 +304,6 @@ async function generateReport() {
         spaceId: spaceStore.activeSpace.id,
         from: from.value,
         to: to.value,
-        userId: userId.value,
         bankAccountId: bankAccountId.value,
         categoryId: categoryId.value,
         subCategoryId: subCategoryId.value,
@@ -408,19 +392,6 @@ function formatReferenceMonth(isoDate: string) {
                 type="date"
                 label="Até"
                 :rules="toRules"
-              />
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="3"
-            >
-              <AppSelect
-                v-model="userId"
-                label="Membro"
-                :items="memberItems"
-                clearable
-                :loading="isLoadingFilters"
               />
             </VCol>
 
