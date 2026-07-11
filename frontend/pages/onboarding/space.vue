@@ -31,7 +31,7 @@ async function submit() {
     })
 
     spaceStore.setActiveSpace({ id: space.id, name: space.name, description: space.description })
-    await navigateTo('/')
+    await navigateTo('/dashboard')
   }
   catch {
     setError('Falha ao criar seu Espaço. Por favor, tente novamente.')

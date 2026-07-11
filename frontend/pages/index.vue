@@ -1,172 +1,235 @@
 <script setup lang="ts">
-definePageMeta({ middleware: 'auth' })
+import logoHorizontal from '@images/logo-horizontal.svg?raw'
+import logoHorizontalMono from '@images/logo-horizontal-mono.svg?raw'
+import sealIcon from '@images/logo.svg?raw'
 
-const spaceStore = useSpaceStore()
+definePageMeta({
+  layout: 'blank',
+  middleware: 'guest',
+  public: true,
+})
 
-const totalBalance = shallowRef(0)
-
-const dueTotal = shallowRef(0)
-const duePeriodLabel = shallowRef('')
-
-const expenseTotal = shallowRef(0)
-const expensePeriodLabel = shallowRef('')
-
-const cardsTotal = shallowRef(0)
-const cardsPeriodLabel = shallowRef('')
-
-const allowedWidgets = ref<Set<string>>(new Set())
-const isLoadingWidgetPermissions = shallowRef(true)
-
-function canShow(widgetKey: string) {
-  return allowedWidgets.value.has(widgetKey)
-}
-
-watch(
-  () => spaceStore.activeSpace,
-  async space => {
-    if (!space) {
-      allowedWidgets.value = new Set()
-
-      return
-    }
-
-    isLoadingWidgetPermissions.value = true
-
-    try {
-      const keys = await $fetch<string[]>('/api/dashboard-widgets', { query: { spaceId: space.id } })
-
-      allowedWidgets.value = new Set(keys)
-    }
-    finally {
-      isLoadingWidgetPermissions.value = false
-    }
+const highlights = [
+  {
+    icon: 'tabler-wallet',
+    color: 'primary',
+    title: 'Visão clara das suas contas',
+    description: 'Acompanhe saldos, contas bancárias e cartões em um só lugar, sem planilhas.',
   },
-  { immediate: true },
-)
+  {
+    icon: 'tabler-users',
+    color: 'secondary',
+    title: 'Planejamento em família',
+    description: 'Convide quem divide as contas com você e organize o orçamento junto, no mesmo Espaço.',
+  },
+  {
+    icon: 'tabler-target-arrow',
+    color: 'warning',
+    title: 'Metas e faturas sob controle',
+    description: 'Saiba o que vence essa semana, quanto já foi gasto e quanto falta para suas metas.',
+  },
+]
+
+const currentYear = new Date().getFullYear()
 </script>
 
 <template>
-  <div
-    v-if="!spaceStore.activeSpace || isLoadingWidgetPermissions"
-    class="d-flex justify-center py-10"
-  >
-    <VProgressCircular indeterminate />
-  </div>
-
-  <div
-    v-else
-    class="d-flex flex-column gap-6"
-  >
-    <VRow v-if="canShow(DASHBOARD_WIDGET_SUMMARY_TILES)">
-      <VCol
-        v-if="canShow(DASHBOARD_WIDGET_ACCOUNT_BALANCES)"
-        cols="12"
-        sm="6"
-        md="3"
+  <div class="landing-page">
+    <header class="landing-header d-flex align-center px-4 px-md-12 py-4">
+      <NuxtLink
+        to="/"
+        class="landing-logo-link d-flex align-center"
       >
-        <CardStatisticsVerticalSimple
-          title="Saldo Total"
-          :color="totalBalance >= 0 ? 'primary' : 'error'"
-          icon="tabler-wallet"
-          :stats="formatCurrency(totalBalance)"
+        <span
+          class="landing-header-logo"
+          v-html="logoHorizontal"
         />
-      </VCol>
+      </NuxtLink>
 
-      <VCol
-        v-if="canShow(DASHBOARD_WIDGET_DUE_THIS_WEEK)"
-        cols="12"
-        sm="6"
-        md="3"
+      <VSpacer />
+
+      <VBtn
+        to="/dashboard"
+        color="primary"
+        variant="flat"
       >
-        <CardStatisticsVerticalSimple
-          title="A Pagar"
-          color="warning"
-          icon="tabler-calendar-due"
-          :stats="formatCurrency(dueTotal)"
-        />
-        <div class="text-caption text-disabled text-center mt-1">
-          {{ duePeriodLabel }}
-        </div>
-      </VCol>
+        Acessar Sistema
+      </VBtn>
+    </header>
 
-      <VCol
-        v-if="canShow(DASHBOARD_WIDGET_CATEGORY_SPENDING)"
-        cols="12"
-        sm="6"
-        md="3"
-      >
-        <CardStatisticsVerticalSimple
-          title="Gasto"
-          color="error"
-          icon="tabler-arrow-down"
-          :stats="formatCurrency(expenseTotal)"
-        />
-        <div class="text-caption text-disabled text-center mt-1">
-          {{ expensePeriodLabel }}
-        </div>
-      </VCol>
+    <section class="landing-hero px-4 px-md-12">
+      <div
+        class="landing-hero-seal"
+        v-html="sealIcon"
+      />
 
-      <VCol
-        v-if="canShow(DASHBOARD_WIDGET_CREDIT_CARD_SPENDING)"
-        cols="12"
-        sm="6"
-        md="3"
-      >
-        <CardStatisticsVerticalSimple
-          title="Faturas"
-          color="secondary"
-          icon="tabler-credit-card"
-          :stats="formatCurrency(cardsTotal)"
-        />
-        <div class="text-caption text-disabled text-center mt-1">
-          {{ cardsPeriodLabel }}
-        </div>
-      </VCol>
-    </VRow>
+      <div class="landing-hero-content">
+        <h1 class="landing-hero-title">
+          Cuide bem do que foi <span class="text-primary">confiado a você</span>
+        </h1>
+        <p class="landing-hero-subtitle">
+          O Prover organiza a vida financeira da sua família: contas, cartões, faturas e metas, tudo em um só
+          lugar, com clareza e cuidado.
+        </p>
+        <VBtn
+          to="/dashboard"
+          color="primary"
+          size="x-large"
+          variant="flat"
+          append-icon="tabler-arrow-right"
+        >
+          Acessar Sistema
+        </VBtn>
+      </div>
+    </section>
 
-    <VRow v-if="canShow(DASHBOARD_WIDGET_DUE_THIS_WEEK)">
-      <VCol cols="12">
-        <DashboardDueThisWeekCard
-          :space-id="spaceStore.activeSpace.id"
-          @update:total="dueTotal = $event"
-          @update:period-label="duePeriodLabel = $event"
-        />
-      </VCol>
-    </VRow>
+    <section class="landing-highlights px-4 px-md-12">
+      <VRow>
+        <VCol
+          v-for="item in highlights"
+          :key="item.title"
+          cols="12"
+          md="4"
+        >
+          <VCard
+            flat
+            border
+            class="landing-highlight-card pa-6"
+          >
+            <VAvatar
+              :color="item.color"
+              variant="tonal"
+              size="48"
+              class="mb-4"
+            >
+              <VIcon
+                :icon="item.icon"
+                size="26"
+              />
+            </VAvatar>
 
-    <VRow v-if="canShow(DASHBOARD_WIDGET_ACCOUNT_BALANCES)">
-      <VCol cols="12">
-        <DashboardAccountBalancesCard
-          :space-id="spaceStore.activeSpace.id"
-          @update:total="totalBalance = $event"
-        />
-      </VCol>
-    </VRow>
+            <h3 class="text-h6 mb-2">
+              {{ item.title }}
+            </h3>
+            <p class="text-body-2 text-medium-emphasis mb-0">
+              {{ item.description }}
+            </p>
+          </VCard>
+        </VCol>
+      </VRow>
+    </section>
 
-    <VRow v-if="canShow(DASHBOARD_WIDGET_CATEGORY_SPENDING) || canShow(DASHBOARD_WIDGET_CREDIT_CARD_SPENDING)">
-      <VCol
-        v-if="canShow(DASHBOARD_WIDGET_CATEGORY_SPENDING)"
-        cols="12"
-        :md="canShow(DASHBOARD_WIDGET_CREDIT_CARD_SPENDING) ? 7 : 12"
-      >
-        <DashboardCategorySpendingCard
-          :space-id="spaceStore.activeSpace.id"
-          @update:total="expenseTotal = $event"
-          @update:period-label="expensePeriodLabel = $event"
-        />
-      </VCol>
-
-      <VCol
-        v-if="canShow(DASHBOARD_WIDGET_CREDIT_CARD_SPENDING)"
-        cols="12"
-        :md="canShow(DASHBOARD_WIDGET_CATEGORY_SPENDING) ? 5 : 12"
-      >
-        <DashboardCreditCardSpendingCard
-          :space-id="spaceStore.activeSpace.id"
-          @update:total="cardsTotal = $event"
-          @update:period-label="cardsPeriodLabel = $event"
-        />
-      </VCol>
-    </VRow>
+    <footer class="landing-footer px-4 px-md-12 py-8">
+      <span
+        class="landing-footer-logo"
+        v-html="logoHorizontalMono"
+      />
+      <p class="text-caption mb-0 mt-4">
+        © {{ currentYear }} Prover. Todos os direitos reservados.
+      </p>
+    </footer>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100vh;
+  background: rgb(var(--v-theme-background));
+  color: rgb(var(--v-theme-on-background));
+}
+
+.landing-header {
+  border-block-end: 1px solid rgba(var(--v-theme-on-background), 0.08);
+}
+
+.landing-logo-link {
+  text-decoration: none;
+}
+
+.landing-header-logo :deep(svg) {
+  block-size: 36px;
+  inline-size: auto;
+  display: block;
+}
+
+.landing-hero {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-block-size: 60vh;
+  overflow: hidden;
+  padding-block: 4rem;
+}
+
+.landing-hero-content {
+  position: relative;
+  z-index: 1;
+  max-inline-size: 640px;
+}
+
+.landing-hero-title {
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 600;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1.1;
+  margin-block-end: 1.5rem;
+}
+
+.landing-hero-subtitle {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  opacity: 0.75;
+  margin-block-end: 2rem;
+  max-inline-size: 32rem;
+}
+
+.landing-hero-seal {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: -5%;
+  transform: translateY(-50%);
+  inline-size: min(45vw, 520px);
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+.landing-hero-seal :deep(svg) {
+  inline-size: 100%;
+  block-size: auto;
+}
+
+.landing-highlights {
+  padding-block: 1rem 4rem;
+}
+
+.landing-highlight-card {
+  block-size: 100%;
+  background: rgb(var(--v-theme-surface));
+}
+
+.landing-footer {
+  margin-block-start: auto;
+  background: #1F3D2F;
+  color: #FFFDF8;
+}
+
+.landing-footer-logo :deep(svg) {
+  block-size: 32px;
+  inline-size: auto;
+  display: block;
+}
+
+@media (max-width: 960px) {
+  .landing-hero {
+    min-block-size: auto;
+    padding-block: 3rem;
+  }
+
+  .landing-hero-seal {
+    display: none;
+  }
+}
+</style>

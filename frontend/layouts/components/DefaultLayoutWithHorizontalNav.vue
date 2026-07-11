@@ -13,7 +13,7 @@ import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 const menuStore = useMenuStore()
 
 const navItems = computed(() => [
-  { title: 'Home', icon: { icon: 'tabler-smart-home' }, to: { path: '/' } },
+  { title: 'Home', icon: { icon: 'tabler-smart-home' }, to: { path: '/dashboard' } },
   ...menuStore.navItems,
 ])
 </script>
@@ -23,7 +23,7 @@ const navItems = computed(() => [
     <!-- 👉 navbar -->
     <template #navbar>
       <NuxtLink
-        to="/"
+        to="/dashboard"
         class="app-logo d-flex align-center gap-x-3"
       >
         <VNodeRenderer :nodes="themeConfig.app.logo" />

@@ -14,7 +14,7 @@ import { VerticalNavLayout } from '@layouts'
 const menuStore = useMenuStore()
 
 const navItems = computed(() => [
-  { title: 'Home', icon: { icon: 'tabler-smart-home' }, to: { path: '/' } },
+  { title: 'Home', icon: { icon: 'tabler-smart-home' }, to: { path: '/dashboard' } },
   ...menuStore.navItems,
 ])
 </script>

@@ -7,7 +7,7 @@ const spaceStore = useSpaceStore()
 
 function selectSpace(space: Space) {
   spaceStore.setActiveSpace(space)
-  navigateTo('/')
+  navigateTo('/dashboard')
 }
 </script>
 

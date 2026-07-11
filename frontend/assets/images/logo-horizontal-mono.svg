@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 470 140" width="470" height="140">
+  <rect width="470" height="140" rx="20" fill="#1F3D2F"></rect>
+  <g transform="translate(8,10)">
+    <path d="M60 12 L104 27 V58 C104 84 85 103 60 112 C35 103 16 84 16 58 V27 Z" fill="#EFEADD"></path>
+    <path d="M60 92 C 57 80 63 70 60 56" stroke="#1F3D2F" stroke-width="3.4" stroke-linecap="round"></path>
+    <path d="M60 66 C 46 66 36 50 43 36 C 52 41 59 55 60 66 Z" fill="#1F3D2F"></path>
+    <path d="M60 60 C 72 63 80 53 76 44 C 69 47 61 53 60 60 Z" fill="#1F3D2F"></path>
+  </g>
+  <text x="150" y="103" font-family="&#39;Cormorant Garamond&#39;, &#39;EB Garamond&#39;, Garamond, &#39;Times New Roman&#39;, serif" font-weight="600" font-size="98" letter-spacing="0.5" fill="#EFEADD">Prover</text>
+</svg>
