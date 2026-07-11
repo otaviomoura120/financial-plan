@@ -9,5 +9,6 @@ public interface BillRecurringRepository {
     BillRecurring update(BillRecurring billRecurring);
     BillRecurring findById(Long id);
     List<BillRecurring> findBySpaceId(Long spaceId);
+    List<BillRecurring> findActiveBySpaceId(Long spaceId);
     void delete(Long id);
 }

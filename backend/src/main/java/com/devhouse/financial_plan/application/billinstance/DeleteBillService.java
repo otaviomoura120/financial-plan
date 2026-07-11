@@ -19,7 +19,9 @@ public class DeleteBillService {
         if (bill == null) {
             throw new DomainException("Bill not found");
         }
-        bill.markDeleted();
-        billRepository.update(bill);
+        if (!bill.isPending()) {
+            throw new DomainException("Cannot delete a bill that is already paid");
+        }
+        billRepository.delete(id);
     }
 }

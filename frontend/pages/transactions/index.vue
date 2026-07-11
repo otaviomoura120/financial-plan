@@ -1,6 +1,8 @@
 <script setup lang="ts">
 type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER'
 
+type TransactionSourceType = 'BILL_INSTANCE_PAYMENT' | 'CREDIT_CARD_INVOICE_PAYMENT'
+
 interface TransactionResponse {
   id: number
   version: number
@@ -14,6 +16,9 @@ interface TransactionResponse {
   transactionDate: string
   description?: string | null
   createdDate: string
+  sourceType?: TransactionSourceType | null
+  sourceId?: number | null
+  creditCardInvoiceReferenceMonth?: string | null
 }
 
 interface BankAccountResponse {
@@ -466,7 +471,9 @@ function formatDate(isoDate: string) {
     <ConfirmDialog
       v-model:is-dialog-visible="isDeleteDialogVisible"
       :auto-result="false"
-      confirmation-question="Tem certeza que deseja excluir esta transação? O saldo da conta envolvida será revertido."
+      :confirmation-question="selectedTransaction?.sourceType
+        ? 'Esta transação está vinculada a um pagamento de conta ou fatura. Ao excluí-la, o pagamento será desfeito e a conta/fatura voltará para pendente. Deseja continuar?'
+        : 'Tem certeza que deseja excluir esta transação? O saldo da conta envolvida será revertido.'"
       cancel-title="Ação cancelada"
       cancel-msg="A transação não foi excluída."
       @confirm="onDeleteConfirm"

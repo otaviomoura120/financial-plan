@@ -7,4 +7,5 @@ import java.util.List;
 public interface JpaBillRecurringRepository extends JpaRepository<BillRecurringEntityJpa, Long> {
 
     List<BillRecurringEntityJpa> findBySpaceId(Long spaceId);
+    List<BillRecurringEntityJpa> findBySpaceIdAndActiveTrue(Long spaceId);
 }

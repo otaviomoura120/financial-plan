@@ -22,7 +22,7 @@ class DeleteBillServiceSpec extends Specification {
                 new BigDecimal("150.00"), status, null, null, null, false, Instant.now(), null)
     }
 
-    def "execute marks the bill as deleted when pending"() {
+    def "execute hard-deletes the bill when pending"() {
         given:
         Bill bill = buildInstance(BillInstanceStatus.PENDING)
         billRepository.findById(1L) >> bill
@@ -31,8 +31,7 @@ class DeleteBillServiceSpec extends Specification {
         service.execute(1L)
 
         then:
-        bill.isDeleted()
-        1 * billRepository.update(bill)
+        1 * billRepository.delete(1L)
     }
 
     def "execute throws DomainException when bill does not exist"() {
@@ -44,7 +43,7 @@ class DeleteBillServiceSpec extends Specification {
 
         then:
         thrown(DomainException)
-        0 * billRepository.update(_)
+        0 * billRepository.delete(_)
     }
 
     def "execute throws DomainException when the bill is already paid"() {
@@ -57,6 +56,6 @@ class DeleteBillServiceSpec extends Specification {
 
         then:
         thrown(DomainException)
-        0 * billRepository.update(_)
+        0 * billRepository.delete(_)
     }
 }

@@ -1,7 +1,7 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
 import com.devhouse.financial_plan.application.bill.CreateBillService;
-import com.devhouse.financial_plan.application.bill.DeactivateBillRecurringService;
+import com.devhouse.financial_plan.application.bill.DeleteBillRecurringService;
 import com.devhouse.financial_plan.application.bill.ListBillsService;
 import com.devhouse.financial_plan.application.bill.UpdateBillRecurringScheduleService;
 import com.devhouse.financial_plan.application.bill.UpdateBillRecurringService;
@@ -24,16 +24,16 @@ public class BillController {
     private final CreateBillService createBillService;
     private final UpdateBillRecurringService updateBillRecurringService;
     private final UpdateBillRecurringScheduleService updateBillRecurringScheduleService;
-    private final DeactivateBillRecurringService deactivateBillRecurringService;
+    private final DeleteBillRecurringService deleteBillRecurringService;
     private final ListBillsService listBillsService;
 
     public BillController(CreateBillService createBillService, UpdateBillRecurringService updateBillRecurringService,
                            UpdateBillRecurringScheduleService updateBillRecurringScheduleService,
-                           DeactivateBillRecurringService deactivateBillRecurringService, ListBillsService listBillsService) {
+                           DeleteBillRecurringService deleteBillRecurringService, ListBillsService listBillsService) {
         this.createBillService = createBillService;
         this.updateBillRecurringService = updateBillRecurringService;
         this.updateBillRecurringScheduleService = updateBillRecurringScheduleService;
-        this.deactivateBillRecurringService = deactivateBillRecurringService;
+        this.deleteBillRecurringService = deleteBillRecurringService;
         this.listBillsService = listBillsService;
     }
 
@@ -65,7 +65,7 @@ public class BillController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void deactivate(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deactivateBillRecurringService.execute(id);
+    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        deleteBillRecurringService.execute(id);
     }
 }

@@ -13,4 +13,5 @@ public interface BillRepository {
     List<Bill> findByBillRecurringId(Long billRecurringId);
     List<Bill> findBySpaceAndPeriod(Long spaceId, LocalDate from, LocalDate to);
     List<Bill> findBySpaceAndPeriod(Long spaceId, LocalDate from, LocalDate to, Long categoryId, Long subCategoryId);
+    void delete(Long id);
 }

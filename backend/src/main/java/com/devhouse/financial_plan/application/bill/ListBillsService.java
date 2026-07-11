@@ -17,7 +17,7 @@ public class ListBillsService {
     }
 
     public List<BillResponse> execute(Long spaceId) {
-        return billRecurringRepository.findBySpaceId(spaceId).stream()
+        return billRecurringRepository.findActiveBySpaceId(spaceId).stream()
                 .map(this::toResponse)
                 .toList();
     }

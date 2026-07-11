@@ -22,7 +22,7 @@ class ListBillsServiceSpec extends Specification {
 
     def "execute returns every bill recurring of the space"() {
         given:
-        billRecurringRepository.findBySpaceId(1L) >> [buildBillRecurring(10L, "Energy Bill"), buildBillRecurring(11L, "Water Bill")]
+        billRecurringRepository.findActiveBySpaceId(1L) >> [buildBillRecurring(10L, "Energy Bill"), buildBillRecurring(11L, "Water Bill")]
 
         when:
         def result = service.execute(1L)
@@ -34,7 +34,7 @@ class ListBillsServiceSpec extends Specification {
 
     def "execute returns an empty list when the space has no bill recurrings"() {
         given:
-        billRecurringRepository.findBySpaceId(1L) >> []
+        billRecurringRepository.findActiveBySpaceId(1L) >> []
 
         when:
         def result = service.execute(1L)

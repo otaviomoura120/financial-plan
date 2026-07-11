@@ -1,7 +1,10 @@
 package com.devhouse.financial_plan.application.transaction
 
+import com.devhouse.financial_plan.application.billinstance.UndoBillInstancePaymentService
+import com.devhouse.financial_plan.application.creditcardinvoice.UndoCreditCardInvoicePaymentService
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
+import com.devhouse.financial_plan.domain.CreditCardInvoicePayment
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
@@ -9,6 +12,7 @@ import com.devhouse.financial_plan.domain.enums.TransactionSourceType
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository
+import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository
 import com.devhouse.financial_plan.domain.repository.TransactionRepository
 import spock.lang.Specification
 
@@ -20,8 +24,12 @@ class DeleteTransactionServiceSpec extends Specification {
     TransactionRepository transactionRepository = Mock()
     BankAccountRepository bankAccountRepository = Mock()
     TransactionBalanceEffectService balanceEffectService = new TransactionBalanceEffectService(bankAccountRepository)
+    UndoBillInstancePaymentService undoBillInstancePaymentService = Mock()
+    UndoCreditCardInvoicePaymentService undoCreditCardInvoicePaymentService = Mock()
+    CreditCardInvoicePaymentRepository creditCardInvoicePaymentRepository = Mock()
 
-    DeleteTransactionService service = new DeleteTransactionService(transactionRepository, balanceEffectService)
+    DeleteTransactionService service = new DeleteTransactionService(transactionRepository, balanceEffectService,
+            undoBillInstancePaymentService, undoCreditCardInvoicePaymentService, creditCardInvoicePaymentRepository)
 
     private BankAccount buildAccount(Long id, BigDecimal balance) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
@@ -88,20 +96,60 @@ class DeleteTransactionServiceSpec extends Specification {
         0 * transactionRepository.delete(_)
     }
 
-    def "execute throws DomainException when transaction is linked to a source (bill/invoice payment)"() {
+    def "execute delegates to UndoBillInstancePaymentService when linked to a BILL_INSTANCE_PAYMENT"() {
         given:
         Transaction transaction = new Transaction(3L, 0, TransactionType.EXPENSE, buildUser(1L),
                 buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null,
-                TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 50L)
+                TransactionSourceType.BILL_INSTANCE_PAYMENT, 50L)
         transactionRepository.findById(3L) >> transaction
 
         when:
         service.execute(3L)
 
         then:
-        thrown(DomainException)
+        1 * undoBillInstancePaymentService.execute(50L)
+        0 * undoCreditCardInvoicePaymentService.execute(_, _)
         0 * bankAccountRepository.update(_)
         0 * transactionRepository.delete(_)
+    }
+
+    def "execute delegates to UndoCreditCardInvoicePaymentService when linked to a CREDIT_CARD_INVOICE_PAYMENT"() {
+        given:
+        Transaction transaction = new Transaction(4L, 0, TransactionType.EXPENSE, buildUser(1L),
+                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null,
+                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null,
+                TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 60L)
+        transactionRepository.findById(4L) >> transaction
+        LocalDate referenceMonth = LocalDate.of(2026, 7, 1)
+        CreditCardInvoicePayment payment = new CreditCardInvoicePayment(1L, 0, null, referenceMonth, referenceMonth,
+                new BigDecimal("100.00"), LocalDate.now(), 4L, 1L, Instant.now(), null)
+        creditCardInvoicePaymentRepository.findByPaymentTransactionIdIn([4L]) >> [payment]
+
+        when:
+        service.execute(4L)
+
+        then:
+        1 * undoCreditCardInvoicePaymentService.execute(60L, referenceMonth)
+        0 * undoBillInstancePaymentService.execute(_)
+        0 * bankAccountRepository.update(_)
+        0 * transactionRepository.delete(_)
+    }
+
+    def "execute throws DomainException when linked CREDIT_CARD_INVOICE_PAYMENT has no matching invoice payment"() {
+        given:
+        Transaction transaction = new Transaction(5L, 0, TransactionType.EXPENSE, buildUser(1L),
+                buildAccount(1L, BigDecimal.ZERO), null, buildCategoryObj(10L), null,
+                new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null,
+                TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 60L)
+        transactionRepository.findById(5L) >> transaction
+        creditCardInvoicePaymentRepository.findByPaymentTransactionIdIn([5L]) >> []
+
+        when:
+        service.execute(5L)
+
+        then:
+        thrown(DomainException)
+        0 * undoCreditCardInvoicePaymentService.execute(_, _)
     }
 }

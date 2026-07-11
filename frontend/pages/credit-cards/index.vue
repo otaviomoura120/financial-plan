@@ -27,6 +27,8 @@ const searchVisible = shallowRef(false)
 
 const isAddEditDialogVisible = shallowRef(false)
 const isDeleteDialogVisible = shallowRef(false)
+const isStatusDialogVisible = shallowRef(false)
+const isTogglingStatus = shallowRef(false)
 const isTransactionsDialogVisible = shallowRef(false)
 const isInvoicesDialogVisible = shallowRef(false)
 
@@ -112,6 +114,43 @@ async function onDeleteConfirm(confirmed: boolean) {
   }
   finally {
     isDeleting.value = false
+    selectedCreditCard.value = null
+  }
+}
+
+function openToggleStatus(creditCard: CreditCardResponse) {
+  selectedCreditCard.value = creditCard
+  isStatusDialogVisible.value = true
+}
+
+async function onToggleStatusConfirm(confirmed: boolean) {
+  if (!confirmed || !selectedCreditCard.value)
+    return
+
+  const target = selectedCreditCard.value
+  const nextActive = !target.active
+
+  isTogglingStatus.value = true
+  clearError()
+
+  try {
+    const updated = await $fetch<CreditCardResponse>(`/api/credit-cards/${target.id}/status`, {
+      method: 'PATCH',
+      body: { active: nextActive },
+    })
+
+    const idx = creditCards.value.findIndex(cc => cc.id === target.id)
+
+    if (idx >= 0)
+      creditCards.value[idx] = updated
+
+    showSuccess(nextActive ? 'Cartão de crédito ativado com sucesso.' : 'Cartão de crédito inativado com sucesso.')
+  }
+  catch (e) {
+    showError(e)
+  }
+  finally {
+    isTogglingStatus.value = false
     selectedCreditCard.value = null
   }
 }
@@ -319,12 +358,25 @@ function openInvoices(creditCard: CreditCardResponse) {
                   icon
                   variant="text"
                   size="small"
+                  :color="creditCard.active ? 'secondary' : 'success'"
+                  @click="openToggleStatus(creditCard)"
+                >
+                  <VIcon :icon="creditCard.active ? 'tabler-toggle-right' : 'tabler-toggle-left'" />
+                  <VTooltip activator="parent">
+                    {{ creditCard.active ? 'Inativar' : 'Ativar' }}
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
                   color="error"
                   @click="openDelete(creditCard)"
                 >
                   <VIcon icon="tabler-trash" />
                   <VTooltip activator="parent">
-                    Excluir
+                    Excluir definitivamente
                   </VTooltip>
                 </VBtn>
               </td>
@@ -361,10 +413,21 @@ function openInvoices(creditCard: CreditCardResponse) {
       v-model:is-dialog-visible="isDeleteDialogVisible"
       :auto-result="false"
       confirm-color="error"
-      confirmation-question="Tem certeza que deseja excluir este cartão de crédito? Esta ação não pode ser desfeita."
+      confirmation-question="Tem certeza que deseja excluir definitivamente este cartão de crédito? Esta ação não pode ser desfeita."
       cancel-title="Ação cancelada"
       cancel-msg="O cartão de crédito não foi excluído."
       @confirm="onDeleteConfirm"
+    />
+
+    <ConfirmDialog
+      v-model:is-dialog-visible="isStatusDialogVisible"
+      :auto-result="false"
+      :confirmation-question="selectedCreditCard?.active
+        ? 'Tem certeza que deseja inativar este cartão de crédito?'
+        : 'Tem certeza que deseja ativar este cartão de crédito?'"
+      cancel-title="Ação cancelada"
+      cancel-msg="O status do cartão de crédito não foi alterado."
+      @confirm="onToggleStatusConfirm"
     />
 
     <CreditCardTransactionsDialog

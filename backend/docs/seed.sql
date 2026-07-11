@@ -83,6 +83,7 @@ VALUES
 -- CreditCardController — /credit-cards
 (1, '/credit-cards',                          'Cartões de Crédito',         65, 'API', 'GET,POST',   'Conta',        NOW(), NOW()),
 (1, '/credit-cards/[0-9]+',                   'Cartões de Crédito',         66, 'API', 'PUT,DELETE', 'Conta',        NOW(), NOW()),
+(1, '/credit-cards/[0-9]+/status',            'Cartões de Crédito',         83, 'API', 'PATCH',      'Conta',        NOW(), NOW()),
 
 -- CreditCardTransactionController — /credit-card-transactions
 -- name reuses 'Cartões de Crédito' (same as CreditCardController above) so it inherits
@@ -1003,6 +1004,62 @@ CROSS JOIN endpoint_permissions ep
 WHERE r.name = 'MEMBER'
   AND ep.type = 'WIDGET'
   AND ep.ep_group = 'Dashboard'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- =============================================================================
+-- 16. INCREMENTAL — CreditCard: exclusão definitiva + PATCH .../status (Ativar/Inativar)
+--    O INSERT abaixo já está embutido na seção 1 (linha do CreditCardController) para
+--    quem roda o seed inteiro num banco vazio. Esta seção é para quem já tinha rodado o
+--    seed ANTES dessa linha existir — insere só o que falta e regrava os ALLOW de
+--    role_endpoint_permissions para OWNER/ADMIN/MEMBER (a seção 5 só roda uma vez, então
+--    endpoint_permissions criados depois dela não ganham ALLOW sozinhos). Idempotente
+--    (seguro rodar mais de uma vez) via WHERE NOT EXISTS.
+--    Nota: PATCH /users/{id}/status não precisa de entrada aqui — UserController usa
+--    @securityService.isSelf, que não consulta endpoint_permissions/role_endpoint_permissions.
+-- =============================================================================
+
+-- 16.1 — endpoint_permissions (API) que ainda não existir
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/credit-cards/[0-9]+/status' AS endpoint, 'Cartões de Crédito' AS name,
+           83 AS sequence, 'API' AS type, 'PATCH' AS permitted_methods, 'Conta' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/credit-cards/[0-9]+/status' AND type = 'API');
+
+-- 16.2 — role_endpoint_permissions: OWNER ganha ALLOW em tudo que ainda não tem (cobre a linha nova + qualquer outro endpoint futuro)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'OWNER'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 16.3 — role_endpoint_permissions: ADMIN ganha ALLOW em 'Cartões de Crédito' (cobre a linha nova, mesmo `name` já presente na allow-list original)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep
+    ON ep.name = 'Cartões de Crédito'
+WHERE r.name = 'ADMIN'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 16.4 — role_endpoint_permissions: MEMBER ganha ALLOW em 'Cartões de Crédito' (mesmo motivo)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep
+    ON ep.name = 'Cartões de Crédito'
+WHERE r.name = 'MEMBER'
   AND NOT EXISTS (
       SELECT 1 FROM role_endpoint_permissions rep
       WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id

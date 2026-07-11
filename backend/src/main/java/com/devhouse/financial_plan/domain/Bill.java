@@ -82,11 +82,8 @@ public class Bill {
         this.updatedDate = Instant.now();
     }
 
-    public void markDeleted() {
-        if (!isPending()) {
-            throw new DomainException("Cannot delete a bill that is already paid");
-        }
-        this.deleted = true;
+    public void detachFromRecurring() {
+        this.billRecurring = null;
         this.updatedDate = Instant.now();
     }
 

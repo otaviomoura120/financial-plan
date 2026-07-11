@@ -12,4 +12,5 @@ public interface JpaCreditCardTransactionRepository extends JpaRepository<Credit
     List<CreditCardTransactionEntityJpa> findByInstallmentGroupId(String installmentGroupId);
     List<CreditCardTransactionEntityJpa> findByCreditCard_Id(Long creditCardId);
     List<CreditCardTransactionEntityJpa> findByCreditCard_IdAndReferenceMonth(Long creditCardId, LocalDate referenceMonth);
+    boolean existsByCreditCard_Id(Long creditCardId);
 }

@@ -46,11 +46,11 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', cu
 
 const billRecurrings = ref<BillResponse[]>([])
 const isLoading = shallowRef(false)
-const isDeactivating = shallowRef(false)
+const isDeleting = shallowRef(false)
 
 const isEditDialogVisible = shallowRef(false)
 const isScheduleDialogVisible = shallowRef(false)
-const isDeactivateDialogVisible = shallowRef(false)
+const isDeleteDialogVisible = shallowRef(false)
 
 const selectedBillRecurring = shallowRef<BillResponse | null>(null)
 
@@ -96,9 +96,9 @@ function openSchedule(billRecurring: BillResponse) {
   isScheduleDialogVisible.value = true
 }
 
-function openDeactivate(billRecurring: BillResponse) {
+function openDelete(billRecurring: BillResponse) {
   selectedBillRecurring.value = billRecurring
-  isDeactivateDialogVisible.value = true
+  isDeleteDialogVisible.value = true
 }
 
 function onEdited() {
@@ -115,11 +115,11 @@ function onScheduleSaved(saved: BillResponse) {
   showSuccess('Agenda atualizada com sucesso.')
 }
 
-async function onDeactivateConfirm(confirmed: boolean) {
+async function onDeleteConfirm(confirmed: boolean) {
   if (!confirmed || !selectedBillRecurring.value)
     return
 
-  isDeactivating.value = true
+  isDeleting.value = true
   clearError()
 
   try {
@@ -127,13 +127,13 @@ async function onDeactivateConfirm(confirmed: boolean) {
 
     billRecurrings.value = billRecurrings.value.filter(b => b.id !== selectedBillRecurring.value!.id)
 
-    showSuccess('Recorrência desativada com sucesso.')
+    showSuccess('Recorrência excluída com sucesso.')
   }
   catch (e) {
     showError(e)
   }
   finally {
-    isDeactivating.value = false
+    isDeleting.value = false
     selectedBillRecurring.value = null
   }
 }
@@ -265,11 +265,11 @@ function onClose() {
                     variant="text"
                     size="small"
                     color="error"
-                    @click="openDeactivate(billRecurring)"
+                    @click="openDelete(billRecurring)"
                   >
                     <VIcon icon="tabler-trash" />
                     <VTooltip activator="parent">
-                      Desativar
+                      Excluir definitivamente
                     </VTooltip>
                   </VBtn>
                 </td>
@@ -313,13 +313,13 @@ function onClose() {
     />
 
     <ConfirmDialog
-      v-model:is-dialog-visible="isDeactivateDialogVisible"
+      v-model:is-dialog-visible="isDeleteDialogVisible"
       :auto-result="false"
       confirm-color="error"
-      confirmation-question="Tem certeza que deseja desativar esta recorrência? Ela para de gerar novas contas, mas as já lançadas continuam disponíveis."
+      confirmation-question="Tem certeza que deseja excluir definitivamente esta recorrência? Esta ação não pode ser desfeita. Ela para de gerar novas contas; as já lançadas continuam disponíveis, mas deixam de ficar vinculadas a ela."
       cancel-title="Ação cancelada"
-      cancel-msg="A recorrência não foi desativada."
-      @confirm="onDeactivateConfirm"
+      cancel-msg="A recorrência não foi excluída."
+      @confirm="onDeleteConfirm"
     />
   </VDialog>
 </template>

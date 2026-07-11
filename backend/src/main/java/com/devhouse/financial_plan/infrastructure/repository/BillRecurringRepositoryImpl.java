@@ -67,6 +67,13 @@ public class BillRecurringRepositoryImpl implements BillRecurringRepository {
     }
 
     @Override
+    public List<BillRecurring> findActiveBySpaceId(Long spaceId) {
+        return jpaBillRecurringRepository.findBySpaceIdAndActiveTrue(spaceId).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public void delete(Long id) {
         jpaBillRecurringRepository.deleteById(id);
     }

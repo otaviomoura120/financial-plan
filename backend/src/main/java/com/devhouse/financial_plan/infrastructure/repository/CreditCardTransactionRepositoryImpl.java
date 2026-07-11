@@ -107,6 +107,11 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     }
 
     @Override
+    public boolean existsByCreditCardId(Long creditCardId) {
+        return jpaCreditCardTransactionRepository.existsByCreditCard_Id(creditCardId);
+    }
+
+    @Override
     public void delete(Long id) {
         jpaCreditCardTransactionRepository.deleteById(id);
     }

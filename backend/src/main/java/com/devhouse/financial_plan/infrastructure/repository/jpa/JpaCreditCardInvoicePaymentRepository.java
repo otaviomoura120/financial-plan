@@ -10,4 +10,5 @@ public interface JpaCreditCardInvoicePaymentRepository extends JpaRepository<Cre
 
     Optional<CreditCardInvoicePaymentEntityJpa> findByCreditCard_IdAndReferenceMonth(Long creditCardId, LocalDate referenceMonth);
     List<CreditCardInvoicePaymentEntityJpa> findByPaymentTransactionIdIn(List<Long> transactionIds);
+    boolean existsByCreditCard_Id(Long creditCardId);
 }

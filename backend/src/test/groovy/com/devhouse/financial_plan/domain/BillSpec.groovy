@@ -153,27 +153,15 @@ class BillSpec extends Specification {
         thrown(DomainException)
     }
 
-    def "markDeleted sets deleted to true when pending"() {
+    def "detachFromRecurring clears the billRecurring reference"() {
         given:
         Bill bill = buildInstance(BillInstanceStatus.PENDING)
 
         when:
-        bill.markDeleted()
+        bill.detachFromRecurring()
 
         then:
-        bill.isDeleted()
-    }
-
-    def "markDeleted throws DomainException when already paid"() {
-        given:
-        Bill bill = buildInstance(BillInstanceStatus.PAID)
-
-        when:
-        bill.markDeleted()
-
-        then:
-        thrown(DomainException)
-        !bill.isDeleted()
+        bill.getBillRecurring() == null
     }
 
     def "markAsPaid sets status to PAID and records the payment details when pending"() {

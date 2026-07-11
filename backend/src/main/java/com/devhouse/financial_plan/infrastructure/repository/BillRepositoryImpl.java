@@ -96,6 +96,11 @@ public class BillRepositoryImpl implements BillRepository {
                 .toList();
     }
 
+    @Override
+    public void delete(Long id) {
+        jpaBillRepository.deleteById(id);
+    }
+
     private Specification<BillEntityJpa> buildSpecification(Long spaceId, LocalDate from, LocalDate to, Long categoryId, Long subCategoryId) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();

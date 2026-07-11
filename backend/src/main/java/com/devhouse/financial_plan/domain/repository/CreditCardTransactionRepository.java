@@ -13,5 +13,6 @@ public interface CreditCardTransactionRepository {
     List<CreditCardTransaction> findByInstallmentGroupId(String installmentGroupId);
     List<CreditCardTransaction> findByCreditCardId(Long creditCardId);
     List<CreditCardTransaction> findByCreditCardIdAndReferenceMonth(Long creditCardId, LocalDate referenceMonth);
+    boolean existsByCreditCardId(Long creditCardId);
     void delete(Long id);
 }

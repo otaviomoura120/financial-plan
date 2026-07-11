@@ -10,5 +10,6 @@ public interface CreditCardInvoicePaymentRepository {
     CreditCardInvoicePayment findById(Long id);
     CreditCardInvoicePayment findByCreditCardIdAndReferenceMonth(Long creditCardId, LocalDate referenceMonth);
     List<CreditCardInvoicePayment> findByPaymentTransactionIdIn(List<Long> transactionIds);
+    boolean existsByCreditCardId(Long creditCardId);
     void deleteById(Long id);
 }

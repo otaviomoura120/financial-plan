@@ -60,6 +60,11 @@ public class CreditCardInvoicePaymentRepositoryImpl implements CreditCardInvoice
     }
 
     @Override
+    public boolean existsByCreditCardId(Long creditCardId) {
+        return jpaCreditCardInvoicePaymentRepository.existsByCreditCard_Id(creditCardId);
+    }
+
+    @Override
     public void deleteById(Long id) {
         jpaCreditCardInvoicePaymentRepository.deleteById(id);
     }

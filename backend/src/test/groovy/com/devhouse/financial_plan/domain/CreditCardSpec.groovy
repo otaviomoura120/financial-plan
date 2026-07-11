@@ -119,4 +119,15 @@ class CreditCardSpec extends Specification {
         then:
         !creditCard.isActive()
     }
+
+    def "activate sets active to true"() {
+        given:
+        CreditCard creditCard = new CreditCard(10L, 0, buildSpace(), null, "Nubank", new BigDecimal("5000.00"), 10, 17, false, Instant.now(), null)
+
+        when:
+        creditCard.activate()
+
+        then:
+        creditCard.isActive()
+    }
 }
