@@ -913,3 +913,97 @@ UPDATE group_menu_children
 SET group_menu_id = (SELECT id FROM group_menus WHERE name = 'Transações'), updated_at = NOW()
 WHERE endpoint = '/bills'
   AND group_menu_id <> (SELECT id FROM group_menus WHERE name = 'Transações');
+
+-- =============================================================================
+-- 15. INCREMENTAL — Permissões por widget do dashboard (RBAC na home)
+--    Novo EndpointPermissionType.WIDGET. Cada quadro do dashboard (os 4 tiles do topo,
+--    agrupados como 'Totais Sumarizados', + os 4 cards de detalhe) ganha sua própria
+--    EndpointPermission tipo WIDGET, grupo 'Dashboard'. Diferente de API/FRONT_PAGE, o
+--    campo `endpoint` aqui NÃO é regex — é uma chave de string simples que precisa bater
+--    1:1 com frontend/utils/dashboardWidgets.ts. Sem permitted_methods (não se aplica).
+--    O ALLOW automático para o OWNER de um space NOVO já é feito em código
+--    (CreateSpaceService já é genérico sobre o tipo, cf. plano) — os INSERTs de
+--    role_endpoint_permissions abaixo são só para manter o banco seedado (que já tem
+--    OWNER/ADMIN/MEMBER de seções anteriores) consistente com o resto do seed.
+--    Idempotente via WHERE NOT EXISTS.
+-- =============================================================================
+
+-- 15.1 — endpoint_permissions (WIDGET) que ainda não existirem
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, 'dashboard:summary-tiles' AS endpoint, 'Totais Sumarizados' AS name,
+           1 AS sequence, 'WIDGET' AS type, NULL AS permitted_methods, 'Dashboard' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = 'dashboard:summary-tiles' AND type = 'WIDGET');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, 'dashboard:due-this-week' AS endpoint, 'Contas a Pagar Vencendo' AS name,
+           2 AS sequence, 'WIDGET' AS type, NULL AS permitted_methods, 'Dashboard' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = 'dashboard:due-this-week' AND type = 'WIDGET');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, 'dashboard:account-balances' AS endpoint, 'Saldo Atual das Contas' AS name,
+           3 AS sequence, 'WIDGET' AS type, NULL AS permitted_methods, 'Dashboard' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = 'dashboard:account-balances' AND type = 'WIDGET');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, 'dashboard:category-spending' AS endpoint, 'Gastos por Categoria e Subcategoria' AS name,
+           4 AS sequence, 'WIDGET' AS type, NULL AS permitted_methods, 'Dashboard' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = 'dashboard:category-spending' AND type = 'WIDGET');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, 'dashboard:credit-card-spending' AS endpoint, 'Total de Gasto em Cada Cartão' AS name,
+           5 AS sequence, 'WIDGET' AS type, NULL AS permitted_methods, 'Dashboard' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = 'dashboard:credit-card-spending' AND type = 'WIDGET');
+
+-- 15.2 — role_endpoint_permissions: OWNER ganha ALLOW em todos os widgets do Dashboard
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'OWNER'
+  AND ep.type = 'WIDGET'
+  AND ep.ep_group = 'Dashboard'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 15.3 — role_endpoint_permissions: ADMIN ganha ALLOW em todos os widgets do Dashboard
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'ADMIN'
+  AND ep.type = 'WIDGET'
+  AND ep.ep_group = 'Dashboard'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 15.4 — role_endpoint_permissions: MEMBER ganha ALLOW em todos os widgets do Dashboard
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'MEMBER'
+  AND ep.type = 'WIDGET'
+  AND ep.ep_group = 'Dashboard'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );

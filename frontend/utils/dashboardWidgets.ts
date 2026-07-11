@@ -1,0 +1,5 @@
+export const DASHBOARD_WIDGET_SUMMARY_TILES = 'dashboard:summary-tiles'
+export const DASHBOARD_WIDGET_DUE_THIS_WEEK = 'dashboard:due-this-week'
+export const DASHBOARD_WIDGET_ACCOUNT_BALANCES = 'dashboard:account-balances'
+export const DASHBOARD_WIDGET_CATEGORY_SPENDING = 'dashboard:category-spending'
+export const DASHBOARD_WIDGET_CREDIT_CARD_SPENDING = 'dashboard:credit-card-spending'

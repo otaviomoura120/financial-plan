@@ -70,10 +70,10 @@ For `INCOME`/`EXPENSE`, `categoryId` is required and `destinationBankAccountId` 
 `EndpointPermission` defines one access rule for an HTTP endpoint or a frontend page:
 - `endpoint`: Java regex matched against the request URI
 - `permittedMethods`: comma-separated HTTP methods (`GET,POST,PUT`)
-- `type`: `API` (backend route) or `FRONT_PAGE` (frontend route)
+- `type`: `API` (backend route), `FRONT_PAGE` (frontend route) or `WIDGET` (a UI section gated by key, not by URL — see `dashboard-widgets.md`)
 - `group`: optional grouping; `INTERNAL_MANAGEMENT` restricts to master admins
 
-`RoleEndpointPermission` is a join entity linking a `Role` to an `EndpointPermission` with an `ALLOW` or `DENY` decision. On every protected request, `SecurityService` resolves the user's role in the **active space** (identified by the `X-Space-Id` request header) and checks whether that role has an `ALLOW` entry for the matching rule.
+`RoleEndpointPermission` is a join entity linking a `Role` to an `EndpointPermission` with an `ALLOW` or `DENY` decision. On every protected request, `SecurityService` resolves the user's role in the **active space** (identified by the `X-Space-Id` request header) and checks whether that role has an `ALLOW` entry for the matching rule. For `WIDGET` rows there is no HTTP request to intercept — a dedicated endpoint (`GET /dashboard-widgets`) exposes the resolved ALLOW set directly, see `dashboard-widgets.md`.
 
 ### GroupMenu / GroupMenuChildren
 Hierarchical UI navigation menu. The menu structure is served to the frontend filtered by the authenticated user's permissions, so each user sees only the sections they can access.
@@ -378,6 +378,11 @@ Full cycle explained in `backend/docs/recurring-bills.md`. `/bills` itself is `B
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/` | Return role-filtered navigation menu for authenticated user |
+
+### Dashboard Widgets `/dashboard-widgets`
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/?spaceId=` | Return the widget keys (home page RBAC) the authenticated user's role in that space is `ALLOW`ed to see — see `dashboard-widgets.md` |
 
 ---
 

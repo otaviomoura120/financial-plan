@@ -5,7 +5,7 @@ interface RoleEndpointPermissionResponse {
   endpointPermissionId: number
   name: string
   endpoint: string
-  type: 'API' | 'FRONT_PAGE'
+  type: 'API' | 'FRONT_PAGE' | 'WIDGET'
   group: string
   permission: 'ALLOW' | 'DENY'
 }
@@ -102,9 +102,16 @@ function onClose() {
   emit('update:isDialogVisible', false)
 }
 
-const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
+const typeLabel: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
   API: 'API',
   FRONT_PAGE: 'Página',
+  WIDGET: 'Widget',
+}
+
+const typeColor: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
+  API: 'primary',
+  FRONT_PAGE: 'secondary',
+  WIDGET: 'success',
 }
 </script>
 
@@ -196,7 +203,7 @@ const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
                 </td>
                 <td class="py-3">
                   <VChip
-                    :color="perm.type === 'API' ? 'primary' : 'secondary'"
+                    :color="typeColor[perm.type]"
                     size="x-small"
                     variant="tonal"
                     label
