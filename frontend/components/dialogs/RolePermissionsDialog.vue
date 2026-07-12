@@ -156,9 +156,8 @@ const typeColor: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
           class="permissions-table"
         >
           <colgroup>
-            <col style="inline-size: 28%">
-            <col style="inline-size: 80px">
             <col>
+            <col style="inline-size: 100px">
             <col style="inline-size: 150px">
           </colgroup>
 
@@ -169,9 +168,6 @@ const typeColor: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
               </th>
               <th class="text-left">
                 Tipo
-              </th>
-              <th class="text-left">
-                Endpoint
               </th>
               <th class="text-center">
                 Acesso
@@ -186,7 +182,7 @@ const typeColor: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
             >
               <tr class="group-header-row">
                 <td
-                  colspan="4"
+                  colspan="3"
                   class="ps-4"
                 >
                   <span class="group-label text-primary">{{ group }}</span>
@@ -210,9 +206,6 @@ const typeColor: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
                   >
                     {{ typeLabel[perm.type] }}
                   </VChip>
-                </td>
-                <td class="py-3">
-                  <code class="text-caption text-disabled">{{ perm.endpoint }}</code>
                 </td>
                 <td class="py-3">
                   <div class="d-flex align-center justify-center gap-2">
