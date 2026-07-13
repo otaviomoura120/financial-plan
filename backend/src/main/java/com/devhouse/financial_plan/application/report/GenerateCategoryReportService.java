@@ -103,7 +103,7 @@ public class GenerateCategoryReportService {
                 CategoryReportItemSource.TRANSACTION, transaction.getType(), transaction.getTransactionDate(),
                 transaction.getDescription(), transaction.getAmount(), transaction.getUser().getId(),
                 transaction.getBankAccount().getId(),
-                null, null, null, null, null);
+                null, null, null, null, null, null);
         return new CategoryReportEntry(transaction.getCategory(), transaction.getSubCategory(), item);
     }
 
@@ -117,7 +117,7 @@ public class GenerateCategoryReportService {
                 bankAccount != null ? bankAccount.getId() : null,
                 creditCard != null ? creditCard.getId() : null,
                 creditCard != null ? creditCard.getName() : null,
-                purchase.getInstallmentNumber(), purchase.getTotalInstallments(), totalAmount);
+                purchase.getInstallmentNumber(), purchase.getTotalInstallments(), totalAmount, purchase.getReferenceMonth());
         return new CategoryReportEntry(purchase.getCategory(), purchase.getSubCategory(), item);
     }
 

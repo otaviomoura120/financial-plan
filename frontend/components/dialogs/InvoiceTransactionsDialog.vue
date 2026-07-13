@@ -187,7 +187,7 @@ function onClose() {
           <VTable>
             <thead style="white-space: nowrap">
               <tr>
-                <th>Data</th>
+                <th>Data da Compra</th>
                 <th style="min-width: 200px">
                   Categoria
                 </th>

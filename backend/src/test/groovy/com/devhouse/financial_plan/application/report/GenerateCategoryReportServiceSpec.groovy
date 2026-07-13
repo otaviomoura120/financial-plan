@@ -134,7 +134,21 @@ class GenerateCategoryReportServiceSpec extends Specification {
             creditCardName() == "Nubank"
             installmentNumber() == 1
             totalInstallments() == 3
+            date() == LocalDate.of(2026, 7, 15)
+            referenceMonth() == LocalDate.of(2026, 8, 1)
         }
+    }
+
+    def "execute leaves referenceMonth null for regular transaction items"() {
+        given:
+        transactionRepository.findByFilter(*_) >> [transaction(id: 100L)]
+        creditCardTransactionRepository.findByFilter(*_) >> []
+
+        when:
+        CategoryReportResponse response = service.execute(filter())
+
+        then:
+        response.groups()[0].subGroups()[0].items()[0].referenceMonth() == null
     }
 
     def "execute computes totalAmount by summing the installment group, once per group"() {

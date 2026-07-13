@@ -71,18 +71,6 @@ function toLocalDateString(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-function firstDayOfMonth() {
-  const now = new Date()
-
-  return toLocalDateString(new Date(now.getFullYear(), now.getMonth(), 1))
-}
-
-function lastDayOfMonth() {
-  const now = new Date()
-
-  return toLocalDateString(new Date(now.getFullYear(), now.getMonth() + 1, 0))
-}
-
 function currentOpenReferenceMonth(closingDay: number) {
   const now = new Date()
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
@@ -99,8 +87,7 @@ const creditCard = ref<CreditCardResponse | null>(null)
 const transactions = ref<CreditCardTransactionResponse[]>([])
 const categories = ref<CategoryResponse[]>([])
 
-const from = shallowRef(firstDayOfMonth())
-const to = shallowRef(lastDayOfMonth())
+const selectedMonth = shallowRef(currentMonthValue())
 
 const page = shallowRef(1)
 const itemsPerPage = shallowRef(10)
@@ -164,6 +151,11 @@ watch(
   },
 )
 
+watch(selectedMonth, () => {
+  if (props.isDialogVisible)
+    fetchTransactions()
+})
+
 async function fetchAll() {
   await Promise.all([fetchCreditCard(), fetchCategories(), fetchTransactions()])
 }
@@ -200,8 +192,7 @@ async function fetchTransactions() {
       query: {
         spaceId: spaceStore.activeSpace.id,
         creditCardId: props.creditCardId,
-        from: from.value,
-        to: to.value,
+        referenceMonth: selectedMonth.value,
       },
     })
     page.value = 1
@@ -292,7 +283,7 @@ function onTransactionSaved(saved: CreditCardTransactionResponse) {
 
   if (idx >= 0)
     transactions.value[idx] = saved
-  else if (saved.purchaseDate >= from.value && saved.purchaseDate <= to.value)
+  else if (saved.referenceMonth === selectedMonth.value)
     transactions.value = [saved, ...transactions.value]
 }
 
@@ -373,31 +364,14 @@ function onClose() {
                   class="d-flex flex-wrap align-center gap-2"
                   style="flex-grow: 1; justify-content: flex-end;"
                 >
-                  <VTextField
-                    v-model="from"
-                    type="date"
-                    label="De"
-                    density="compact"
-                    hide-details
-                    style="max-inline-size: 170px"
+                  <MonthYearSelect
+                    v-model="selectedMonth"
+                    label="Mês da Fatura"
                   />
-                  <VTextField
-                    v-model="to"
-                    type="date"
-                    label="Até"
-                    density="compact"
-                    hide-details
-                    style="max-inline-size: 170px"
-                  />
-                  <VBtn
-                    variant="tonal"
-                    @click="fetchTransactions"
-                  >
-                    Filtrar
-                  </VBtn>
 
                   <VBtn
                     prepend-icon="tabler-plus"
+                    style="align-self: flex-end"
                     @click="openCreate"
                   >
                     <span class="d-sm-inline">Adicionar</span>
@@ -442,12 +416,12 @@ function onClose() {
                   <VTable>
                     <thead style="white-space: nowrap">
                       <tr>
-                        <th>Data</th>
+                        <th>Data da Compra</th>
                         <th style="min-width: 200px">
                           Categoria
                         </th>
                         <th>Descrição</th>
-                        <th>Fatura</th>
+                        <th>Mês da Fatura</th>
                         <th>Parcela</th>
                         <th class="text-right">
                           Valor

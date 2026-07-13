@@ -18,8 +18,11 @@ report entity.
 `ReportFilterRequest`: `{ spaceId, from, to, userId, bankAccountId, categoryId, subCategoryId,
 type }` — only `spaceId` is enforced server-side (`GenerateReportService`
 throws if missing); everything else, including `from`/`to`, is optional as far as the backend
-is concerned. `from`/`to` being "obrigatórios" is a **frontend-only** UX decision (per the
-plan) — enforced client-side via `VForm` validation before the request is sent.
+is concerned. The frontend always sends a full calendar month: `from`/`to` are derived from the
+`MonthYearSelect` month picker (`from` = 1st day, `to` = last day of the picked month, via the
+`useMonthBoundaries` composable) — there's no `VForm` rule enforcing them non-empty anymore
+because the picker can never be empty (it always holds a valid month, defaulting to the current
+one), unlike the free "De"/"Até" date fields it replaced.
 
 `ReportResponse`: `{ transactions: TransactionResponse[], totalIncome, totalExpense, balance,
 currentBalance, pendingCreditCardInvoices, pendingCreditCardTotal, pendingBillInstances,
@@ -57,12 +60,12 @@ Filter dropdowns reuse the same list endpoints as F2-F4 (`/api/bank-accounts`,
 - On mount / `spaceStore.activeSpace` change: fetches all filter dropdown data, then
   immediately generates a report for the default period (current month) so the page isn't
   empty on first load.
-- Filter form (`Filtros` card): `De`/`Até` (required dates, defaulting to the current month),
+- Filter form (`Filtros` card): `MonthYearSelect` (month + year, defaults to the current month),
   `Tipo` (Todos/Receita/Despesa/Transferência), `Conta`, `Categoria` → `Subcategoria`
-  (cascading, same pattern as F4) — all optional except the date range. The `userId` field on
+  (cascading, same pattern as F4) — all optional except the month. The `userId` field on
   `ReportFilterRequest` still exists on the backend but is no longer exposed in the UI (the
   "Membro" filter was removed as unused).
-  "Gerar Relatório" validates the form (blocks on missing `from`/`to`) and re-POSTs.
+  "Gerar Relatório" re-POSTs with `from`/`to` computed from the currently selected month.
 - Summary cards use the template's existing `CardStatisticsVerticalSimple` component (reused,
   not reinvented) for **Total de Receitas** (green), **Total de Despesas** (red), and **Saldo do
   Período** (neutral/`primary` if non-negative, `error` only if negative) — deliberately calm,
@@ -82,7 +85,7 @@ Filter dropdowns reuse the same list endpoints as F2-F4 (`/api/bank-accounts`,
 
 No frontend test suite exists in this project — verified manually: `pnpm dev`, open
 `/reports`, confirm the default (current month) report loads with correct totals, change the
-period and a couple of filters and regenerate, confirm a `TRANSFER` transaction shows in the
+month in `MonthYearSelect` and a couple of filters and regenerate, confirm a `TRANSFER` transaction shows in the
 table but doesn't affect `totalIncome`/`totalExpense`/`balance`. Filter a period covering future
 pending invoices/bill instances and confirm `projectedBalance` matches
 `currentBalance - pendingCreditCardTotal - pendingBillTotal`, and that both pending lists list

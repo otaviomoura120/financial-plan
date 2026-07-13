@@ -18,5 +18,6 @@ public record CategoryReportItemResponse(
         String creditCardName,
         Integer installmentNumber,
         Integer totalInstallments,
-        BigDecimal totalAmount
+        BigDecimal totalAmount,
+        LocalDate referenceMonth
 ) {}

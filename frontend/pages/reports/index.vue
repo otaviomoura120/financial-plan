@@ -97,31 +97,10 @@ interface CategoryResponse {
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
-function toLocalDateString(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
-function firstDayOfMonth() {
-  const now = new Date()
-
-  return toLocalDateString(new Date(now.getFullYear(), now.getMonth(), 1))
-}
-
-function lastDayOfMonth() {
-  const now = new Date()
-
-  return toLocalDateString(new Date(now.getFullYear(), now.getMonth() + 1, 0))
-}
-
 const bankAccounts = ref<BankAccountResponse[]>([])
 const categories = ref<CategoryResponse[]>([])
 
-const from = shallowRef(firstDayOfMonth())
-const to = shallowRef(lastDayOfMonth())
+const selectedMonth = shallowRef(currentMonthValue())
 const bankAccountId = shallowRef<number | null>(null)
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
@@ -132,9 +111,6 @@ const isLoading = shallowRef(false)
 const isLoadingFilters = shallowRef(false)
 
 const filterFormRef = useTemplateRef<InstanceType<typeof VForm>>('filterFormRef')
-
-const fromRules = [(v: string) => !!v || 'Data inicial é obrigatória']
-const toRules = [(v: string) => !!v || 'Data final é obrigatória']
 
 const typeItems = [
   { title: 'Todos', value: null },
@@ -302,8 +278,8 @@ async function generateReport() {
       method: 'POST',
       body: {
         spaceId: spaceStore.activeSpace.id,
-        from: from.value,
-        to: to.value,
+        from: selectedMonth.value,
+        to: lastDayOfMonthOf(selectedMonth.value),
         bankAccountId: bankAccountId.value,
         categoryId: categoryId.value,
         subCategoryId: subCategoryId.value,
@@ -373,25 +349,11 @@ function formatReferenceMonth(isoDate: string) {
           <VRow>
             <VCol
               cols="12"
-              md="3"
+              md="6"
             >
-              <AppTextField
-                v-model="from"
-                type="date"
-                label="De"
-                :rules="fromRules"
-              />
-            </VCol>
-
-            <VCol
-              cols="12"
-              md="3"
-            >
-              <AppTextField
-                v-model="to"
-                type="date"
-                label="Até"
-                :rules="toRules"
+              <MonthYearSelect
+                v-model="selectedMonth"
+                label="Mês"
               />
             </VCol>
 

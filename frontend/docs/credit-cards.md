@@ -68,13 +68,14 @@ purchase's month.
 | `pages/credit-cards/index.vue` | Card CRUD table (FCC1) — opens lançamentos/fatura per card as modals |
 | `components/dialogs/CreditCardTransactionsDialog.vue` | Lançamentos of a single card, filtered by period (FCC2) — near-fullscreen modal, replaces the old `pages/credit-cards/[id]/transactions.vue` route |
 | `components/dialogs/CreditCardInvoicesDialog.vue` | Invoice list, payment and undo-payment for a single card (FCC3) — near-fullscreen modal, replaces the old `pages/credit-cards/[id]/invoices.vue` route |
-| `components/dialogs/InvoiceTransactionsDialog.vue` | Read-only listing of every `CreditCardTransaction` belonging to one invoice (`creditCardId` + `referenceMonth`), sorted ascending by `purchaseDate` — opened from a row action inside `CreditCardInvoicesDialog` |
+| `components/dialogs/InvoiceTransactionsDialog.vue` | Read-only listing of every `CreditCardTransaction` belonging to one invoice (`creditCardId` + `referenceMonth`), sorted ascending by `purchaseDate` — opened from a row action inside `CreditCardInvoicesDialog`. Its "Data" column is labeled **"Data da Compra"** — the dialog's title already shows the invoice month, so there's no separate per-row fatura column here |
 | `components/dialogs/AddEditCreditCardDialog.vue` | Create/edit dialog for `CreditCard` |
 | `components/dialogs/AddEditCreditCardTransactionDialog.vue` | Create/edit dialog for `CreditCardTransaction`, with an installments field only shown when creating |
 | `components/dialogs/AnticipateInstallmentsDialog.vue` | Anticipates the last N installments of a group into the current open invoice |
 | `components/dialogs/PayCreditCardInvoiceDialog.vue` | Pay-invoice dialog (`bankAccountId`, `categoryId`, `subCategoryId`, `paidDate`) |
 | `components/dialogs/ConfirmDialog.vue` | Reused for delete and undo-payment confirmations (binary yes/no) |
 | `components/dialogs/DeleteInstallmentDialog.vue` | 3-option delete confirmation ("somente esta parcela" / "esta e as futuras" / cancelar) shown instead of `ConfirmDialog` when deleting a row with `totalInstallments > 1` |
+| `components/MonthYearSelect.vue` | Shared month+year picker (also used by `/reports` and `/reports/by-category`) — `v-model` is a `YYYY-MM-01` string |
 | `server/api/credit-cards/*` | Card CRUD proxy routes |
 | `server/api/credit-card-transactions/*` | Transaction CRUD + installment-group + anticipate proxy routes |
 | `server/api/credit-cards/invoices/index.get.ts`, `server/api/credit-cards/[id]/invoices/[referenceMonth]/*` | Invoice list/pay/undo-payment proxy routes |
@@ -99,20 +100,25 @@ link is used by the category report filters.
 
 ### `CreditCardTransactionsDialog` (FCC2)
 Resolves the card's name via `GET /credit-cards?spaceId=` filtered by the `creditCardId` prop.
-Period filter defaults to the current month and, since `from`/`to` now filter by `referenceMonth`,
-only shows the installment(s) whose invoice falls in the selected period. Table shows date,
-category/subcategory, description, amount (with a "Total: R$ ..." caption below it for parceled
-rows, `totalInstallments > 1`, showing `totalAmount`), and an `"N/total"` chip when the row belongs
-to an installment group, plus an "Antecipada" badge when `anticipated`. "Antecipar parcelas" is
-only shown for rows with `installmentNumber < totalInstallments` and opens
-`AnticipateInstallmentsDialog`, which loads the full group via `GET .../installment-groups/{id}`
-to compute how many future installments are eligible before calling the anticipate endpoint.
-Create/edit follow the standard dialog pattern. Delete: a single (`totalInstallments <= 1`) row
-uses the standard `ConfirmDialog`; a row that belongs to an installment group instead opens
-`DeleteInstallmentDialog`, which asks whether to delete just this installment or this one and
-every later one in the group (`DELETE .../{id}?includeFuture=true`) — the removed rows are pruned
-from the local list by `installmentGroupId` + `installmentNumber >= this row's`. A `422` from a
-paid month surfaces the real backend message in either case.
+Period filter is a single `MonthYearSelect` (defaults to the current month) bound to
+`selectedMonth`, sent as the **exact-match** `referenceMonth` query param (not `from`/`to`) —
+so it shows exactly the installment(s) whose invoice falls in the picked month, and changing the
+month refetches automatically (`watch(selectedMonth, ...)`, no "Filtrar" button). Table columns
+are **"Data da Compra"** (`purchaseDate`) and **"Mês da Fatura"** (`referenceMonth`, formatted
+`MM/YYYY`) side by side, precisely so the two can't be confused — plus description, amount (with
+a "Total: R$ ..." caption below it for parceled rows, `totalInstallments > 1`, showing
+`totalAmount`), and an `"N/total"` chip when the row belongs to an installment group, plus an
+"Antecipada" badge when `anticipated`. "Antecipar parcelas" is only shown for rows with
+`installmentNumber < totalInstallments` and opens `AnticipateInstallmentsDialog`, which loads the
+full group via `GET .../installment-groups/{id}` to compute how many future installments are
+eligible before calling the anticipate endpoint. Create/edit follow the standard dialog pattern —
+a newly created/edited row is spliced into the local list only when its `referenceMonth` matches
+`selectedMonth`. Delete: a single (`totalInstallments <= 1`) row uses the standard `ConfirmDialog`;
+a row that belongs to an installment group instead opens `DeleteInstallmentDialog`, which asks
+whether to delete just this installment or this one and every later one in the group
+(`DELETE .../{id}?includeFuture=true`) — the removed rows are pruned from the local list by
+`installmentGroupId` + `installmentNumber >= this row's`. A `422` from a paid month surfaces the
+real backend message in either case.
 
 ### `CreditCardInvoicesDialog` (FCC3)
 Lists months (open/paid) with totals. "Pagar Fatura" opens `PayCreditCardInvoiceDialog` (only for
@@ -135,4 +141,8 @@ the debit in `/bank-accounts`, try editing/deleting a transaction from an alread
 Also verify: "Ver Lançamentos"/"Ver Fatura" from `/credit-cards` open as near-fullscreen modals
 (not page navigation) on both desktop and a mobile viewport; "Ver Itens da Fatura" on an invoice
 row opens `InvoiceTransactionsDialog` stacked on top of `CreditCardInvoicesDialog` with the
-correct transactions for that `referenceMonth`, sorted by date ascending.
+correct transactions for that `referenceMonth`, sorted by date ascending. In
+"Ver Lançamentos" (`CreditCardTransactionsDialog`), change the month in `MonthYearSelect` and
+confirm the list refetches automatically (no button click needed), showing "Data da Compra" and
+"Mês da Fatura" as two distinct columns for a parceled purchase whose installments span several
+months.
