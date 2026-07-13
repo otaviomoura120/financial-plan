@@ -8,4 +8,4 @@ public record CreditCardTransactionResponse(Long id, Integer version, Long credi
                                              Long subCategoryId, BigDecimal amount, LocalDate purchaseDate, String description,
                                              LocalDate referenceMonth, String installmentGroupId, Integer installmentNumber,
                                              Integer totalInstallments, boolean anticipated, LocalDate originalReferenceMonth,
-                                             Instant createdDate) {}
+                                             Instant createdDate, BigDecimal totalAmount) {}

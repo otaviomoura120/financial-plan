@@ -13,6 +13,8 @@ import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+
 @Service
 public class UpdateCreditCardTransactionService {
 
@@ -45,7 +47,16 @@ public class UpdateCreditCardTransactionService {
         transaction.update(category, subCategory, request.amount(), request.purchaseDate(), request.description());
         transaction.validate();
         CreditCardTransaction updated = creditCardTransactionRepository.update(transaction);
-        return toResponse(updated);
+        return toResponse(updated, resolveTotalAmount(updated));
+    }
+
+    private BigDecimal resolveTotalAmount(CreditCardTransaction transaction) {
+        if (transaction.getTotalInstallments() == null || transaction.getTotalInstallments() <= 1) {
+            return transaction.getAmount();
+        }
+        return creditCardTransactionRepository.findByInstallmentGroupId(transaction.getInstallmentGroupId()).stream()
+                .map(CreditCardTransaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private void rejectIfMonthAlreadyPaid(CreditCardTransaction transaction) {
@@ -75,11 +86,11 @@ public class UpdateCreditCardTransactionService {
         return subCategory;
     }
 
-    private CreditCardTransactionResponse toResponse(CreditCardTransaction t) {
+    private CreditCardTransactionResponse toResponse(CreditCardTransaction t, BigDecimal totalAmount) {
         return new CreditCardTransactionResponse(t.getId(), t.getVersion(), t.getCreditCard().getId(), t.getUser().getId(),
                 t.getCategory() != null ? t.getCategory().getId() : null,
                 t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(), t.getPurchaseDate(),
                 t.getDescription(), t.getReferenceMonth(), t.getInstallmentGroupId(), t.getInstallmentNumber(),
-                t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate());
+                t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate(), totalAmount);
     }
 }

@@ -80,6 +80,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
                  transaction(id: 101L, amount: new BigDecimal("30.00"), subCategory: restaurants)]
         creditCardTransactionRepository.findByFilter(1L, null, null, null, null, _, _, null) >>
                 [purchase(id: 200L, amount: new BigDecimal("80.00"))]
+        creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
         CategoryReportResponse response = service.execute(filter())
@@ -114,11 +115,12 @@ class GenerateCategoryReportServiceSpec extends Specification {
         response.groups()[0].subGroups()[0].items()[0].id() == 100L
     }
 
-    def "execute includes credit card purchases by purchase date with the card name"() {
+    def "execute includes credit card purchases by invoice month with the card name"() {
         given:
         transactionRepository.findByFilter(*_) >> []
         creditCardTransactionRepository.findByFilter(1L, null, null, null, null, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31), null) >>
                 [purchase(id: 200L)]
+        creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
         CategoryReportResponse response = service.execute(filter())
@@ -135,9 +137,30 @@ class GenerateCategoryReportServiceSpec extends Specification {
         }
     }
 
+    def "execute computes totalAmount by summing the installment group, once per group"() {
+        given:
+        transactionRepository.findByFilter(*_) >> []
+        creditCardTransactionRepository.findByFilter(*_) >>
+                [purchase(id: 200L, amount: new BigDecimal("33.33")),
+                 purchase(id: 201L, amount: new BigDecimal("33.33"), category: food, subCategory: restaurants)]
+
+        when:
+        CategoryReportResponse response = service.execute(filter())
+
+        then:
+        1 * creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> [
+                purchase(id: 200L, amount: new BigDecimal("33.33")),
+                purchase(id: 201L, amount: new BigDecimal("33.33")),
+                purchase(id: 202L, amount: new BigDecimal("33.34"))]
+        response.groups()[0].subGroups()[0].items().size() == 2
+        response.groups()[0].subGroups()[0].items()[0].totalAmount() == new BigDecimal("100.00")
+        response.groups()[0].subGroups()[0].items()[1].totalAmount() == new BigDecimal("100.00")
+    }
+
     def "execute returns only purchases of the given credit card when creditCardId is filtered"() {
         given:
         creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, _, _, null) >> [purchase()]
+        creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
         CategoryReportResponse response = service.execute(filter(creditCardId: 10L))
@@ -168,6 +191,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         transactionRepository.findByFilter(*_) >> []
         creditCardTransactionRepository.findByFilter(*_) >>
                 [purchase(id: 200L, creditCard: linkedCard), purchase(id: 201L, creditCard: unlinkedCard)]
+        creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
         CategoryReportResponse response = service.execute(filter(bankAccountId: 5L))
@@ -195,6 +219,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
                 [transaction(id: 100L, type: TransactionType.INCOME, category: salary, amount: new BigDecimal("1000.00")),
                  transaction(id: 101L, category: food, amount: new BigDecimal("150.00"))]
         creditCardTransactionRepository.findByFilter(*_) >> [purchase(id: 200L, amount: new BigDecimal("50.00"))]
+        creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
         CategoryReportResponse response = service.execute(filter())

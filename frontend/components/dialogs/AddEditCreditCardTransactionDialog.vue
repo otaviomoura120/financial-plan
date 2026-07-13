@@ -18,6 +18,7 @@ interface CreditCardTransactionResponse {
   anticipated: boolean
   originalReferenceMonth: string | null
   createdDate: string
+  totalAmount: number
 }
 
 interface SubCategoryOption {

@@ -64,6 +64,36 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         response.purchaseDate() == LocalDate.of(2026, 3, 10)
         response.description() == "new desc"
         response.referenceMonth() == LocalDate.of(2026, 3, 1)
+        response.totalAmount() == new BigDecimal("150.00")
+    }
+
+    def "execute computes totalAmount by summing the group when the installment belongs to a parceled purchase"() {
+        given:
+        Category category = new Category(20L, 0, null, "Food", true, Instant.now(), null)
+        CreditCardTransaction existing = new CreditCardTransaction(2L, 0, buildCreditCard(), buildUser(), category, null,
+                new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 4, 1),
+                "group-2", 2, 3, false, null, Instant.now(), null)
+        creditCardTransactionRepository.findById(2L) >> existing
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 4, 1)) >> null
+        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", true, Instant.now(), null)
+        creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
+        creditCardTransactionRepository.findByInstallmentGroupId("group-2") >> [
+                new CreditCardTransaction(1L, 0, buildCreditCard(), buildUser(), category, null,
+                        new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
+                        "group-2", 1, 3, false, null, Instant.now(), null),
+                existing,
+                new CreditCardTransaction(3L, 0, buildCreditCard(), buildUser(), category, null,
+                        new BigDecimal("33.34"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 5, 1),
+                        "group-2", 3, 3, false, null, Instant.now(), null),
+        ]
+        UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
+                new BigDecimal("33.33"), LocalDate.of(2026, 3, 10), "new desc")
+
+        when:
+        CreditCardTransactionResponse response = service.execute(2L, request)
+
+        then:
+        response.totalAmount() == new BigDecimal("100.00")
     }
 
     def "execute throws DomainException when transaction does not exist"() {

@@ -41,6 +41,7 @@ class ListInstallmentGroupServiceSpec extends Specification {
         responses[0].installmentNumber() == 1
         responses[1].installmentNumber() == 2
         responses[2].installmentNumber() == 3
+        responses.every { it.totalAmount() == new BigDecimal("99.99") }
     }
 
     def "execute returns an empty list when the group does not exist"() {

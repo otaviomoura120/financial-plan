@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,11 +72,22 @@ public class GenerateCategoryReportService {
         if (!typeAllows) {
             return List.of();
         }
+        Map<String, BigDecimal> totalAmountByGroup = new HashMap<>();
         return creditCardTransactionRepository.findByFilter(filter.spaceId(), filter.creditCardId(), filter.categoryId(),
                         filter.subCategoryId(), filter.userId(), filter.from(), filter.to(), null).stream()
                 .filter(purchase -> matchesBankAccount(purchase, filter.bankAccountId()))
-                .map(this::toEntry)
+                .map(purchase -> toEntry(purchase, resolveTotalAmount(purchase, totalAmountByGroup)))
                 .toList();
+    }
+
+    private BigDecimal resolveTotalAmount(CreditCardTransaction transaction, Map<String, BigDecimal> cache) {
+        if (transaction.getTotalInstallments() == null || transaction.getTotalInstallments() <= 1) {
+            return transaction.getAmount();
+        }
+        return cache.computeIfAbsent(transaction.getInstallmentGroupId(), groupId ->
+                creditCardTransactionRepository.findByInstallmentGroupId(groupId).stream()
+                        .map(CreditCardTransaction::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
     }
 
     private boolean matchesBankAccount(CreditCardTransaction purchase, Long bankAccountId) {
@@ -91,11 +103,11 @@ public class GenerateCategoryReportService {
                 CategoryReportItemSource.TRANSACTION, transaction.getType(), transaction.getTransactionDate(),
                 transaction.getDescription(), transaction.getAmount(), transaction.getUser().getId(),
                 transaction.getBankAccount().getId(),
-                null, null, null, null);
+                null, null, null, null, null);
         return new CategoryReportEntry(transaction.getCategory(), transaction.getSubCategory(), item);
     }
 
-    private CategoryReportEntry toEntry(CreditCardTransaction purchase) {
+    private CategoryReportEntry toEntry(CreditCardTransaction purchase, BigDecimal totalAmount) {
         CreditCard creditCard = purchase.getCreditCard();
         BankAccount bankAccount = creditCard != null ? creditCard.getBankAccount() : null;
         CategoryReportItemResponse item = new CategoryReportItemResponse(purchase.getId(),
@@ -105,7 +117,7 @@ public class GenerateCategoryReportService {
                 bankAccount != null ? bankAccount.getId() : null,
                 creditCard != null ? creditCard.getId() : null,
                 creditCard != null ? creditCard.getName() : null,
-                purchase.getInstallmentNumber(), purchase.getTotalInstallments());
+                purchase.getInstallmentNumber(), purchase.getTotalInstallments(), totalAmount);
         return new CategoryReportEntry(purchase.getCategory(), purchase.getSubCategory(), item);
     }
 

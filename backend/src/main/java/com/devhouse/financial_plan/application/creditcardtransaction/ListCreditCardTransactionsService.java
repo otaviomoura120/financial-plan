@@ -5,8 +5,11 @@ import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ListCreditCardTransactionsService {
@@ -19,16 +22,27 @@ public class ListCreditCardTransactionsService {
 
     public List<CreditCardTransactionResponse> execute(Long spaceId, Long creditCardId, Long categoryId,
                                                          Long subCategoryId, LocalDate from, LocalDate to, LocalDate referenceMonth) {
+        Map<String, BigDecimal> totalAmountByGroup = new HashMap<>();
         return creditCardTransactionRepository.findByFilter(spaceId, creditCardId, categoryId, subCategoryId, null, from, to, referenceMonth).stream()
-                .map(this::toResponse)
+                .map(t -> toResponse(t, resolveTotalAmount(t, totalAmountByGroup)))
                 .toList();
     }
 
-    private CreditCardTransactionResponse toResponse(CreditCardTransaction t) {
+    private BigDecimal resolveTotalAmount(CreditCardTransaction transaction, Map<String, BigDecimal> cache) {
+        if (transaction.getTotalInstallments() == null || transaction.getTotalInstallments() <= 1) {
+            return transaction.getAmount();
+        }
+        return cache.computeIfAbsent(transaction.getInstallmentGroupId(), groupId ->
+                creditCardTransactionRepository.findByInstallmentGroupId(groupId).stream()
+                        .map(CreditCardTransaction::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add));
+    }
+
+    private CreditCardTransactionResponse toResponse(CreditCardTransaction t, BigDecimal totalAmount) {
         return new CreditCardTransactionResponse(t.getId(), t.getVersion(), t.getCreditCard().getId(), t.getUser().getId(),
                 t.getCategory() != null ? t.getCategory().getId() : null,
                 t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(), t.getPurchaseDate(),
                 t.getDescription(), t.getReferenceMonth(), t.getInstallmentGroupId(), t.getInstallmentNumber(),
-                t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate());
+                t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate(), totalAmount);
     }
 }

@@ -148,15 +148,25 @@ function onClose() {
   >
     <DialogCloseBtn @click="onClose" />
 
-    <VCard>
+    <VCard
+      class="d-flex flex-column"
+      style="block-size: 100%"
+    >
       <VCardText>
         <h4 class="text-h4 text-center mb-2">
           Itens da Fatura {{ referenceMonth ? `— ${formatReferenceMonth(referenceMonth)}` : '' }}
         </h4>
-        <p class="text-body-1 text-center mb-6">
+        <p class="text-body-1 text-center mb-0">
           Lançamentos que compõem esta fatura, ordenados por data.
         </p>
+      </VCardText>
 
+      <VDivider />
+
+      <VCardText
+        class="flex-grow-1"
+        style="overflow-y: auto"
+      >
         <ApiErrorAlert
           v-if="error"
           :error="error"
@@ -248,16 +258,18 @@ function onClose() {
             </tbody>
           </VTable>
         </div>
+      </VCardText>
 
-        <div class="d-flex justify-center mt-6">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="onClose"
-          >
-            Fechar
-          </VBtn>
-        </div>
+      <VDivider />
+
+      <VCardText class="d-flex justify-center">
+        <VBtn
+          color="secondary"
+          variant="tonal"
+          @click="onClose"
+        >
+          Fechar
+        </VBtn>
       </VCardText>
     </VCard>
   </VDialog>

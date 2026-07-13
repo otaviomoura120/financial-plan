@@ -28,6 +28,7 @@ interface CreditCardTransactionResponse {
   anticipated: boolean
   originalReferenceMonth: string | null
   createdDate: string
+  totalAmount: number
 }
 
 interface SubCategoryResponse {
@@ -108,6 +109,7 @@ const isDeleting = shallowRef(false)
 
 const isAddEditDialogVisible = shallowRef(false)
 const isDeleteDialogVisible = shallowRef(false)
+const isDeleteInstallmentDialogVisible = shallowRef(false)
 const isAnticipateDialogVisible = shallowRef(false)
 
 const selectedTransaction = shallowRef<CreditCardTransactionResponse | null>(null)
@@ -224,7 +226,11 @@ function openEdit(transaction: CreditCardTransactionResponse) {
 
 function openDelete(transaction: CreditCardTransactionResponse) {
   selectedTransaction.value = transaction
-  isDeleteDialogVisible.value = true
+
+  if (transaction.totalInstallments > 1)
+    isDeleteInstallmentDialogVisible.value = true
+  else
+    isDeleteDialogVisible.value = true
 }
 
 function openAnticipate(transaction: CreditCardTransactionResponse) {
@@ -236,12 +242,40 @@ async function onDeleteConfirm(confirmed: boolean) {
   if (!confirmed || !selectedTransaction.value)
     return
 
+  await deleteSelectedTransaction(false)
+}
+
+async function onDeleteInstallmentConfirm(result: 'single' | 'future' | null) {
+  if (!result || !selectedTransaction.value)
+    return
+
+  await deleteSelectedTransaction(result === 'future')
+}
+
+async function deleteSelectedTransaction(includeFuture: boolean) {
+  if (!selectedTransaction.value)
+    return
+
+  const transaction = selectedTransaction.value
+
   isDeleting.value = true
   clearError()
 
   try {
-    await $fetch(`/api/credit-card-transactions/${selectedTransaction.value.id}`, { method: 'DELETE' })
-    transactions.value = transactions.value.filter(t => t.id !== selectedTransaction.value!.id)
+    await $fetch(`/api/credit-card-transactions/${transaction.id}`, {
+      method: 'DELETE',
+      query: { includeFuture },
+    })
+
+    if (includeFuture) {
+      transactions.value = transactions.value.filter(t =>
+        !(t.installmentGroupId === transaction.installmentGroupId && t.installmentNumber >= transaction.installmentNumber),
+      )
+    }
+    else {
+      transactions.value = transactions.value.filter(t => t.id !== transaction.id)
+    }
+
     showSuccess('Lançamento excluído com sucesso.')
   }
   catch (e) {
@@ -470,6 +504,12 @@ function onClose() {
                         </td>
                         <td class="text-right">
                           {{ currencyFormatter.format(transaction.amount) }}
+                          <div
+                            v-if="transaction.totalInstallments > 1"
+                            class="text-caption text-disabled"
+                          >
+                            Total: {{ currencyFormatter.format(transaction.totalAmount) }}
+                          </div>
                         </td>
                         <td
                           class="text-center"
@@ -566,6 +606,11 @@ function onClose() {
       cancel-title="Ação cancelada"
       cancel-msg="O lançamento não foi excluído."
       @confirm="onDeleteConfirm"
+    />
+
+    <DeleteInstallmentDialog
+      v-model:is-dialog-visible="isDeleteInstallmentDialogVisible"
+      @confirm="onDeleteInstallmentConfirm"
     />
   </VDialog>
 </template>

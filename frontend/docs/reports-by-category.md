@@ -47,16 +47,19 @@ Special filter semantics (full rationale in the backend doc):
         type, date, description, amount,
         userId, bankAccountId,
         creditCardId, creditCardName,    // filled for CREDIT_CARD items — "which card"
-        installmentNumber, totalInstallments
+        installmentNumber, totalInstallments,
+        totalAmount                      // CREDIT_CARD only — sum of the whole installment group, shown as a reference
       }]
     }]
   }]
 }
 ```
 
-Credit-card items enter by **purchase date** (`purchaseDate`), never by invoice closing or
-payment date; the matching `CREDIT_CARD_INVOICE_PAYMENT` transactions are excluded to avoid
-double counting.
+Credit-card items enter by **invoice month** (`referenceMonth`), never by purchase date, invoice
+closing or payment date — each installment of a parceled purchase carries its own `referenceMonth`,
+so a 3x purchase shows up as one item per month across three consecutive periods. `date` in the
+item still shows the original `purchaseDate` as a reference of when the purchase happened. The
+matching `CREDIT_CARD_INVOICE_PAYMENT` transactions are excluded to avoid double counting.
 
 ## Frontend — file map
 
@@ -85,7 +88,9 @@ plus `/api/credit-cards` for the "Cartão de Crédito" filter.
   the group has expenses, otherwise `incomePercentage` "das receitas"), green income, red
   expense, and the signed total. Expanding a category reveals subcategory rows (same totals,
   no percentage); expanding a subcategory reveals a nested compact table of items: date,
-  origin, description, signed/colored amount.
+  origin, description, signed/colored amount — plus a small "Total: R$ ..." caption below the
+  amount for parceled `CREDIT_CARD` items (`totalInstallments > 1`), showing `totalAmount` as a
+  reference to the original purchase.
 - **Origin column**: `CREDIT_CARD` items render a chip with the `tabler-credit-card` icon and
   the card name, plus an `n/total` installment chip when parceled; `TRANSACTION` items render
   the bank account name resolved via the local lookup map.
@@ -105,4 +110,7 @@ invoice-payment transaction does **not** appear; totals and percentages match. E
 filters: with no filter, both the transaction and the card purchase appear together; the card
 filter narrows to only that card's purchases and excludes regular transactions; Tipo=Receita
 hides card items; Conta keeps only purchases of cards linked to that account. Toggle "Agrupar
-por categoria" and confirm the flat list is date-sorted with the same items.
+por categoria" and confirm the flat list is date-sorted with the same items. Create a 3x
+installment purchase and confirm each installment only shows up when filtering by its own
+`referenceMonth` (not all three at once in the purchase month), with a "Total: R$ ..." caption
+under the amount matching the sum of all three installments.

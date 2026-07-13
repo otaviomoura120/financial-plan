@@ -18,6 +18,7 @@ interface CategoryReportItemResponse {
   creditCardName: string | null
   installmentNumber: number | null
   totalInstallments: number | null
+  totalAmount: number | null
 }
 
 interface CategoryReportSubGroupResponse {
@@ -651,6 +652,12 @@ function formatDate(isoDate: string) {
                                       :class="item.type === 'INCOME' ? 'text-success' : 'text-error'"
                                     >
                                       {{ formatSignedAmount(item.type, item.amount) }}
+                                      <div
+                                        v-if="item.source === 'CREDIT_CARD' && (item.totalInstallments ?? 0) > 1"
+                                        class="text-caption text-disabled"
+                                      >
+                                        Total: {{ formatCurrency(item.totalAmount ?? 0) }}
+                                      </div>
                                     </td>
                                   </tr>
                                 </tbody>
@@ -742,6 +749,12 @@ function formatDate(isoDate: string) {
                       :class="item.type === 'INCOME' ? 'text-success' : 'text-error'"
                     >
                       {{ formatSignedAmount(item.type, item.amount) }}
+                      <div
+                        v-if="item.source === 'CREDIT_CARD' && (item.totalInstallments ?? 0) > 1"
+                        class="text-caption text-disabled"
+                      >
+                        Total: {{ formatCurrency(item.totalAmount ?? 0) }}
+                      </div>
                     </td>
                   </tr>
 

@@ -30,7 +30,7 @@ All already implemented with `@PreAuthorize`.
 | POST | `/credit-card-transactions/installment-groups/{id}/anticipate` | `{ targetReferenceMonth, installmentsToAnticipate }` | `CreditCardTransactionResponse[]` |
 | POST | `/credit-card-transactions` | `{ creditCardId, userId, categoryId, subCategoryId, amount, purchaseDate, description, totalInstallments }` | `CreditCardTransactionResponse` |
 | PUT | `/credit-card-transactions/{id}` | `{ version, categoryId, subCategoryId, amount, purchaseDate, description }` | `CreditCardTransactionResponse` |
-| DELETE | `/credit-card-transactions/{id}` | — | `204` (rejected with `422` if the reference month is already paid) |
+| DELETE | `/credit-card-transactions/{id}` | `includeFuture?` (query, default `false`) | `204` (rejected with `422` if the reference month is already paid; when `includeFuture=true` on a grouped purchase, also deletes every later installment of the group, rejecting the whole batch if any of them is already paid) |
 | GET | `/credit-cards/invoices` | `spaceId, creditCardId?, from?, to?` (query) | `CreditCardInvoiceResponse[]` |
 | POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | `{ bankAccountId, categoryId, subCategoryId, paidDate }` | `CreditCardInvoicePaymentResponse` |
 | POST | `/credit-cards/{id}/invoices/{referenceMonth}/undo-payment` | — | `204` |
@@ -43,7 +43,7 @@ purchases — see `backend/docs/report-by-category.md` (RPTC6) and
 [`reports-by-category.md`](./reports-by-category.md). `bankAccountName` is denormalized into the
 response so the list/report don't need an extra lookup.
 
-`CreditCardTransactionResponse`: `{ id, version, creditCardId, userId, categoryId, subCategoryId, amount, purchaseDate, description, referenceMonth, installmentGroupId, installmentNumber, totalInstallments, anticipated, originalReferenceMonth, createdDate }`.
+`CreditCardTransactionResponse`: `{ id, version, creditCardId, userId, categoryId, subCategoryId, amount, purchaseDate, description, referenceMonth, installmentGroupId, installmentNumber, totalInstallments, anticipated, originalReferenceMonth, createdDate, totalAmount }`. `totalAmount` is the sum of every installment's `amount` in the group — computed on read (not persisted) via `findByInstallmentGroupId`, equal to `amount` itself for a single (`totalInstallments <= 1`) purchase — shown in the UI as a reference to the original purchase total next to the per-installment `amount`.
 
 `CreditCardInvoiceResponse`: `{ creditCardId, creditCardName, referenceMonth, closingDate, dueDate, totalAmount, paid, paidDate, paidAmount, paymentTransactionId }` — an invoice is never materialized until paid; open invoices are computed on the fly by grouping `CreditCardTransaction` rows by the stored `referenceMonth`.
 
@@ -55,6 +55,11 @@ so the frontend can fetch exactly the transactions belonging to one invoice — 
 join key (`creditCardId` + `referenceMonth`) that `ListCreditCardInvoicesService` already used
 internally via `findByCreditCardIdAndReferenceMonth` to group transactions into invoices; the new
 param just reuses the spaceId-scoped `findByFilter` specification instead.
+
+`from`/`to` on the same endpoint filter by `referenceMonth` too (invoice month), not by
+`purchaseDate` — each installment of a parceled purchase carries its own `referenceMonth`, so
+filtering by period shows one installment per month, not every installment bunched into the
+purchase's month.
 
 ## Frontend — file map
 
@@ -68,7 +73,8 @@ param just reuses the spaceId-scoped `findByFilter` specification instead.
 | `components/dialogs/AddEditCreditCardTransactionDialog.vue` | Create/edit dialog for `CreditCardTransaction`, with an installments field only shown when creating |
 | `components/dialogs/AnticipateInstallmentsDialog.vue` | Anticipates the last N installments of a group into the current open invoice |
 | `components/dialogs/PayCreditCardInvoiceDialog.vue` | Pay-invoice dialog (`bankAccountId`, `categoryId`, `subCategoryId`, `paidDate`) |
-| `components/dialogs/ConfirmDialog.vue` | Reused for delete and undo-payment confirmations |
+| `components/dialogs/ConfirmDialog.vue` | Reused for delete and undo-payment confirmations (binary yes/no) |
+| `components/dialogs/DeleteInstallmentDialog.vue` | 3-option delete confirmation ("somente esta parcela" / "esta e as futuras" / cancelar) shown instead of `ConfirmDialog` when deleting a row with `totalInstallments > 1` |
 | `server/api/credit-cards/*` | Card CRUD proxy routes |
 | `server/api/credit-card-transactions/*` | Transaction CRUD + installment-group + anticipate proxy routes |
 | `server/api/credit-cards/invoices/index.get.ts`, `server/api/credit-cards/[id]/invoices/[referenceMonth]/*` | Invoice list/pay/undo-payment proxy routes |
@@ -93,13 +99,20 @@ link is used by the category report filters.
 
 ### `CreditCardTransactionsDialog` (FCC2)
 Resolves the card's name via `GET /credit-cards?spaceId=` filtered by the `creditCardId` prop.
-Period filter defaults to the current month. Table shows date, category/subcategory, description,
-amount, and an `"N/total"` chip when the row belongs to an installment group (`totalInstallments > 1`),
-plus an "Antecipada" badge when `anticipated`. "Antecipar parcelas" is only shown for rows with
-`installmentNumber < totalInstallments` and opens `AnticipateInstallmentsDialog`, which loads the
-full group via `GET .../installment-groups/{id}` to compute how many future installments are
-eligible before calling the anticipate endpoint. Create/edit/delete follow the standard dialog +
-`ConfirmDialog` pattern; a `422` from a paid month surfaces the real backend message.
+Period filter defaults to the current month and, since `from`/`to` now filter by `referenceMonth`,
+only shows the installment(s) whose invoice falls in the selected period. Table shows date,
+category/subcategory, description, amount (with a "Total: R$ ..." caption below it for parceled
+rows, `totalInstallments > 1`, showing `totalAmount`), and an `"N/total"` chip when the row belongs
+to an installment group, plus an "Antecipada" badge when `anticipated`. "Antecipar parcelas" is
+only shown for rows with `installmentNumber < totalInstallments` and opens
+`AnticipateInstallmentsDialog`, which loads the full group via `GET .../installment-groups/{id}`
+to compute how many future installments are eligible before calling the anticipate endpoint.
+Create/edit follow the standard dialog pattern. Delete: a single (`totalInstallments <= 1`) row
+uses the standard `ConfirmDialog`; a row that belongs to an installment group instead opens
+`DeleteInstallmentDialog`, which asks whether to delete just this installment or this one and
+every later one in the group (`DELETE .../{id}?includeFuture=true`) — the removed rows are pruned
+from the local list by `installmentGroupId` + `installmentNumber >= this row's`. A `422` from a
+paid month surfaces the real backend message in either case.
 
 ### `CreditCardInvoicesDialog` (FCC3)
 Lists months (open/paid) with totals. "Pagar Fatura" opens `PayCreditCardInvoiceDialog` (only for

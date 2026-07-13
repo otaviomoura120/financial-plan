@@ -135,10 +135,10 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
                 predicates.add(criteriaBuilder.equal(root.get("user").get("id"), userId));
             }
             if (from != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("purchaseDate"), from));
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("referenceMonth"), from));
             }
             if (to != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("purchaseDate"), to));
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("referenceMonth"), to));
             }
             if (referenceMonth != null) {
                 predicates.add(criteriaBuilder.equal(root.get("referenceMonth"), referenceMonth));

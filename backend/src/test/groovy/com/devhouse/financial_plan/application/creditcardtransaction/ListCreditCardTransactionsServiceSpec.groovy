@@ -71,4 +71,34 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
         responses.size() == 1
         responses[0].referenceMonth() == referenceMonth
     }
+
+    def "execute computes totalAmount by summing every installment of the group, once per group"() {
+        given:
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
+        User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
+                null, null, Instant.now(), null, false)
+        Category category = new Category(20L, 0, null, "Food", true, Instant.now(), null)
+        CreditCardTransaction installment1 = new CreditCardTransaction(1L, 0, creditCard, user, category, null,
+                new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
+                "group-1", 1, 3, false, null, Instant.now(), null)
+        CreditCardTransaction installment2 = new CreditCardTransaction(2L, 0, creditCard, user, category, null,
+                new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 4, 1),
+                "group-1", 2, 3, false, null, Instant.now(), null)
+        creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 4, 30), null) >>
+                [installment1, installment2]
+
+        when:
+        List<CreditCardTransactionResponse> responses = service.execute(1L, 10L, null, null,
+                LocalDate.of(2026, 3, 1), LocalDate.of(2026, 4, 30), null)
+
+        then:
+        1 * creditCardTransactionRepository.findByInstallmentGroupId("group-1") >>
+                [installment1, installment2, new CreditCardTransaction(3L, 0, creditCard, user, category, null,
+                        new BigDecimal("33.34"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 5, 1),
+                        "group-1", 3, 3, false, null, Instant.now(), null)]
+        responses.size() == 2
+        responses[0].totalAmount() == new BigDecimal("100.00")
+        responses[1].totalAmount() == new BigDecimal("100.00")
+    }
 }

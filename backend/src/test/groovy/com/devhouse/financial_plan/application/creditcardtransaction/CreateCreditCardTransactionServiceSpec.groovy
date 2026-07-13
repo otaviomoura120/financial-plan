@@ -62,6 +62,7 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         !saved[0].installmentGroupId.isBlank()
         response.installmentNumber() == 1
         response.totalInstallments() == 1
+        response.totalAmount() == new BigDecimal("100.00")
     }
 
     def "execute splits an installment purchase across N rows sharing the same group id and sequential reference months"() {

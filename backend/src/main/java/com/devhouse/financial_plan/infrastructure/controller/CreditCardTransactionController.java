@@ -88,7 +88,8 @@ public class CreditCardTransactionController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deleteCreditCardTransactionService.execute(id);
+    public void delete(@PathVariable Long id, @RequestParam(required = false, defaultValue = "false") boolean includeFuture,
+                        Authentication authentication, HttpServletRequest request) {
+        deleteCreditCardTransactionService.execute(id, includeFuture);
     }
 }

@@ -17,5 +17,6 @@ public record CategoryReportItemResponse(
         Long creditCardId,
         String creditCardName,
         Integer installmentNumber,
-        Integer totalInstallments
+        Integer totalInstallments,
+        BigDecimal totalAmount
 ) {}

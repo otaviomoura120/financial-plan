@@ -71,6 +71,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         responses[3].referenceMonth() == LocalDate.of(2026, 1, 1)
         responses[3].anticipated()
         responses[3].originalReferenceMonth() == LocalDate.of(2026, 4, 1)
+        responses.every { it.totalAmount() == new BigDecimal("400.00") }
     }
 
     def "execute throws DomainException when the installment group does not exist"() {

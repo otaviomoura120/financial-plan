@@ -8,6 +8,7 @@ import com.devhouse.financial_plan.domain.repository.CreditCardTransactionReposi
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -55,17 +56,19 @@ public class AnticipateCreditCardInstallmentsService {
             creditCardTransactionRepository.update(installment);
         }
 
-        return creditCardTransactionRepository.findByInstallmentGroupId(installmentGroupId).stream()
+        List<CreditCardTransaction> updatedGroup = creditCardTransactionRepository.findByInstallmentGroupId(installmentGroupId);
+        BigDecimal totalAmount = updatedGroup.stream().map(CreditCardTransaction::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return updatedGroup.stream()
                 .sorted(Comparator.comparing(CreditCardTransaction::getInstallmentNumber))
-                .map(this::toResponse)
+                .map(t -> toResponse(t, totalAmount))
                 .toList();
     }
 
-    private CreditCardTransactionResponse toResponse(CreditCardTransaction t) {
+    private CreditCardTransactionResponse toResponse(CreditCardTransaction t, BigDecimal totalAmount) {
         return new CreditCardTransactionResponse(t.getId(), t.getVersion(), t.getCreditCard().getId(), t.getUser().getId(),
                 t.getCategory() != null ? t.getCategory().getId() : null,
                 t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(), t.getPurchaseDate(),
                 t.getDescription(), t.getReferenceMonth(), t.getInstallmentGroupId(), t.getInstallmentNumber(),
-                t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate());
+                t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate(), totalAmount);
     }
 }

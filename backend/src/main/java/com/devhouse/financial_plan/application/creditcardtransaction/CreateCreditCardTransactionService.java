@@ -78,7 +78,7 @@ public class CreateCreditCardTransactionService {
                 firstInstallment = saved;
             }
         }
-        return toResponse(firstInstallment);
+        return toResponse(firstInstallment, request.amount());
     }
 
     private List<BigDecimal> splitAmount(BigDecimal totalAmount, int totalInstallments) {
@@ -140,11 +140,11 @@ public class CreateCreditCardTransactionService {
         return subCategory;
     }
 
-    private CreditCardTransactionResponse toResponse(CreditCardTransaction t) {
+    private CreditCardTransactionResponse toResponse(CreditCardTransaction t, BigDecimal totalAmount) {
         return new CreditCardTransactionResponse(t.getId(), t.getVersion(), t.getCreditCard().getId(), t.getUser().getId(),
                 t.getCategory() != null ? t.getCategory().getId() : null,
                 t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(), t.getPurchaseDate(),
                 t.getDescription(), t.getReferenceMonth(), t.getInstallmentGroupId(), t.getInstallmentNumber(),
-                t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate());
+                t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate(), totalAmount);
     }
 }
