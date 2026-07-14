@@ -42,32 +42,11 @@ const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
-function toLocalDateString(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
-}
-
-function firstDayOfMonth() {
-  const now = new Date()
-
-  return toLocalDateString(new Date(now.getFullYear(), now.getMonth(), 1))
-}
-
-function lastDayOfMonth() {
-  const now = new Date()
-
-  return toLocalDateString(new Date(now.getFullYear(), now.getMonth() + 1, 0))
-}
-
 const bills = ref<BillInstanceResponse[]>([])
 const bankAccounts = ref<OptionItem[]>([])
 const categories = ref<CategoryOption[]>([])
 
-const from = shallowRef(firstDayOfMonth())
-const to = shallowRef(lastDayOfMonth())
+const selectedMonth = shallowRef(currentMonthValue())
 
 const page = shallowRef(1)
 const itemsPerPage = shallowRef(10)
@@ -152,8 +131,8 @@ async function fetchBills() {
     bills.value = await $fetch<BillInstanceResponse[]>('/api/bills/instances', {
       query: {
         spaceId: spaceStore.activeSpace.id,
-        from: from.value,
-        to: to.value,
+        from: selectedMonth.value,
+        to: lastDayOfMonthOf(selectedMonth.value),
       },
     })
     page.value = 1
@@ -301,27 +280,15 @@ function formatDate(isoDate: string) {
           class="d-flex flex-wrap align-center gap-2"
           style="flex-grow: 1; justify-content: flex-end;"
         >
-          <VTextField
-            v-model="from"
-            type="date"
-            label="De"
-            density="compact"
-            hide-details
-            style="max-inline-size: 170px"
-          />
-
-          <VTextField
-            v-model="to"
-            type="date"
-            label="Até"
-            density="compact"
-            hide-details
-            style="max-inline-size: 170px"
+          <MonthYearSelect
+            v-model="selectedMonth"
+            label="Mês"
           />
 
           <VBtn
             variant="tonal"
             @click="fetchBills"
+            style="align-self: flex-end;"
           >
             Filtrar
           </VBtn>
@@ -330,6 +297,7 @@ function formatDate(isoDate: string) {
             variant="tonal"
             prepend-icon="tabler-calendar-cog"
             @click="openRecurrenceSettings"
+            style="align-self: flex-end;"
           >
             <span class="d-sm-inline">Recorrências</span>
           </VBtn>
@@ -337,6 +305,7 @@ function formatDate(isoDate: string) {
           <VBtn
             prepend-icon="tabler-plus"
             @click="openAdd"
+            style="align-self: flex-end;"
           >
             <span class="d-sm-inline">Adicionar</span>
           </VBtn>
