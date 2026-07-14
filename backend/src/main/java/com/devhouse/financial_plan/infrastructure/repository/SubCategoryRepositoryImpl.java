@@ -51,7 +51,7 @@ public class SubCategoryRepositoryImpl implements SubCategoryRepository {
 
     @Override
     public List<SubCategory> findByCategoryId(Long categoryId) {
-        return jpaSubCategoryRepository.findByCategoryId(categoryId).stream()
+        return jpaSubCategoryRepository.findByCategoryIdOrderByNameAsc(categoryId).stream()
                 .map(this::toDomain)
                 .toList();
     }

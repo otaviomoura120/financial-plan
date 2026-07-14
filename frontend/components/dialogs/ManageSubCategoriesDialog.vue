@@ -246,7 +246,7 @@ function onClose() {
           class="pa-0"
         >
           <VListItem
-            v-for="subCategory in localSubCategories"
+            v-for="subCategory in sortedSubCategories"
             :key="subCategory.id"
             class="px-0"
           >

@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface JpaSubCategoryRepository extends JpaRepository<SubCategoryEntityJpa, Long> {
 
-    List<SubCategoryEntityJpa> findByCategoryId(Long categoryId);
+    List<SubCategoryEntityJpa> findByCategoryIdOrderByNameAsc(Long categoryId);
     boolean existsByCategoryId(Long categoryId);
 }

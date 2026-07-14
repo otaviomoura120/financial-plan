@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface JpaCategoryRepository extends JpaRepository<CategoryEntityJpa, Long> {
 
-    List<CategoryEntityJpa> findBySpaceId(Long spaceId);
+    List<CategoryEntityJpa> findBySpaceIdOrderByNameAsc(Long spaceId);
 }
