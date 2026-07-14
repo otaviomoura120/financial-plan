@@ -1188,3 +1188,18 @@ WHERE r.name = 'MEMBER'
       SELECT 1 FROM role_endpoint_permissions rep
       WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
   );
+
+
+-- =============================================================================
+-- NOTA: o relatório por categoria e os lançamentos do cartão passaram a filtrar
+-- CreditCardTransaction por "mês de competência" (mês da compra + nº da parcela - 1,
+-- ou o reference_month quando a parcela foi antecipada) em vez do reference_month da
+-- fatura. Esse valor é CALCULADO em CreditCardTransaction.getCompetenceMonth() a
+-- partir de purchase_date/installment_number/anticipated/reference_month — não existe
+-- coluna nova nem backfill necessário (uma tentativa anterior chegou a adicionar uma
+-- coluna competence_month persistida, mas foi revertida por não ser necessária e por
+-- deixar linhas antigas com NULL sem um passo de migração).
+-- Se algum banco chegou a rodar ddl-auto=update com essa versão anterior, a coluna
+-- competence_month ficou órfã (sem uso) e pode ser removida manualmente:
+--   ALTER TABLE credit_card_transactions DROP COLUMN competence_month;
+-- =============================================================================

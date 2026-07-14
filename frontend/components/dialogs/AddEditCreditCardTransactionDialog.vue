@@ -12,6 +12,7 @@ interface CreditCardTransactionResponse {
   purchaseDate: string
   description?: string | null
   referenceMonth: string
+  competenceMonth: string
   installmentGroupId: string
   installmentNumber: number
   totalInstallments: number

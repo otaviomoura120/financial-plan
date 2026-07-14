@@ -9,7 +9,7 @@ public interface CreditCardTransactionRepository {
     CreditCardTransaction save(CreditCardTransaction creditCardTransaction);
     CreditCardTransaction update(CreditCardTransaction creditCardTransaction);
     CreditCardTransaction findById(Long id);
-    List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, Long userId, LocalDate from, LocalDate to, LocalDate referenceMonth);
+    List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, Long userId, LocalDate referenceMonth);
     List<CreditCardTransaction> findByInstallmentGroupId(String installmentGroupId);
     List<CreditCardTransaction> findByCreditCardId(Long creditCardId);
     List<CreditCardTransaction> findByCreditCardIdAndReferenceMonth(Long creditCardId, LocalDate referenceMonth);

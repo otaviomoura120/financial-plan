@@ -22,6 +22,7 @@ interface CreditCardTransactionResponse {
   purchaseDate: string
   description?: string | null
   referenceMonth: string
+  competenceMonth: string
   installmentGroupId: string
   installmentNumber: number
   totalInstallments: number
@@ -192,7 +193,7 @@ async function fetchTransactions() {
       query: {
         spaceId: spaceStore.activeSpace.id,
         creditCardId: props.creditCardId,
-        referenceMonth: selectedMonth.value,
+        competenceMonth: selectedMonth.value,
       },
     })
     page.value = 1
@@ -283,7 +284,7 @@ function onTransactionSaved(saved: CreditCardTransactionResponse) {
 
   if (idx >= 0)
     transactions.value[idx] = saved
-  else if (saved.referenceMonth === selectedMonth.value)
+  else if (saved.competenceMonth === selectedMonth.value)
     transactions.value = [saved, ...transactions.value]
 }
 
@@ -366,7 +367,7 @@ function onClose() {
                 >
                   <MonthYearSelect
                     v-model="selectedMonth"
-                    label="Mês da Fatura"
+                    label="Mês de Referência"
                   />
 
                   <VBtn
@@ -421,7 +422,7 @@ function onClose() {
                           Categoria
                         </th>
                         <th>Descrição</th>
-                        <th>Mês da Fatura</th>
+                        <th>Mês de Referência</th>
                         <th>Parcela</th>
                         <th class="text-right">
                           Valor
@@ -449,7 +450,12 @@ function onClose() {
                         <td class="text-disabled">
                           {{ transaction.description || '—' }}
                         </td>
-                        <td>{{ formatReferenceMonth(transaction.referenceMonth) }}</td>
+                        <td>
+                          {{ formatReferenceMonth(transaction.competenceMonth) }}
+                          <div class="text-caption text-disabled">
+                            Fatura: {{ formatReferenceMonth(transaction.referenceMonth) }}
+                          </div>
+                        </td>
                         <td>
                           <VChip
                             v-if="transaction.totalInstallments > 1"

@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -74,10 +75,19 @@ public class GenerateCategoryReportService {
         }
         Map<String, BigDecimal> totalAmountByGroup = new HashMap<>();
         return creditCardTransactionRepository.findByFilter(filter.spaceId(), filter.creditCardId(), filter.categoryId(),
-                        filter.subCategoryId(), filter.userId(), filter.from(), filter.to(), null).stream()
+                        filter.subCategoryId(), filter.userId(), null).stream()
+                .filter(purchase -> matchesCompetenceMonth(purchase, filter.from(), filter.to()))
                 .filter(purchase -> matchesBankAccount(purchase, filter.bankAccountId()))
                 .map(purchase -> toEntry(purchase, resolveTotalAmount(purchase, totalAmountByGroup)))
                 .toList();
+    }
+
+    private boolean matchesCompetenceMonth(CreditCardTransaction purchase, LocalDate from, LocalDate to) {
+        LocalDate competenceMonth = purchase.getCompetenceMonth();
+        if (from != null && competenceMonth.isBefore(from)) {
+            return false;
+        }
+        return to == null || !competenceMonth.isAfter(to);
     }
 
     private BigDecimal resolveTotalAmount(CreditCardTransaction transaction, Map<String, BigDecimal> cache) {

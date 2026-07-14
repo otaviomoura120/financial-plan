@@ -64,7 +64,27 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         response.purchaseDate() == LocalDate.of(2026, 3, 10)
         response.description() == "new desc"
         response.referenceMonth() == LocalDate.of(2026, 3, 1)
+        response.competenceMonth() == LocalDate.of(2026, 3, 1)
         response.totalAmount() == new BigDecimal("150.00")
+    }
+
+    def "execute reflects competenceMonth from the corrected purchaseDate, since it is derived rather than stored"() {
+        given:
+        CreditCardTransaction existing = buildExisting()
+        creditCardTransactionRepository.findById(1L) >> existing
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> null
+        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", true, Instant.now(), null)
+        creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
+        UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
+                new BigDecimal("150.00"), LocalDate.of(2026, 4, 15), "new desc")
+
+        when:
+        CreditCardTransactionResponse response = service.execute(1L, request)
+
+        then:
+        response.purchaseDate() == LocalDate.of(2026, 4, 15)
+        response.competenceMonth() == LocalDate.of(2026, 4, 1)
+        response.referenceMonth() == LocalDate.of(2026, 3, 1)
     }
 
     def "execute computes totalAmount by summing the group when the installment belongs to a parceled purchase"() {

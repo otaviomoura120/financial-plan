@@ -78,8 +78,8 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     }
 
     @Override
-    public List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, Long userId, LocalDate from, LocalDate to, LocalDate referenceMonth) {
-        Specification<CreditCardTransactionEntityJpa> specification = buildSpecification(spaceId, creditCardId, categoryId, subCategoryId, userId, from, to, referenceMonth);
+    public List<CreditCardTransaction> findByFilter(Long spaceId, Long creditCardId, Long categoryId, Long subCategoryId, Long userId, LocalDate referenceMonth) {
+        Specification<CreditCardTransactionEntityJpa> specification = buildSpecification(spaceId, creditCardId, categoryId, subCategoryId, userId, referenceMonth);
         return jpaCreditCardTransactionRepository.findAll(specification).stream()
                 .map(this::toDomain)
                 .toList();
@@ -117,8 +117,7 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     }
 
     private Specification<CreditCardTransactionEntityJpa> buildSpecification(Long spaceId, Long creditCardId, Long categoryId,
-                                                                              Long subCategoryId, Long userId, LocalDate from,
-                                                                              LocalDate to, LocalDate referenceMonth) {
+                                                                              Long subCategoryId, Long userId, LocalDate referenceMonth) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(root.get("creditCard").get("id").in(creditCardIdsInSpace(spaceId, query, criteriaBuilder)));
@@ -133,12 +132,6 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
             }
             if (userId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("user").get("id"), userId));
-            }
-            if (from != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("referenceMonth"), from));
-            }
-            if (to != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("referenceMonth"), to));
             }
             if (referenceMonth != null) {
                 predicates.add(criteriaBuilder.equal(root.get("referenceMonth"), referenceMonth));

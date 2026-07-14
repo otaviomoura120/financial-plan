@@ -6,6 +6,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.Objects;
 
 public class CreditCardTransaction {
@@ -126,6 +127,14 @@ public class CreditCardTransaction {
     public void setDescription(String description) { this.description = description; }
     public LocalDate getReferenceMonth() { return referenceMonth; }
     public void setReferenceMonth(LocalDate referenceMonth) { this.referenceMonth = referenceMonth; }
+
+    public LocalDate getCompetenceMonth() {
+        if (anticipated) {
+            return referenceMonth;
+        }
+        return YearMonth.from(purchaseDate).plusMonths(installmentNumber - 1).atDay(1);
+    }
+
     public String getInstallmentGroupId() { return installmentGroupId; }
     public void setInstallmentGroupId(String installmentGroupId) { this.installmentGroupId = installmentGroupId; }
     public Integer getInstallmentNumber() { return installmentNumber; }

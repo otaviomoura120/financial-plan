@@ -58,6 +58,7 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         saved[0].installmentNumber == 1
         saved[0].totalInstallments == 1
         saved[0].referenceMonth == LocalDate.of(2026, 3, 1)
+        saved[0].competenceMonth == LocalDate.of(2026, 3, 1)
         saved[0].amount == new BigDecimal("100.00")
         !saved[0].installmentGroupId.isBlank()
         response.installmentNumber() == 1
@@ -91,7 +92,34 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         saved[0].referenceMonth == LocalDate.of(2026, 3, 1)
         saved[1].referenceMonth == LocalDate.of(2026, 4, 1)
         saved[2].referenceMonth == LocalDate.of(2026, 5, 1)
+        saved[0].competenceMonth == LocalDate.of(2026, 3, 1)
+        saved[1].competenceMonth == LocalDate.of(2026, 4, 1)
+        saved[2].competenceMonth == LocalDate.of(2026, 5, 1)
         saved.collect { it.amount }.sum() == new BigDecimal("100.00")
+    }
+
+    def "execute anchors competenceMonth to the purchase month even when the closing day pushes referenceMonth to the next month"() {
+        given:
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 1, 10, true, Instant.now(), null)
+        creditCardRepository.findById(10L) >> creditCard
+        userRepository.findById(1L) >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category)
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
+        List<CreditCardTransaction> saved = []
+        creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
+
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+                new BigDecimal("100.00"), LocalDate.of(2026, 7, 12), "desc", 2)
+
+        when:
+        service.execute(request)
+
+        then:
+        saved[0].referenceMonth == LocalDate.of(2026, 8, 1)
+        saved[0].competenceMonth == LocalDate.of(2026, 7, 1)
+        saved[1].referenceMonth == LocalDate.of(2026, 9, 1)
+        saved[1].competenceMonth == LocalDate.of(2026, 8, 1)
     }
 
     def "execute makes the last installment absorb the rounding residue when the amount does not divide exactly"() {

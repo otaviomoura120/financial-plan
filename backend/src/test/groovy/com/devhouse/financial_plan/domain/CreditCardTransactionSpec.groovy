@@ -173,6 +173,22 @@ class CreditCardTransactionSpec extends Specification {
         installmentNumber << [null, 0, 13]
     }
 
+    def "getCompetenceMonth anchors to the purchase month plus the installment offset when not anticipated"() {
+        given:
+        CreditCardTransaction transaction = buildTransaction("group-1", 3, 12)
+
+        expect:
+        transaction.getCompetenceMonth() == LocalDate.of(2026, 5, 1)
+    }
+
+    def "getCompetenceMonth matches the purchase month itself for the first installment"() {
+        given:
+        CreditCardTransaction transaction = buildTransaction("group-1", 1, 1)
+
+        expect:
+        transaction.getCompetenceMonth() == LocalDate.of(2026, 3, 1)
+    }
+
     def "anticipateTo moves the reference month and records the original one on first anticipation"() {
         given:
         CreditCardTransaction transaction = buildTransaction("group-1", 10, 12)
@@ -186,6 +202,17 @@ class CreditCardTransactionSpec extends Specification {
         transaction.getOriginalReferenceMonth() == LocalDate.of(2026, 3, 1)
     }
 
+    def "anticipateTo also moves the competence month to the target month"() {
+        given:
+        CreditCardTransaction transaction = buildTransaction("group-1", 10, 12)
+
+        when:
+        transaction.anticipateTo(LocalDate.of(2026, 6, 1))
+
+        then:
+        transaction.getCompetenceMonth() == LocalDate.of(2026, 6, 1)
+    }
+
     def "anticipateTo preserves the original reference month across repeated anticipations"() {
         given:
         CreditCardTransaction transaction = buildTransaction("group-1", 10, 12)
@@ -196,6 +223,7 @@ class CreditCardTransactionSpec extends Specification {
 
         then:
         transaction.getReferenceMonth() == LocalDate.of(2026, 5, 1)
+        transaction.getCompetenceMonth() == LocalDate.of(2026, 5, 1)
         transaction.isAnticipated()
         transaction.getOriginalReferenceMonth() == LocalDate.of(2026, 3, 1)
     }
@@ -218,5 +246,17 @@ class CreditCardTransactionSpec extends Specification {
         transaction.getReferenceMonth() == LocalDate.of(2026, 3, 1)
         transaction.getInstallmentNumber() == 3
         transaction.getTotalInstallments() == 12
+    }
+
+    def "update moving purchaseDate to a different month shifts the derived competenceMonth accordingly"() {
+        given:
+        CreditCardTransaction transaction = buildTransaction("group-1", 3, 12)
+
+        when:
+        transaction.update(transaction.getCategory(), transaction.getSubCategory(), transaction.getAmount(),
+                LocalDate.of(2026, 4, 20), "new desc")
+
+        then:
+        transaction.getCompetenceMonth() == LocalDate.of(2026, 6, 1)
     }
 }

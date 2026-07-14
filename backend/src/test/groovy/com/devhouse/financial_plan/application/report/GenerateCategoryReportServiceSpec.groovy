@@ -55,11 +55,13 @@ class GenerateCategoryReportServiceSpec extends Specification {
         new CreditCard(values.id, 0, space, values.bankAccount, values.name, new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
     }
 
+    // installmentNumber is fixed at 1, so the purchase's competenceMonth (derived) always equals the month of `date`.
     private CreditCardTransaction purchase(Map overrides = [:]) {
         Map values = [id: 200L, creditCard: creditCard(), category: food, subCategory: restaurants,
-                      amount: new BigDecimal("80.00"), date: LocalDate.of(2026, 7, 15)] + overrides
+                      amount: new BigDecimal("80.00"), date: LocalDate.of(2026, 7, 15),
+                      referenceMonth: LocalDate.of(2026, 8, 1)] + overrides
         new CreditCardTransaction(values.id, 0, values.creditCard, user, values.category, values.subCategory,
-                values.amount, values.date, "purchase", LocalDate.of(2026, 8, 1),
+                values.amount, values.date, "purchase", values.referenceMonth,
                 "group-1", 1, 3, false, null, Instant.now(), null)
     }
 
@@ -78,7 +80,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         transactionRepository.findByFilter(1L, null, null, null, null, null, _, _) >>
                 [transaction(id: 100L, amount: new BigDecimal("50.00")),
                  transaction(id: 101L, amount: new BigDecimal("30.00"), subCategory: restaurants)]
-        creditCardTransactionRepository.findByFilter(1L, null, null, null, null, _, _, null) >>
+        creditCardTransactionRepository.findByFilter(1L, null, null, null, null, null) >>
                 [purchase(id: 200L, amount: new BigDecimal("80.00"))]
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
@@ -115,10 +117,10 @@ class GenerateCategoryReportServiceSpec extends Specification {
         response.groups()[0].subGroups()[0].items()[0].id() == 100L
     }
 
-    def "execute includes credit card purchases by invoice month with the card name"() {
+    def "execute includes credit card purchases whose competence month falls in the requested period, showing the purchase date and invoice month"() {
         given:
         transactionRepository.findByFilter(*_) >> []
-        creditCardTransactionRepository.findByFilter(1L, null, null, null, null, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31), null) >>
+        creditCardTransactionRepository.findByFilter(1L, null, null, null, null, null) >>
                 [purchase(id: 200L)]
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
@@ -137,6 +139,22 @@ class GenerateCategoryReportServiceSpec extends Specification {
             date() == LocalDate.of(2026, 7, 15)
             referenceMonth() == LocalDate.of(2026, 8, 1)
         }
+    }
+
+    def "execute filters credit card purchases by the requested from/to range using the derived competence month"() {
+        given:
+        transactionRepository.findByFilter(*_) >> []
+        creditCardTransactionRepository.findByFilter(1L, null, null, null, null, null) >>
+                [purchase(id: 200L, date: LocalDate.of(2026, 8, 20), referenceMonth: LocalDate.of(2026, 9, 1)),
+                 purchase(id: 201L, date: LocalDate.of(2026, 9, 5), referenceMonth: LocalDate.of(2026, 10, 1))]
+        creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
+
+        when:
+        CategoryReportResponse response = service.execute(filter(from: LocalDate.of(2026, 8, 1), to: LocalDate.of(2026, 8, 31)))
+
+        then:
+        response.groups()[0].subGroups()[0].items().size() == 1
+        response.groups()[0].subGroups()[0].items()[0].id() == 200L
     }
 
     def "execute leaves referenceMonth null for regular transaction items"() {
@@ -173,7 +191,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
 
     def "execute returns only purchases of the given credit card when creditCardId is filtered"() {
         given:
-        creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, _, _, null) >> [purchase()]
+        creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, null) >> [purchase()]
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
@@ -224,7 +242,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         service.execute(filter(userId: 1L))
 
         then:
-        1 * creditCardTransactionRepository.findByFilter(1L, null, null, null, 1L, _, _, null) >> []
+        1 * creditCardTransactionRepository.findByFilter(1L, null, null, null, 1L, null) >> []
     }
 
     def "execute computes summary totals and group percentages"() {

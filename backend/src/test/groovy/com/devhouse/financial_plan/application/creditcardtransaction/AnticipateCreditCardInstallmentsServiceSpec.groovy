@@ -62,13 +62,17 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         2 * creditCardTransactionRepository.update(_)
         responses.size() == 4
         responses[0].referenceMonth() == LocalDate.of(2026, 1, 1)
+        responses[0].competenceMonth() == LocalDate.of(2026, 1, 1)
         !responses[0].anticipated()
         responses[1].referenceMonth() == LocalDate.of(2026, 2, 1)
+        responses[1].competenceMonth() == LocalDate.of(2026, 2, 1)
         !responses[1].anticipated()
         responses[2].referenceMonth() == LocalDate.of(2026, 1, 1)
+        responses[2].competenceMonth() == LocalDate.of(2026, 1, 1)
         responses[2].anticipated()
         responses[2].originalReferenceMonth() == LocalDate.of(2026, 3, 1)
         responses[3].referenceMonth() == LocalDate.of(2026, 1, 1)
+        responses[3].competenceMonth() == LocalDate.of(2026, 1, 1)
         responses[3].anticipated()
         responses[3].originalReferenceMonth() == LocalDate.of(2026, 4, 1)
         responses.every { it.totalAmount() == new BigDecimal("400.00") }
