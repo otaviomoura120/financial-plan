@@ -46,6 +46,7 @@ interface Props {
 interface Emit {
   (e: 'update:isDialogVisible', value: boolean): void
   (e: 'saved', transaction: CreditCardTransactionResponse): void
+  (e: 'recurringSaved'): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -73,6 +74,7 @@ const amount = shallowRef<number | null>(null)
 const purchaseDate = shallowRef<string>('')
 const description = shallowRef('')
 const totalInstallments = shallowRef<string>('')
+const isRecurringSubscription = shallowRef(false)
 const isLoading = shallowRef(false)
 
 const isEditMode = computed(() => props.transaction !== null)
@@ -123,10 +125,16 @@ watch(
       purchaseDate.value = t?.purchaseDate ?? toLocalDateString(new Date())
       description.value = t?.description ?? ''
       totalInstallments.value = ''
+      isRecurringSubscription.value = false
       clearError()
     }
   },
 )
+
+watch(isRecurringSubscription, recurring => {
+  if (recurring)
+    totalInstallments.value = ''
+})
 
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
@@ -138,6 +146,26 @@ async function onSubmit() {
   clearError()
 
   try {
+    if (!isEditMode.value && isRecurringSubscription.value) {
+      await $fetch('/api/credit-card-transactions/recurring', {
+        method: 'POST',
+        body: {
+          creditCardId: props.creditCardId,
+          userId: spaceStore.dbUser!.id,
+          categoryId: categoryId.value,
+          subCategoryId: subCategoryId.value,
+          description: description.value || undefined,
+          defaultAmount: amount.value,
+          startDate: purchaseDate.value,
+        },
+      })
+
+      emit('recurringSaved')
+      emit('update:isDialogVisible', false)
+
+      return
+    }
+
     let saved: CreditCardTransactionResponse
 
     if (isEditMode.value) {
@@ -275,7 +303,7 @@ function onClose() {
             </VCol>
 
             <VCol
-              v-if="!isEditMode"
+              v-if="!isEditMode && !isRecurringSubscription"
               cols="12"
               md="6"
             >
@@ -289,6 +317,19 @@ function onClose() {
                 hint="Deixe em branco ou 1 para compra à vista"
                 persistent-hint
                 :rules="installmentsRules"
+              />
+            </VCol>
+
+            <VCol
+              v-if="!isEditMode"
+              cols="12"
+              :md="isRecurringSubscription ? 12 : 6"
+              class="d-flex align-center"
+            >
+              <VCheckbox
+                v-model="isRecurringSubscription"
+                label="Assinatura recorrente (cobra todo mês)"
+                hide-details
               />
             </VCol>
           </VRow>

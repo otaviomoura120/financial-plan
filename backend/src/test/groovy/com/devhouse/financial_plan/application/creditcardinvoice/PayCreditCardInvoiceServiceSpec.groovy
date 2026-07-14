@@ -45,7 +45,7 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
     }
 
     private CreditCardTransaction buildTransaction(BigDecimal amount) {
-        new CreditCardTransaction(1L, 0, buildCreditCard(), buildUser(), new Category(20L, 0, null, "Food", true, Instant.now(), null),
+        new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), new Category(20L, 0, null, "Food", true, Instant.now(), null),
                 null, amount, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1), "group-1", 1, 1, false, null,
                 Instant.now(), null)
     }

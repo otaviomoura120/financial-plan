@@ -99,6 +99,7 @@ const isAddEditDialogVisible = shallowRef(false)
 const isDeleteDialogVisible = shallowRef(false)
 const isDeleteInstallmentDialogVisible = shallowRef(false)
 const isAnticipateDialogVisible = shallowRef(false)
+const isSubscriptionsDialogVisible = shallowRef(false)
 
 const selectedTransaction = shallowRef<CreditCardTransactionResponse | null>(null)
 
@@ -288,6 +289,11 @@ function onTransactionSaved(saved: CreditCardTransactionResponse) {
     transactions.value = [saved, ...transactions.value]
 }
 
+async function onRecurringSubscriptionSaved() {
+  showSuccess('Assinatura cadastrada. O primeiro lançamento aparecerá na fatura correspondente.')
+  await fetchTransactions()
+}
+
 function onAnticipated(updated: CreditCardTransactionResponse[]) {
   for (const updatedTransaction of updated) {
     const idx = transactions.value.findIndex(t => t.id === updatedTransaction.id)
@@ -369,6 +375,15 @@ function onClose() {
                     v-model="selectedMonth"
                     label="Mês de Referência"
                   />
+
+                  <VBtn
+                    variant="tonal"
+                    prepend-icon="tabler-refresh"
+                    style="align-self: flex-end"
+                    @click="isSubscriptionsDialogVisible = true"
+                  >
+                    <span class="d-sm-inline">Assinaturas Recorrentes</span>
+                  </VBtn>
 
                   <VBtn
                     prepend-icon="tabler-plus"
@@ -569,6 +584,13 @@ function onClose() {
       :transaction="selectedTransaction"
       :categories="categories"
       @saved="onTransactionSaved"
+      @recurring-saved="onRecurringSubscriptionSaved"
+    />
+
+    <RecurringCreditCardSubscriptionsDialog
+      v-model:is-dialog-visible="isSubscriptionsDialogVisible"
+      :credit-card-id="props.creditCardId"
+      :categories="categories"
     />
 
     <AnticipateInstallmentsDialog

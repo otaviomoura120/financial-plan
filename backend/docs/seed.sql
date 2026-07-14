@@ -1203,3 +1203,72 @@ WHERE r.name = 'MEMBER'
 -- competence_month ficou órfã (sem uso) e pode ser removida manualmente:
 --   ALTER TABLE credit_card_transactions DROP COLUMN competence_month;
 -- =============================================================================
+
+-- =============================================================================
+-- 17. INCREMENTAL — CreditCardTransactionRecurring (Assinaturas Recorrentes)
+--    Novo sub-recurso de CreditCardTransaction: /credit-card-transactions/recurring[...].
+--    Mesmo raciocínio das seções 8/16 — reaproveita o ep_group 'Cartões de Crédito'.
+--    Idempotente via WHERE NOT EXISTS.
+-- =============================================================================
+
+-- 17.1 — endpoint_permissions (API) que ainda não existirem
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/credit-card-transactions/recurring' AS endpoint, 'Visualizar e Criar Assinaturas Recorrentes' AS name,
+           84 AS sequence, 'API' AS type, 'GET,POST' AS permitted_methods, 'Cartões de Crédito' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/credit-card-transactions/recurring' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/credit-card-transactions/recurring/[0-9]+' AS endpoint, 'Editar e Excluir Assinaturas Recorrentes' AS name,
+           85 AS sequence, 'API' AS type, 'PUT,DELETE' AS permitted_methods, 'Cartões de Crédito' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/credit-card-transactions/recurring/[0-9]+' AND type = 'API');
+
+INSERT INTO endpoint_permissions (version, endpoint, name, sequence, type, permitted_methods, ep_group, created_at, updated_at)
+SELECT * FROM (
+    SELECT 1 AS version, '/credit-card-transactions/recurring/[0-9]+/schedule' AS endpoint, 'Agendar Assinaturas Recorrentes' AS name,
+           86 AS sequence, 'API' AS type, 'PUT' AS permitted_methods, 'Cartões de Crédito' AS ep_group,
+           NOW() AS created_at, NOW() AS updated_at
+) AS tmp
+WHERE NOT EXISTS (SELECT 1 FROM endpoint_permissions WHERE endpoint = '/credit-card-transactions/recurring/[0-9]+/schedule' AND type = 'API');
+
+-- 17.2 — role_endpoint_permissions: OWNER ganha ALLOW (cobre as 3 linhas novas)
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+CROSS JOIN endpoint_permissions ep
+WHERE r.name = 'OWNER'
+  AND ep.name IN ('Visualizar e Criar Assinaturas Recorrentes', 'Editar e Excluir Assinaturas Recorrentes', 'Agendar Assinaturas Recorrentes')
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 17.3 — role_endpoint_permissions: ADMIN ganha ALLOW em 'Cartões de Crédito'
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep
+    ON ep.name IN ('Visualizar e Criar Assinaturas Recorrentes', 'Editar e Excluir Assinaturas Recorrentes', 'Agendar Assinaturas Recorrentes')
+WHERE r.name = 'ADMIN'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+
+-- 17.4 — role_endpoint_permissions: MEMBER ganha ALLOW em 'Cartões de Crédito'
+INSERT INTO role_endpoint_permissions (version, role_id, endpoint_permission_id, permission, created_at, updated_at)
+SELECT 0, r.id, ep.id, 'ALLOW', NOW(), NOW()
+FROM roles r
+JOIN endpoint_permissions ep
+    ON ep.name IN ('Visualizar e Criar Assinaturas Recorrentes', 'Editar e Excluir Assinaturas Recorrentes', 'Agendar Assinaturas Recorrentes')
+WHERE r.name = 'MEMBER'
+  AND NOT EXISTS (
+      SELECT 1 FROM role_endpoint_permissions rep
+      WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
+  );
+-- =============================================================================

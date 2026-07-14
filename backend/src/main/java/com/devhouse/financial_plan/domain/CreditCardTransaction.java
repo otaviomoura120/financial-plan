@@ -14,6 +14,7 @@ public class CreditCardTransaction {
     private Long id;
     private Integer version;
     private CreditCard creditCard;
+    private CreditCardTransactionRecurring creditCardTransactionRecurring;
     private User user;
     private Category category;
     private SubCategory subCategory;
@@ -29,13 +30,15 @@ public class CreditCardTransaction {
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public CreditCardTransaction(Long id, Integer version, CreditCard creditCard, User user, Category category, SubCategory subCategory,
+    public CreditCardTransaction(Long id, Integer version, CreditCard creditCard, CreditCardTransactionRecurring creditCardTransactionRecurring,
+                                  User user, Category category, SubCategory subCategory,
                                   BigDecimal amount, LocalDate purchaseDate, String description, LocalDate referenceMonth,
                                   String installmentGroupId, Integer installmentNumber, Integer totalInstallments,
                                   boolean anticipated, LocalDate originalReferenceMonth, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
         this.creditCard = creditCard;
+        this.creditCardTransactionRecurring = creditCardTransactionRecurring;
         this.user = user;
         this.category = category;
         this.subCategory = subCategory;
@@ -91,6 +94,11 @@ public class CreditCardTransaction {
         this.updatedDate = Instant.now();
     }
 
+    public void detachFromRecurring() {
+        this.creditCardTransactionRecurring = null;
+        this.updatedDate = Instant.now();
+    }
+
     public void anticipateTo(LocalDate targetReferenceMonth) {
         if (!anticipated) {
             this.originalReferenceMonth = this.referenceMonth;
@@ -113,6 +121,8 @@ public class CreditCardTransaction {
 
     public CreditCard getCreditCard() { return creditCard; }
     public void setCreditCard(CreditCard creditCard) { this.creditCard = creditCard; }
+    public CreditCardTransactionRecurring getCreditCardTransactionRecurring() { return creditCardTransactionRecurring; }
+    public void setCreditCardTransactionRecurring(CreditCardTransactionRecurring creditCardTransactionRecurring) { this.creditCardTransactionRecurring = creditCardTransactionRecurring; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
     public Category getCategory() { return category; }

@@ -23,7 +23,7 @@ class CreditCardTransactionSpec extends Specification {
     }
 
     private CreditCardTransaction buildTransaction(String installmentGroupId, Integer installmentNumber, Integer totalInstallments) {
-        new CreditCardTransaction(null, 0, buildCreditCard(), buildUser(), buildCategory(), null,
+        new CreditCardTransaction(null, 0, buildCreditCard(), null, buildUser(), buildCategory(), null,
                 new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 installmentGroupId, installmentNumber, totalInstallments, false, null, Instant.now(), null)
     }
@@ -52,7 +52,7 @@ class CreditCardTransactionSpec extends Specification {
 
     def "validate throws DomainException when creditCard is null"() {
         given:
-        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, null, buildUser(), buildCategory(), null,
+        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, null, null, buildUser(), buildCategory(), null,
                 new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
 
@@ -65,7 +65,7 @@ class CreditCardTransactionSpec extends Specification {
 
     def "validate throws DomainException when user is null"() {
         given:
-        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), null, buildCategory(), null,
+        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), null, null, buildCategory(), null,
                 new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
 
@@ -78,7 +78,7 @@ class CreditCardTransactionSpec extends Specification {
 
     def "validate throws DomainException when category is null"() {
         given:
-        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), buildUser(), null, null,
+        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), null, buildUser(), null, null,
                 new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
 
@@ -91,7 +91,7 @@ class CreditCardTransactionSpec extends Specification {
 
     def "validate throws DomainException when amount is null or not positive"() {
         given:
-        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), buildUser(), buildCategory(), null,
+        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), null, buildUser(), buildCategory(), null,
                 amount, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
 
@@ -107,7 +107,7 @@ class CreditCardTransactionSpec extends Specification {
 
     def "validate throws DomainException when purchaseDate is null"() {
         given:
-        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), buildUser(), buildCategory(), null,
+        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), null, buildUser(), buildCategory(), null,
                 new BigDecimal("100.00"), null, "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
 
@@ -120,7 +120,7 @@ class CreditCardTransactionSpec extends Specification {
 
     def "validate throws DomainException when referenceMonth is null"() {
         given:
-        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), buildUser(), buildCategory(), null,
+        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), null, buildUser(), buildCategory(), null,
                 new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", null,
                 "group-1", 1, 1, false, null, Instant.now(), null)
 
@@ -258,5 +258,21 @@ class CreditCardTransactionSpec extends Specification {
 
         then:
         transaction.getCompetenceMonth() == LocalDate.of(2026, 6, 1)
+    }
+
+    def "detachFromRecurring clears the recurring reference and bumps updatedDate"() {
+        given:
+        CreditCardTransactionRecurring recurring = new CreditCardTransactionRecurring(50L, 0, buildCreditCard(), buildUser(),
+                buildCategory(), null, "Netflix", new BigDecimal("39.90"), LocalDate.of(2026, 3, 10), true, Instant.now(), null)
+        CreditCardTransaction transaction = new CreditCardTransaction(null, 0, buildCreditCard(), recurring, buildUser(),
+                buildCategory(), null, new BigDecimal("39.90"), LocalDate.of(2026, 3, 10), "Netflix", LocalDate.of(2026, 3, 1),
+                "group-1", 1, 1, false, null, Instant.now(), null)
+
+        when:
+        transaction.detachFromRecurring()
+
+        then:
+        transaction.getCreditCardTransactionRecurring() == null
+        transaction.getUpdatedDate() != null
     }
 }

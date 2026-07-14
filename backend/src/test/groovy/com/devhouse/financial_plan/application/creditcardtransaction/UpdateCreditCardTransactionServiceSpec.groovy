@@ -40,7 +40,7 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
 
     private CreditCardTransaction buildExisting() {
         Category category = new Category(20L, 0, null, "Food", true, Instant.now(), null)
-        new CreditCardTransaction(1L, 0, buildCreditCard(), buildUser(), category, null,
+        new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), category, null,
                 new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
     }
@@ -90,7 +90,7 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
     def "execute computes totalAmount by summing the group when the installment belongs to a parceled purchase"() {
         given:
         Category category = new Category(20L, 0, null, "Food", true, Instant.now(), null)
-        CreditCardTransaction existing = new CreditCardTransaction(2L, 0, buildCreditCard(), buildUser(), category, null,
+        CreditCardTransaction existing = new CreditCardTransaction(2L, 0, buildCreditCard(), null, buildUser(), category, null,
                 new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 4, 1),
                 "group-2", 2, 3, false, null, Instant.now(), null)
         creditCardTransactionRepository.findById(2L) >> existing
@@ -98,11 +98,11 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", true, Instant.now(), null)
         creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
         creditCardTransactionRepository.findByInstallmentGroupId("group-2") >> [
-                new CreditCardTransaction(1L, 0, buildCreditCard(), buildUser(), category, null,
+                new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), category, null,
                         new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                         "group-2", 1, 3, false, null, Instant.now(), null),
                 existing,
-                new CreditCardTransaction(3L, 0, buildCreditCard(), buildUser(), category, null,
+                new CreditCardTransaction(3L, 0, buildCreditCard(), null, buildUser(), category, null,
                         new BigDecimal("33.34"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 5, 1),
                         "group-2", 3, 3, false, null, Instant.now(), null),
         ]

@@ -20,6 +20,9 @@ public class CreditCardTransactionEntityJpa {
     @JoinColumn(name = "credit_card_id")
     private CreditCardEntityJpa creditCard;
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "credit_card_transaction_recurring_id")
+    private CreditCardTransactionRecurringEntityJpa creditCardTransactionRecurring;
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private UserEntityJpa user;
     @ManyToOne(fetch = FetchType.LAZY)
@@ -51,6 +54,8 @@ public class CreditCardTransactionEntityJpa {
     public void setVersion(Integer version) { this.version = version; }
     public CreditCardEntityJpa getCreditCard() { return creditCard; }
     public void setCreditCard(CreditCardEntityJpa creditCard) { this.creditCard = creditCard; }
+    public CreditCardTransactionRecurringEntityJpa getCreditCardTransactionRecurring() { return creditCardTransactionRecurring; }
+    public void setCreditCardTransactionRecurring(CreditCardTransactionRecurringEntityJpa creditCardTransactionRecurring) { this.creditCardTransactionRecurring = creditCardTransactionRecurring; }
     public UserEntityJpa getUser() { return user; }
     public void setUser(UserEntityJpa user) { this.user = user; }
     public CategoryEntityJpa getCategory() { return category; }

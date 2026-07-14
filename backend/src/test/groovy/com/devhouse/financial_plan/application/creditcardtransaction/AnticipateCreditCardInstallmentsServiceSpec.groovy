@@ -39,7 +39,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
 
     private CreditCardTransaction buildInstallment(Integer number, Integer total, LocalDate referenceMonth,
                                                      boolean anticipated = false, LocalDate originalReferenceMonth = null) {
-        new CreditCardTransaction(number as Long, 0, buildCreditCard(), buildUser(), buildCategory(), null,
+        new CreditCardTransaction(number as Long, 0, buildCreditCard(), null, buildUser(), buildCategory(), null,
                 new BigDecimal("100.00"), LocalDate.of(2026, 1, 5), "desc", referenceMonth,
                 "group-1", number, total, anticipated, originalReferenceMonth, Instant.now(), null)
     }

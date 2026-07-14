@@ -69,7 +69,7 @@ public class CreateCreditCardTransactionService {
 
         CreditCardTransaction firstInstallment = null;
         for (int i = 0; i < totalInstallments; i++) {
-            CreditCardTransaction installment = new CreditCardTransaction(null, 0, creditCard, user, category, subCategory,
+            CreditCardTransaction installment = new CreditCardTransaction(null, 0, creditCard, null, user, category, subCategory,
                     installmentAmounts.get(i), request.purchaseDate(), request.description(), referenceMonths.get(i),
                     installmentGroupId, i + 1, totalInstallments, false, null, Instant.now(), null);
             installment.validate();

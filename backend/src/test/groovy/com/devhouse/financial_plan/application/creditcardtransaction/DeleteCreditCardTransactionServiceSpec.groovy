@@ -29,7 +29,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
         Category category = new Category(20L, 0, null, "Food", true, Instant.now(), null)
-        new CreditCardTransaction(id, 0, creditCard, user, category, null,
+        new CreditCardTransaction(id, 0, creditCard, null, user, category, null,
                 new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", referenceMonth,
                 groupId, installmentNumber, totalInstallments, false, null, Instant.now(), null)
     }

@@ -4,6 +4,7 @@ import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.CreditCard;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
+import com.devhouse.financial_plan.domain.CreditCardTransactionRecurring;
 import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.User;
@@ -12,8 +13,10 @@ import com.devhouse.financial_plan.infrastructure.repository.jpa.BankAccountEnti
 import com.devhouse.financial_plan.infrastructure.repository.jpa.CategoryEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.CreditCardEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.CreditCardTransactionEntityJpa;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.CreditCardTransactionRecurringEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaCategoryRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaCreditCardRepository;
+import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaCreditCardTransactionRecurringRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaCreditCardTransactionRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaSubCategoryRepository;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.JpaUserRepository;
@@ -30,6 +33,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,15 +46,18 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     private final JpaUserRepository jpaUserRepository;
     private final JpaCategoryRepository jpaCategoryRepository;
     private final JpaSubCategoryRepository jpaSubCategoryRepository;
+    private final JpaCreditCardTransactionRecurringRepository jpaCreditCardTransactionRecurringRepository;
 
     public CreditCardTransactionRepositoryImpl(JpaCreditCardTransactionRepository jpaCreditCardTransactionRepository,
                                                 JpaCreditCardRepository jpaCreditCardRepository, JpaUserRepository jpaUserRepository,
-                                                JpaCategoryRepository jpaCategoryRepository, JpaSubCategoryRepository jpaSubCategoryRepository) {
+                                                JpaCategoryRepository jpaCategoryRepository, JpaSubCategoryRepository jpaSubCategoryRepository,
+                                                JpaCreditCardTransactionRecurringRepository jpaCreditCardTransactionRecurringRepository) {
         this.jpaCreditCardTransactionRepository = jpaCreditCardTransactionRepository;
         this.jpaCreditCardRepository = jpaCreditCardRepository;
         this.jpaUserRepository = jpaUserRepository;
         this.jpaCategoryRepository = jpaCategoryRepository;
         this.jpaSubCategoryRepository = jpaSubCategoryRepository;
+        this.jpaCreditCardTransactionRecurringRepository = jpaCreditCardTransactionRecurringRepository;
     }
 
     @Override
@@ -112,6 +119,21 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
     }
 
     @Override
+    public List<CreditCardTransaction> findByCreditCardTransactionRecurringId(Long creditCardTransactionRecurringId) {
+        return jpaCreditCardTransactionRepository.findByCreditCardTransactionRecurring_Id(creditCardTransactionRecurringId).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<CreditCardTransaction> findByCreditCardTransactionRecurringIdAndPurchaseMonth(Long creditCardTransactionRecurringId, YearMonth month) {
+        return jpaCreditCardTransactionRepository.findByCreditCardTransactionRecurring_IdAndPurchaseDateBetween(
+                        creditCardTransactionRecurringId, month.atDay(1), month.atEndOfMonth()).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public void delete(Long id) {
         jpaCreditCardTransactionRepository.deleteById(id);
     }
@@ -150,6 +172,8 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
 
     private void applyFields(CreditCardTransaction creditCardTransaction, CreditCardTransactionEntityJpa entity) {
         entity.setCreditCard(jpaCreditCardRepository.getReferenceById(creditCardTransaction.getCreditCard().getId()));
+        entity.setCreditCardTransactionRecurring(creditCardTransaction.getCreditCardTransactionRecurring() != null
+                ? jpaCreditCardTransactionRecurringRepository.getReferenceById(creditCardTransaction.getCreditCardTransactionRecurring().getId()) : null);
         entity.setUser(jpaUserRepository.getReferenceById(creditCardTransaction.getUser().getId()));
         entity.setCategory(jpaCategoryRepository.getReferenceById(creditCardTransaction.getCategory().getId()));
         entity.setSubCategory(creditCardTransaction.getSubCategory() != null
@@ -167,13 +191,25 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
 
     private CreditCardTransaction toDomain(CreditCardTransactionEntityJpa entity) {
         CreditCard creditCard = buildCreditCard(entity.getCreditCard());
+        CreditCardTransactionRecurring recurring = entity.getCreditCardTransactionRecurring() != null
+                ? buildCreditCardTransactionRecurring(entity.getCreditCardTransactionRecurring()) : null;
         User user = buildUser(entity.getUser());
         Category category = entity.getCategory() != null ? buildCategory(entity.getCategory()) : null;
         SubCategory subCategory = entity.getSubCategory() != null ? buildSubCategory(entity.getSubCategory()) : null;
-        return new CreditCardTransaction(entity.getId(), entity.getVersion(), creditCard, user, category, subCategory,
+        return new CreditCardTransaction(entity.getId(), entity.getVersion(), creditCard, recurring, user, category, subCategory,
                 entity.getAmount(), entity.getPurchaseDate(), entity.getDescription(), entity.getReferenceMonth(),
                 entity.getInstallmentGroupId(), entity.getInstallmentNumber(), entity.getTotalInstallments(),
                 entity.isAnticipated(), entity.getOriginalReferenceMonth(), entity.getCreatedAt(), null);
+    }
+
+    private CreditCardTransactionRecurring buildCreditCardTransactionRecurring(CreditCardTransactionRecurringEntityJpa entity) {
+        CreditCard creditCard = buildCreditCard(entity.getCreditCard());
+        User user = buildUser(entity.getUser());
+        Category category = entity.getCategory() != null ? buildCategory(entity.getCategory()) : null;
+        SubCategory subCategory = entity.getSubCategory() != null ? buildSubCategory(entity.getSubCategory()) : null;
+        return new CreditCardTransactionRecurring(entity.getId(), entity.getVersion(), creditCard, user, category, subCategory,
+                entity.getDescription(), entity.getDefaultAmount(), entity.getStartDate(), entity.isActive(),
+                entity.getCreatedAt(), null);
     }
 
     private CreditCard buildCreditCard(CreditCardEntityJpa entity) {

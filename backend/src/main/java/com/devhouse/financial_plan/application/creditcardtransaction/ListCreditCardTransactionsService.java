@@ -15,14 +15,18 @@ import java.util.Map;
 public class ListCreditCardTransactionsService {
 
     private final CreditCardTransactionRepository creditCardTransactionRepository;
+    private final EnsureRecurringCreditCardTransactionsGeneratedService ensureRecurringCreditCardTransactionsGeneratedService;
 
-    public ListCreditCardTransactionsService(CreditCardTransactionRepository creditCardTransactionRepository) {
+    public ListCreditCardTransactionsService(CreditCardTransactionRepository creditCardTransactionRepository,
+                                              EnsureRecurringCreditCardTransactionsGeneratedService ensureRecurringCreditCardTransactionsGeneratedService) {
         this.creditCardTransactionRepository = creditCardTransactionRepository;
+        this.ensureRecurringCreditCardTransactionsGeneratedService = ensureRecurringCreditCardTransactionsGeneratedService;
     }
 
     public List<CreditCardTransactionResponse> execute(Long spaceId, Long creditCardId, Long categoryId,
                                                          Long subCategoryId, LocalDate from, LocalDate to, LocalDate referenceMonth,
                                                          LocalDate competenceMonth) {
+        ensureRecurringCreditCardTransactionsGeneratedService.execute(spaceId, to != null ? to : LocalDate.now());
         Map<String, BigDecimal> totalAmountByGroup = new HashMap<>();
         return creditCardTransactionRepository.findByFilter(spaceId, creditCardId, categoryId, subCategoryId, null, referenceMonth).stream()
                 .filter(t -> matchesCompetenceMonth(t, from, to, competenceMonth))

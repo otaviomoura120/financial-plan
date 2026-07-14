@@ -3,6 +3,7 @@ package com.devhouse.financial_plan.domain.repository;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 public interface CreditCardTransactionRepository {
@@ -14,5 +15,7 @@ public interface CreditCardTransactionRepository {
     List<CreditCardTransaction> findByCreditCardId(Long creditCardId);
     List<CreditCardTransaction> findByCreditCardIdAndReferenceMonth(Long creditCardId, LocalDate referenceMonth);
     boolean existsByCreditCardId(Long creditCardId);
+    List<CreditCardTransaction> findByCreditCardTransactionRecurringId(Long creditCardTransactionRecurringId);
+    List<CreditCardTransaction> findByCreditCardTransactionRecurringIdAndPurchaseMonth(Long creditCardTransactionRecurringId, YearMonth month);
     void delete(Long id);
 }
