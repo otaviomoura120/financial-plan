@@ -503,7 +503,7 @@ function onClose() {
                             color="default"
                             @click="openAnticipate(transaction)"
                           >
-                            <VIcon icon="tabler-clock-forward" />
+                            <VIcon icon="tabler-clock-up" />
                             <VTooltip activator="parent">
                               Antecipar parcelas
                             </VTooltip>
