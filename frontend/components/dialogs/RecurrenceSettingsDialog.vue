@@ -170,7 +170,7 @@ function onClose() {
           Configurações de Recorrência
         </h4>
         <p class="text-body-1 text-center mb-6">
-          Contas que se repetem todo mês. Alterações aqui afetam somente as próximas gerações.
+          Contas que se repetem todo mês. Alterações aqui afetam as contas pendentes do mês atual em diante (já geradas ou não); as de meses anteriores ou já pagas não são alteradas.
         </p>
 
         <ApiErrorAlert
@@ -316,7 +316,7 @@ function onClose() {
       v-model:is-dialog-visible="isDeleteDialogVisible"
       :auto-result="false"
       confirm-color="error"
-      confirmation-question="Tem certeza que deseja excluir definitivamente esta recorrência? Esta ação não pode ser desfeita. Ela para de gerar novas contas; as já lançadas continuam disponíveis, mas deixam de ficar vinculadas a ela."
+      confirmation-question="Tem certeza que deseja excluir definitivamente esta recorrência? As contas pendentes do mês atual em diante serão excluídas; as de meses anteriores ou já pagas continuam disponíveis, mas deixam de ficar vinculadas a ela."
       cancel-title="Ação cancelada"
       cancel-msg="A recorrência não foi excluída."
       @confirm="onDeleteConfirm"

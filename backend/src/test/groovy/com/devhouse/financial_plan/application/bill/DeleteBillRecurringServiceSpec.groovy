@@ -11,6 +11,7 @@ import spock.lang.Specification
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 
 class DeleteBillRecurringServiceSpec extends Specification {
 
@@ -27,28 +28,48 @@ class DeleteBillRecurringServiceSpec extends Specification {
                 LocalDate.of(2026, 3, 10), true, Instant.now(), null)
     }
 
-    private Bill buildGeneratedBill(Long id, BillRecurring billRecurring) {
-        new Bill(id, 0, buildSpace(), billRecurring, "Energy Bill", null, null, LocalDate.of(2026, 3, 1),
-                LocalDate.of(2026, 3, 10), new BigDecimal("150.00"), BillInstanceStatus.PENDING, null, null, null,
-                false, Instant.now(), null)
+    private Bill buildGeneratedBill(Long id, BillRecurring billRecurring, LocalDate referenceMonth, BillInstanceStatus status = BillInstanceStatus.PENDING) {
+        new Bill(id, 0, buildSpace(), billRecurring, "Energy Bill", null, null, referenceMonth,
+                referenceMonth, new BigDecimal("150.00"), status, null, null, null, false, Instant.now(), null)
     }
 
-    def "execute hard-deletes the bill recurring and detaches generated bills"() {
+    def "execute deletes pending bills from the current month onward and detaches (keeps) past bills"() {
         given:
         BillRecurring billRecurring = buildBillRecurring()
         billRecurringRepository.findById(10L) >> billRecurring
-        Bill bill1 = buildGeneratedBill(1L, billRecurring)
-        Bill bill2 = buildGeneratedBill(2L, billRecurring)
-        billRepository.findByBillRecurringId(10L) >> [bill1, bill2]
+        Bill pastBill = buildGeneratedBill(1L, billRecurring, YearMonth.now().minusMonths(2).atDay(1))
+        Bill currentMonthBill = buildGeneratedBill(2L, billRecurring, YearMonth.now().atDay(1))
+        Bill futureBill = buildGeneratedBill(3L, billRecurring, YearMonth.now().plusMonths(3).atDay(1))
+        billRepository.findByBillRecurringId(10L) >> [pastBill, currentMonthBill, futureBill]
 
         when:
         service.execute(10L)
 
         then:
-        bill1.getBillRecurring() == null
-        bill2.getBillRecurring() == null
-        1 * billRepository.update(bill1)
-        1 * billRepository.update(bill2)
+        pastBill.getBillRecurring() == null
+        1 * billRepository.update(pastBill)
+        0 * billRepository.update(currentMonthBill)
+        0 * billRepository.update(futureBill)
+        1 * billRepository.delete(2L)
+        1 * billRepository.delete(3L)
+        0 * billRepository.delete(1L)
+        1 * billRecurringRepository.delete(10L)
+    }
+
+    def "execute detaches (does not delete) a current/future bill that is already paid"() {
+        given:
+        BillRecurring billRecurring = buildBillRecurring()
+        billRecurringRepository.findById(10L) >> billRecurring
+        Bill paidBill = buildGeneratedBill(1L, billRecurring, YearMonth.now().atDay(1), BillInstanceStatus.PAID)
+        billRepository.findByBillRecurringId(10L) >> [paidBill]
+
+        when:
+        service.execute(10L)
+
+        then:
+        paidBill.getBillRecurring() == null
+        1 * billRepository.update(paidBill)
+        0 * billRepository.delete(1L)
         1 * billRecurringRepository.delete(10L)
     }
 
@@ -62,6 +83,7 @@ class DeleteBillRecurringServiceSpec extends Specification {
 
         then:
         0 * billRepository.update(_)
+        0 * billRepository.delete(_)
         1 * billRecurringRepository.delete(10L)
     }
 
@@ -75,6 +97,7 @@ class DeleteBillRecurringServiceSpec extends Specification {
         then:
         thrown(DomainException)
         0 * billRepository.update(_)
+        0 * billRepository.delete(_)
         0 * billRecurringRepository.delete(_)
     }
 }

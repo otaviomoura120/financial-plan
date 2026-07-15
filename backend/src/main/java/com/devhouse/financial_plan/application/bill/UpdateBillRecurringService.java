@@ -2,29 +2,38 @@ package com.devhouse.financial_plan.application.bill;
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse;
 import com.devhouse.financial_plan.application.bill.dto.UpdateBillRecurringRequest;
+import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.BillRecurring;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BillRecurringRepository;
+import com.devhouse.financial_plan.domain.repository.BillRepository;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
 
 @Service
 public class UpdateBillRecurringService {
 
     private final BillRecurringRepository billRecurringRepository;
+    private final BillRepository billRepository;
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
 
-    public UpdateBillRecurringService(BillRecurringRepository billRecurringRepository, CategoryRepository categoryRepository,
-                                       SubCategoryRepository subCategoryRepository) {
+    public UpdateBillRecurringService(BillRecurringRepository billRecurringRepository, BillRepository billRepository,
+                                       CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository) {
         this.billRecurringRepository = billRecurringRepository;
+        this.billRepository = billRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
     }
 
+    @Transactional
     public BillResponse execute(Long id, UpdateBillRecurringRequest request) {
         BillRecurring billRecurring = billRecurringRepository.findById(id);
         if (billRecurring == null) {
@@ -36,7 +45,23 @@ public class UpdateBillRecurringService {
         billRecurring.update(request.name(), category, subCategory, request.defaultAmount());
         billRecurring.validate();
         BillRecurring updated = billRecurringRepository.update(billRecurring);
+        updateCurrentAndFutureBills(updated);
         return toResponse(updated);
+    }
+
+    private void updateCurrentAndFutureBills(BillRecurring billRecurring) {
+        LocalDate currentMonth = YearMonth.now().atDay(1);
+        for (Bill bill : billRepository.findByBillRecurringId(billRecurring.getId())) {
+            if (isFromCurrentMonthOrLater(bill, currentMonth) && bill.isPending()) {
+                bill.updateDetails(billRecurring.getName(), billRecurring.getCategory(), billRecurring.getSubCategory(),
+                        billRecurring.getDefaultAmount(), bill.getDueDate());
+                billRepository.update(bill);
+            }
+        }
+    }
+
+    private boolean isFromCurrentMonthOrLater(Bill bill, LocalDate currentMonth) {
+        return !bill.getReferenceMonth().isBefore(currentMonth);
     }
 
     private Category resolveCategory(Long categoryId) {

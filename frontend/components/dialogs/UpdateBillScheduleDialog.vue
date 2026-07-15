@@ -101,8 +101,8 @@ function onClose() {
           variant="tonal"
           class="mb-4"
         >
-          Alterar a agenda só afeta contas geradas no futuro — as já lançadas (pendentes ou pagas)
-          mantêm o vencimento antigo.
+          Alterar a agenda recalcula o vencimento das contas pendentes do mês atual em diante.
+          Contas de meses anteriores ou já pagas mantêm o vencimento antigo.
         </VAlert>
 
         <ApiErrorAlert

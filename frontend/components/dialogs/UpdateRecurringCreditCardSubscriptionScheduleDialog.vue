@@ -102,7 +102,8 @@ function onClose() {
           variant="tonal"
           class="mb-4"
         >
-          Alterar a agenda só afeta cobranças geradas no futuro — as já lançadas mantêm a data antiga.
+          Alterar a agenda recalcula a data das cobranças pendentes do mês atual em diante.
+          Cobranças de meses anteriores ou já pagas mantêm a data antiga.
         </VAlert>
 
         <ApiErrorAlert

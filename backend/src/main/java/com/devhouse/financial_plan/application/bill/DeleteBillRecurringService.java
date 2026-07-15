@@ -8,6 +8,9 @@ import com.devhouse.financial_plan.domain.repository.BillRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+
 @Service
 public class DeleteBillRecurringService {
 
@@ -25,14 +28,24 @@ public class DeleteBillRecurringService {
         if (billRecurring == null) {
             throw new DomainException("Bill recurring not found");
         }
-        detachGeneratedBills(id);
+        removeFutureAndDetachPastBills(id);
         billRecurringRepository.delete(id);
     }
 
-    private void detachGeneratedBills(Long billRecurringId) {
+    private void removeFutureAndDetachPastBills(Long billRecurringId) {
+        LocalDate currentMonth = YearMonth.now().atDay(1);
         for (Bill bill : billRepository.findByBillRecurringId(billRecurringId)) {
-            bill.detachFromRecurring();
-            billRepository.update(bill);
+            if (isFromCurrentMonthOrLater(bill, currentMonth) && bill.isPending()) {
+                billRepository.delete(bill.getId());
+            }
+            else {
+                bill.detachFromRecurring();
+                billRepository.update(bill);
+            }
         }
+    }
+
+    private boolean isFromCurrentMonthOrLater(Bill bill, LocalDate currentMonth) {
+        return !bill.getReferenceMonth().isBefore(currentMonth);
     }
 }
