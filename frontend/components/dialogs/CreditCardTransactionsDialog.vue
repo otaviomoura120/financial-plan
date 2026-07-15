@@ -350,7 +350,10 @@ function onClose() {
       class="d-flex flex-column"
       style="block-size: 100%"
     >
-      <VCardText class="d-flex align-center flex-wrap gap-4">
+      <VCardText
+        class="d-flex align-center flex-wrap gap-4"
+        style="overflow: visible; flex-shrink: 0;"
+      >
         <h5
           class="text-h5 text-truncate"
           style="min-inline-size: 0"
@@ -391,8 +394,8 @@ function onClose() {
       <VDivider />
 
       <VCardText
-        class="flex-grow-1"
-        style="overflow-y: auto"
+        class="d-flex flex-column flex-grow-1"
+        style="overflow: hidden; min-height: 0;"
       >
         <ApiErrorAlert
           v-if="error"
@@ -420,9 +423,13 @@ function onClose() {
 
         <div
           v-else
-          style="overflow-x: auto"
+          class="flex-grow-1"
+          style="overflow: auto; min-height: 0;"
         >
-          <VTable>
+          <VTable
+            fixed-header
+            class="credit-card-transactions-table"
+          >
             <thead style="white-space: nowrap">
               <tr>
                 <th>Data da Compra</th>
@@ -562,6 +569,7 @@ function onClose() {
           :page="page"
           :items-per-page="itemsPerPage"
           :total-items="transactions.length"
+          class="mt-4"
           @update:page="page = $event"
         />
       </VCardText>
@@ -605,3 +613,17 @@ function onClose() {
     />
   </VDialog>
 </template>
+
+<style scoped>
+.credit-card-transactions-table :deep(table) {
+  border-collapse: collapse;
+}
+
+.credit-card-transactions-table :deep(.v-table__wrapper) {
+  overflow: visible;
+}
+
+.credit-card-transactions-table :deep(thead th) {
+  background-color: rgb(var(--v-theme-surface));
+}
+</style>
