@@ -254,185 +254,182 @@ function onClose() {
     @update:model-value="onClose"
   >
     <DialogCloseBtn @click="onClose" />
-    <div>
-      <VCard>
-        <VCardText
-          class="pa-5 v-application"
-          style="display: block;"
+
+    <VCard
+      class="d-flex flex-column"
+      style="block-size: 100%"
+    >
+      <VCardText
+        class="d-flex align-center flex-wrap gap-4"
+        style="overflow: visible; flex-shrink: 0;"
+      >
+        <h5
+          class="text-h5 text-truncate"
+          style="min-inline-size: 0"
         >
-          <div>
-            <VCard
-              class="d-flex flex-column"
-              style="block-size: 100%"
-            >
-              <VCardText class="d-flex align-center flex-wrap gap-4">
-                <h5
-                  class="text-h5 text-truncate"
-                  style="min-inline-size: 0"
-                >
-                  Fatura {{ creditCard ? `— ${creditCard.name}` : '' }}
-                </h5>
+          Fatura {{ creditCard ? `— ${creditCard.name}` : '' }}
+        </h5>
 
-                <div
-                  class="d-flex flex-wrap align-center gap-2"
-                  style="flex-grow: 1; justify-content: flex-end;"
-                >
-                  <VTextField
-                    v-model="from"
-                    type="date"
-                    label="De"
-                    density="compact"
-                    hide-details
-                    style="max-inline-size: 170px"
-                  />
+        <div
+          class="d-flex flex-wrap align-center gap-2"
+          style="flex-grow: 1; justify-content: flex-end;"
+        >
+          <VTextField
+            v-model="from"
+            type="date"
+            label="De"
+            density="compact"
+            hide-details
+            style="max-inline-size: 170px"
+          />
 
-                  <VTextField
-                    v-model="to"
-                    type="date"
-                    label="Até"
-                    density="compact"
-                    hide-details
-                    style="max-inline-size: 170px"
-                  />
-                  <VBtn
-                    variant="tonal"
-                    @click="fetchInvoices"
-                  >
-                    Filtrar
-                  </VBtn>
-                </div>
-              </VCardText>
+          <VTextField
+            v-model="to"
+            type="date"
+            label="Até"
+            density="compact"
+            hide-details
+            style="max-inline-size: 170px"
+          />
+          <VBtn
+            variant="tonal"
+            @click="fetchInvoices"
+          >
+            Filtrar
+          </VBtn>
+        </div>
+      </VCardText>
 
-              <VDivider />
+      <VDivider />
 
-              <VCardText
-                class="flex-grow-1"
-                style="overflow-y: auto"
-              >
-                <ApiErrorAlert
-                  v-if="error"
-                  :error="error"
-                  class="mb-4"
-                />
+      <VCardText
+        class="d-flex flex-column flex-grow-1"
+        style="overflow: hidden; min-height: 0;"
+      >
+        <ApiErrorAlert
+          v-if="error"
+          :error="error"
+          class="mb-4"
+        />
 
-                <VSnackbar
-                  v-model="snackbarVisible"
-                  :color="snackbarColor"
-                  :timeout="3000"
-                >
-                  <div class="d-flex align-center gap-2">
-                    <VIcon :icon="snackbarIcon" />
-                    {{ snackbarMessage }}
-                  </div>
-                </VSnackbar>
-
-                <div
-                  v-if="isLoading"
-                  class="d-flex justify-center py-10"
-                >
-                  <VProgressCircular indeterminate />
-                </div>
-
-                <div
-                  v-else
-                  style="overflow-x: auto"
-                >
-                  <VTable>
-                    <thead style="white-space: nowrap">
-                      <tr>
-                        <th>Mês</th>
-                        <th>Fechamento</th>
-                        <th>Vencimento</th>
-                        <th class="text-right">
-                          Total
-                        </th>
-                        <th>Status</th>
-                        <th class="text-center">
-                          Ações
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr
-                        v-for="invoice in sortedInvoices"
-                        :key="invoice.referenceMonth"
-                      >
-                        <td class="font-weight-medium">
-                          {{ formatReferenceMonth(invoice.referenceMonth) }}
-                        </td>
-                        <td class="text-disabled">
-                          {{ formatDate(invoice.closingDate) }}
-                        </td>
-                        <td class="text-disabled">
-                          {{ formatDate(invoice.dueDate) }}
-                        </td>
-                        <td class="text-right">
-                          {{ currencyFormatter.format(invoice.totalAmount) }}
-                        </td>
-                        <td>
-                          <VChip
-                            :color="invoice.paid ? 'success' : 'warning'"
-                            size="small"
-                            variant="tonal"
-                          >
-                            {{ invoice.paid ? 'Paga' : 'Aberta' }}
-                          </VChip>
-                        </td>
-                        <td
-                          class="text-center"
-                          style="white-space: nowrap"
-                        >
-                          <VBtn
-                            icon
-                            variant="text"
-                            size="small"
-                            color="default"
-                            @click="openInvoiceItems(invoice)"
-                          >
-                            <VIcon icon="tabler-list-details" />
-                            <VTooltip activator="parent">
-                              Ver Itens da Fatura
-                            </VTooltip>
-                          </VBtn>
-
-                          <VBtn
-                            v-if="!invoice.paid"
-                            variant="tonal"
-                            size="small"
-                            @click="openPay(invoice)"
-                          >
-                            Pagar Fatura
-                          </VBtn>
-
-                          <VBtn
-                            v-else
-                            variant="tonal"
-                            color="error"
-                            size="small"
-                            @click="openUndo(invoice)"
-                          >
-                            Desfazer Pagamento
-                          </VBtn>
-                        </td>
-                      </tr>
-
-                      <tr v-if="!isLoading && invoices.length === 0">
-                        <td
-                          colspan="6"
-                          class="text-center text-disabled py-8"
-                        >
-                          Nenhuma fatura encontrada para o período selecionado.
-                        </td>
-                      </tr>
-                    </tbody>
-                  </VTable>
-                </div>
-              </VCardText>
-            </VCard>
+        <VSnackbar
+          v-model="snackbarVisible"
+          :color="snackbarColor"
+          :timeout="3000"
+        >
+          <div class="d-flex align-center gap-2">
+            <VIcon :icon="snackbarIcon" />
+            {{ snackbarMessage }}
           </div>
-        </VCardText>
-      </VCard>
-    </div>
+        </VSnackbar>
+
+        <div
+          v-if="isLoading"
+          class="d-flex justify-center py-10"
+        >
+          <VProgressCircular indeterminate />
+        </div>
+
+        <div
+          v-else
+          class="flex-grow-1"
+          style="overflow: auto; min-height: 0;"
+        >
+          <VTable
+            fixed-header
+            class="credit-card-invoices-table"
+          >
+            <thead style="white-space: nowrap">
+              <tr>
+                <th>Mês</th>
+                <th>Fechamento</th>
+                <th>Vencimento</th>
+                <th class="text-right">
+                  Total
+                </th>
+                <th>Status</th>
+                <th class="text-center">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="invoice in sortedInvoices"
+                :key="invoice.referenceMonth"
+              >
+                <td class="font-weight-medium">
+                  {{ formatReferenceMonth(invoice.referenceMonth) }}
+                </td>
+                <td class="text-disabled">
+                  {{ formatDate(invoice.closingDate) }}
+                </td>
+                <td class="text-disabled">
+                  {{ formatDate(invoice.dueDate) }}
+                </td>
+                <td class="text-right">
+                  {{ currencyFormatter.format(invoice.totalAmount) }}
+                </td>
+                <td>
+                  <VChip
+                    :color="invoice.paid ? 'success' : 'warning'"
+                    size="small"
+                    variant="tonal"
+                  >
+                    {{ invoice.paid ? 'Paga' : 'Aberta' }}
+                  </VChip>
+                </td>
+                <td
+                  class="text-center"
+                  style="white-space: nowrap"
+                >
+                  <VBtn
+                    icon
+                    variant="text"
+                    size="small"
+                    color="default"
+                    @click="openInvoiceItems(invoice)"
+                  >
+                    <VIcon icon="tabler-list-details" />
+                    <VTooltip activator="parent">
+                      Ver Itens da Fatura
+                    </VTooltip>
+                  </VBtn>
+
+                  <VBtn
+                    v-if="!invoice.paid"
+                    variant="tonal"
+                    size="small"
+                    @click="openPay(invoice)"
+                  >
+                    Pagar Fatura
+                  </VBtn>
+
+                  <VBtn
+                    v-else
+                    variant="tonal"
+                    color="error"
+                    size="small"
+                    @click="openUndo(invoice)"
+                  >
+                    Desfazer Pagamento
+                  </VBtn>
+                </td>
+              </tr>
+
+              <tr v-if="!isLoading && invoices.length === 0">
+                <td
+                  colspan="6"
+                  class="text-center text-disabled py-8"
+                >
+                  Nenhuma fatura encontrada para o período selecionado.
+                </td>
+              </tr>
+            </tbody>
+          </VTable>
+        </div>
+      </VCardText>
+    </VCard>
 
     <PayCreditCardInvoiceDialog
       v-model:is-dialog-visible="isPayDialogVisible"
@@ -463,3 +460,17 @@ function onClose() {
     />
   </VDialog>
 </template>
+
+<style scoped>
+.credit-card-invoices-table :deep(table) {
+  border-collapse: collapse;
+}
+
+.credit-card-invoices-table :deep(.v-table__wrapper) {
+  overflow: visible;
+}
+
+.credit-card-invoices-table :deep(thead th) {
+  background-color: rgb(var(--v-theme-surface));
+}
+</style>

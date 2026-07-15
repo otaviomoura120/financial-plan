@@ -152,7 +152,7 @@ function onClose() {
       class="d-flex flex-column"
       style="block-size: 100%"
     >
-      <VCardText>
+      <VCardText style="overflow: visible; flex-shrink: 0;">
         <h4 class="text-h4 text-center mb-2">
           Itens da Fatura {{ referenceMonth ? `— ${formatReferenceMonth(referenceMonth)}` : '' }}
         </h4>
@@ -164,8 +164,8 @@ function onClose() {
       <VDivider />
 
       <VCardText
-        class="flex-grow-1"
-        style="overflow-y: auto"
+        class="d-flex flex-column flex-grow-1"
+        style="overflow: hidden; min-height: 0;"
       >
         <ApiErrorAlert
           v-if="error"
@@ -182,9 +182,13 @@ function onClose() {
 
         <div
           v-else
-          style="overflow-x: auto"
+          class="flex-grow-1"
+          style="overflow: auto; min-height: 0;"
         >
-          <VTable>
+          <VTable
+            fixed-header
+            class="invoice-transactions-table"
+          >
             <thead style="white-space: nowrap">
               <tr>
                 <th>Data da Compra</th>
@@ -262,7 +266,10 @@ function onClose() {
 
       <VDivider />
 
-      <VCardText class="d-flex justify-center">
+      <VCardText
+        class="d-flex justify-center"
+        style="overflow: visible; flex-shrink: 0;"
+      >
         <VBtn
           color="secondary"
           variant="tonal"
@@ -274,3 +281,17 @@ function onClose() {
     </VCard>
   </VDialog>
 </template>
+
+<style scoped>
+.invoice-transactions-table :deep(table) {
+  border-collapse: collapse;
+}
+
+.invoice-transactions-table :deep(.v-table__wrapper) {
+  overflow: visible;
+}
+
+.invoice-transactions-table :deep(thead th) {
+  background-color: rgb(var(--v-theme-surface));
+}
+</style>

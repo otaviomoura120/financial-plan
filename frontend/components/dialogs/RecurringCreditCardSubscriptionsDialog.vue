@@ -157,12 +157,19 @@ defineExpose({ fetchRecurrings })
   <VDialog
     :width="$vuetify.display.smAndDown ? 'auto' : 900"
     :model-value="props.isDialogVisible"
+    scrollable
     @update:model-value="onClose"
   >
     <DialogCloseBtn @click="onClose" />
 
-    <VCard class="pa-sm-10 pa-4">
-      <VCardText>
+    <VCard
+      class="d-flex flex-column pa-sm-10 pa-4"
+      style="block-size: 100%"
+    >
+      <VCardText
+        class="d-flex flex-column flex-grow-1"
+        style="overflow: hidden; min-height: 0;"
+      >
         <h4 class="text-h4 text-center mb-2">
           Assinaturas Recorrentes
         </h4>
@@ -196,9 +203,13 @@ defineExpose({ fetchRecurrings })
 
         <div
           v-else
-          style="overflow-x: auto"
+          class="flex-grow-1"
+          style="overflow: auto; min-height: 0;"
         >
-          <VTable>
+          <VTable
+            fixed-header
+            class="credit-card-recurrings-table"
+          >
             <thead style="white-space: nowrap">
               <tr>
                 <th>Descrição</th>
@@ -301,3 +312,17 @@ defineExpose({ fetchRecurrings })
     />
   </VDialog>
 </template>
+
+<style scoped>
+.credit-card-recurrings-table :deep(table) {
+  border-collapse: collapse;
+}
+
+.credit-card-recurrings-table :deep(.v-table__wrapper) {
+  overflow: visible;
+}
+
+.credit-card-recurrings-table :deep(thead th) {
+  background-color: rgb(var(--v-theme-surface));
+}
+</style>
