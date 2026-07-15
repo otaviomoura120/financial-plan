@@ -37,19 +37,20 @@ class UpdateBillRecurringServiceSpec extends Specification {
                 LocalDate.of(2026, 3, 10), true, Instant.now(), null)
     }
 
-    private Bill buildGeneratedBill(Long id, LocalDate referenceMonth, BillInstanceStatus status = BillInstanceStatus.PENDING) {
+    private Bill buildGeneratedBill(Long id, LocalDate referenceMonth, LocalDate dueDate = referenceMonth, BillInstanceStatus status = BillInstanceStatus.PENDING) {
         new Bill(id, 0, buildSpace(), buildBillRecurring(), "Energy Bill", null, null, referenceMonth,
-                referenceMonth, new BigDecimal("150.00"), status, null, null, null, false, Instant.now(), null)
+                dueDate, new BigDecimal("150.00"), status, null, null, null, false, Instant.now(), null)
     }
 
-    def "execute updates name, category and defaultAmount"() {
+    def "execute updates name, category, defaultAmount and startDate"() {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
         Category category = new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
         billRecurringRepository.update(_) >> { BillRecurring b -> b }
         billRepository.findByBillRecurringId(10L) >> []
-        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null, new BigDecimal("180.00"))
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null,
+                new BigDecimal("180.00"), LocalDate.of(2026, 6, 1))
 
         when:
         BillResponse response = service.execute(10L, request)
@@ -58,6 +59,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
         response.name() == "Power Bill"
         response.categoryId() == 20L
         response.defaultAmount() == new BigDecimal("180.00")
+        response.startDate() == LocalDate.of(2026, 6, 1)
     }
 
     def "execute also updates already-generated pending bills from the current month onward"() {
@@ -70,7 +72,8 @@ class UpdateBillRecurringServiceSpec extends Specification {
         Bill currentMonthBill = buildGeneratedBill(2L, YearMonth.now().atDay(1))
         Bill futureBill = buildGeneratedBill(3L, YearMonth.now().plusMonths(3).atDay(1))
         billRepository.findByBillRecurringId(10L) >> [pastBill, currentMonthBill, futureBill]
-        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null, new BigDecimal("180.00"))
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null,
+                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10))
 
         when:
         service.execute(10L, request)
@@ -88,28 +91,74 @@ class UpdateBillRecurringServiceSpec extends Specification {
         0 * billRepository.update(pastBill)
     }
 
+    def "execute recalculates dueDate for pending bills from the current month onward when startDate changes"() {
+        given:
+        billRecurringRepository.findById(10L) >> buildBillRecurring()
+        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
+        billRecurringRepository.update(_) >> { BillRecurring b -> b }
+        YearMonth pastMonth = YearMonth.now().minusMonths(2)
+        YearMonth currentMonth = YearMonth.now()
+        YearMonth futureMonth = YearMonth.now().plusMonths(3)
+        Bill pastBill = buildGeneratedBill(1L, pastMonth.atDay(1), pastMonth.atDay(10))
+        Bill currentMonthBill = buildGeneratedBill(2L, currentMonth.atDay(1), currentMonth.atDay(10))
+        Bill futureBill = buildGeneratedBill(3L, futureMonth.atDay(1), futureMonth.atDay(10))
+        billRepository.findByBillRecurringId(10L) >> [pastBill, currentMonthBill, futureBill]
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Energy Bill", 20L, null,
+                new BigDecimal("150.00"), LocalDate.of(2026, 1, 25))
+
+        when:
+        service.execute(10L, request)
+
+        then:
+        currentMonthBill.getDueDate() == currentMonth.atDay(25)
+        futureBill.getDueDate() == futureMonth.atDay(25)
+        pastBill.getDueDate() == pastMonth.atDay(10)
+    }
+
+    def "execute clamps the recalculated dueDate to the target month's length"() {
+        given:
+        billRecurringRepository.findById(10L) >> buildBillRecurring()
+        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
+        billRecurringRepository.update(_) >> { BillRecurring b -> b }
+        YearMonth currentMonth = YearMonth.now()
+        Bill currentMonthBill = buildGeneratedBill(1L, currentMonth.atDay(1), currentMonth.atDay(10))
+        billRepository.findByBillRecurringId(10L) >> [currentMonthBill]
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Energy Bill", 20L, null,
+                new BigDecimal("150.00"), LocalDate.of(2026, 1, 31))
+
+        when:
+        service.execute(10L, request)
+
+        then:
+        currentMonthBill.getDueDate() == currentMonth.atDay(Math.min(31, currentMonth.lengthOfMonth()))
+    }
+
     def "execute does not update a current/future bill that is already paid"() {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
         Category category = new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
         billRecurringRepository.update(_) >> { BillRecurring b -> b }
-        Bill paidBill = buildGeneratedBill(1L, YearMonth.now().atDay(1), BillInstanceStatus.PAID)
+        YearMonth currentMonth = YearMonth.now()
+        Bill paidBill = buildGeneratedBill(1L, currentMonth.atDay(1), currentMonth.atDay(10), BillInstanceStatus.PAID)
         billRepository.findByBillRecurringId(10L) >> [paidBill]
-        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null, new BigDecimal("180.00"))
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null,
+                new BigDecimal("180.00"), LocalDate.of(2026, 1, 25))
 
         when:
         service.execute(10L, request)
 
         then:
         paidBill.getName() == "Energy Bill"
+        paidBill.getDueDate() == currentMonth.atDay(10)
         0 * billRepository.update(paidBill)
     }
 
     def "execute throws DomainException when bill recurring does not exist"() {
         given:
         billRecurringRepository.findById(99L) >> null
-        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", null, null, new BigDecimal("180.00"))
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", null, null,
+                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10))
 
         when:
         service.execute(99L, request)
@@ -123,7 +172,8 @@ class UpdateBillRecurringServiceSpec extends Specification {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
         categoryRepository.findById(20L) >> null
-        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null, new BigDecimal("180.00"))
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null,
+                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10))
 
         when:
         service.execute(10L, request)
@@ -136,7 +186,8 @@ class UpdateBillRecurringServiceSpec extends Specification {
     def "execute throws ObjectOptimisticLockingFailureException when version does not match"() {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
-        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(99, "Power Bill", null, null, new BigDecimal("180.00"))
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(99, "Power Bill", null, null,
+                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10))
 
         when:
         service.execute(10L, request)

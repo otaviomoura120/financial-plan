@@ -43,6 +43,7 @@ public class UpdateBillRecurringService {
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
         billRecurring.update(request.name(), category, subCategory, request.defaultAmount());
+        billRecurring.updateSchedule(request.startDate());
         billRecurring.validate();
         BillRecurring updated = billRecurringRepository.update(billRecurring);
         updateCurrentAndFutureBills(updated);
@@ -53,8 +54,9 @@ public class UpdateBillRecurringService {
         LocalDate currentMonth = YearMonth.now().atDay(1);
         for (Bill bill : billRepository.findByBillRecurringId(billRecurring.getId())) {
             if (isFromCurrentMonthOrLater(bill, currentMonth) && bill.isPending()) {
+                LocalDate newDueDate = resolveDueDate(billRecurring, bill.getReferenceMonth());
                 bill.updateDetails(billRecurring.getName(), billRecurring.getCategory(), billRecurring.getSubCategory(),
-                        billRecurring.getDefaultAmount(), bill.getDueDate());
+                        billRecurring.getDefaultAmount(), newDueDate);
                 billRepository.update(bill);
             }
         }
@@ -62,6 +64,12 @@ public class UpdateBillRecurringService {
 
     private boolean isFromCurrentMonthOrLater(Bill bill, LocalDate currentMonth) {
         return !bill.getReferenceMonth().isBefore(currentMonth);
+    }
+
+    private LocalDate resolveDueDate(BillRecurring billRecurring, LocalDate referenceMonth) {
+        YearMonth month = YearMonth.from(referenceMonth);
+        int dayOfMonth = Math.min(billRecurring.getStartDate().getDayOfMonth(), month.lengthOfMonth());
+        return month.atDay(dayOfMonth);
     }
 
     private Category resolveCategory(Long categoryId) {

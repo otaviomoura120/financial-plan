@@ -51,6 +51,7 @@ const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
 const defaultAmount = shallowRef<number | null>(null)
 const description = shallowRef('')
+const startDate = shallowRef('')
 const isLoading = shallowRef(false)
 
 function optionLabel<T extends { name: string; active: boolean }>(item: T) {
@@ -69,6 +70,7 @@ const subCategoryItems = computed(() =>
 
 const categoryRules = [(v: number | null) => v !== null || 'Categoria é obrigatória']
 const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
+const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
 watch(categoryId, () => {
   if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value))
@@ -83,6 +85,7 @@ watch(
       subCategoryId.value = props.recurring?.subCategoryId ?? null
       defaultAmount.value = props.recurring?.defaultAmount ?? null
       description.value = props.recurring?.description ?? ''
+      startDate.value = props.recurring?.startDate ?? ''
       clearError()
     }
   },
@@ -106,6 +109,7 @@ async function onSubmit() {
         subCategoryId: subCategoryId.value,
         defaultAmount: defaultAmount.value,
         description: description.value || undefined,
+        startDate: startDate.value,
       },
     })
 
@@ -139,7 +143,7 @@ function onClose() {
           Editar Assinatura
         </h4>
         <p class="text-body-1 text-center mb-6">
-          Alterações aqui afetam as cobranças do mês atual em diante (já geradas ou não); as de meses anteriores não são alteradas.
+          Alterações aqui afetam as cobranças pendentes do mês atual em diante (já geradas ou não); as de meses anteriores ou já pagas não são alteradas.
         </p>
 
         <ApiErrorAlert
@@ -180,6 +184,15 @@ function onClose() {
               label="Valor padrão"
               placeholder="0,00"
               :rules="amountRules"
+            />
+
+            <AppTextField
+              v-model="startDate"
+              type="date"
+              label="Dia de cobrança"
+              hint="Alterar recalcula a data das cobranças pendentes do mês atual em diante."
+              persistent-hint
+              :rules="dateRules"
             />
           </div>
 

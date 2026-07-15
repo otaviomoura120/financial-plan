@@ -3,12 +3,10 @@ package com.devhouse.financial_plan.infrastructure.controller;
 import com.devhouse.financial_plan.application.creditcardtransaction.CreateCreditCardTransactionRecurringService;
 import com.devhouse.financial_plan.application.creditcardtransaction.DeleteCreditCardTransactionRecurringService;
 import com.devhouse.financial_plan.application.creditcardtransaction.ListCreditCardTransactionRecurringsService;
-import com.devhouse.financial_plan.application.creditcardtransaction.UpdateCreditCardTransactionRecurringScheduleService;
 import com.devhouse.financial_plan.application.creditcardtransaction.UpdateCreditCardTransactionRecurringService;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreateCreditCardTransactionRecurringRequest;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionRecurringResponse;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.UpdateCreditCardTransactionRecurringRequest;
-import com.devhouse.financial_plan.application.creditcardtransaction.dto.UpdateCreditCardTransactionRecurringScheduleRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,18 +21,15 @@ public class CreditCardTransactionRecurringController {
 
     private final CreateCreditCardTransactionRecurringService createCreditCardTransactionRecurringService;
     private final UpdateCreditCardTransactionRecurringService updateCreditCardTransactionRecurringService;
-    private final UpdateCreditCardTransactionRecurringScheduleService updateCreditCardTransactionRecurringScheduleService;
     private final DeleteCreditCardTransactionRecurringService deleteCreditCardTransactionRecurringService;
     private final ListCreditCardTransactionRecurringsService listCreditCardTransactionRecurringsService;
 
     public CreditCardTransactionRecurringController(CreateCreditCardTransactionRecurringService createCreditCardTransactionRecurringService,
                                                      UpdateCreditCardTransactionRecurringService updateCreditCardTransactionRecurringService,
-                                                     UpdateCreditCardTransactionRecurringScheduleService updateCreditCardTransactionRecurringScheduleService,
                                                      DeleteCreditCardTransactionRecurringService deleteCreditCardTransactionRecurringService,
                                                      ListCreditCardTransactionRecurringsService listCreditCardTransactionRecurringsService) {
         this.createCreditCardTransactionRecurringService = createCreditCardTransactionRecurringService;
         this.updateCreditCardTransactionRecurringService = updateCreditCardTransactionRecurringService;
-        this.updateCreditCardTransactionRecurringScheduleService = updateCreditCardTransactionRecurringScheduleService;
         this.deleteCreditCardTransactionRecurringService = deleteCreditCardTransactionRecurringService;
         this.listCreditCardTransactionRecurringsService = listCreditCardTransactionRecurringsService;
     }
@@ -58,13 +53,6 @@ public class CreditCardTransactionRecurringController {
     public CreditCardTransactionRecurringResponse update(@PathVariable Long id, @RequestBody UpdateCreditCardTransactionRecurringRequest body,
                                                           Authentication authentication, HttpServletRequest request) {
         return updateCreditCardTransactionRecurringService.execute(id, body);
-    }
-
-    @PutMapping("/{id}/schedule")
-    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CreditCardTransactionRecurringResponse updateSchedule(@PathVariable Long id, @RequestBody UpdateCreditCardTransactionRecurringScheduleRequest body,
-                                                                  Authentication authentication, HttpServletRequest request) {
-        return updateCreditCardTransactionRecurringScheduleService.execute(id, body);
     }
 
     @DeleteMapping("/{id}")

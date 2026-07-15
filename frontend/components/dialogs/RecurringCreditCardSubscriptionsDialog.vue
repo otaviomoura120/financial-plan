@@ -51,7 +51,6 @@ const isLoading = shallowRef(false)
 const isDeleting = shallowRef(false)
 
 const isEditDialogVisible = shallowRef(false)
-const isScheduleDialogVisible = shallowRef(false)
 const isDeleteDialogVisible = shallowRef(false)
 
 const selectedRecurring = shallowRef<CreditCardTransactionRecurringResponse | null>(null)
@@ -97,11 +96,6 @@ function openEdit(recurring: CreditCardTransactionRecurringResponse) {
   isEditDialogVisible.value = true
 }
 
-function openSchedule(recurring: CreditCardTransactionRecurringResponse) {
-  selectedRecurring.value = recurring
-  isScheduleDialogVisible.value = true
-}
-
 function openDelete(recurring: CreditCardTransactionRecurringResponse) {
   selectedRecurring.value = recurring
   isDeleteDialogVisible.value = true
@@ -114,15 +108,6 @@ function onEdited(saved: CreditCardTransactionRecurringResponse) {
     recurrings.value[idx] = saved
 
   showSuccess('Assinatura atualizada com sucesso.')
-}
-
-function onScheduleSaved(saved: CreditCardTransactionRecurringResponse) {
-  const idx = recurrings.value.findIndex(r => r.id === saved.id)
-
-  if (idx >= 0)
-    recurrings.value[idx] = saved
-
-  showSuccess('Agenda atualizada com sucesso.')
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
@@ -182,7 +167,7 @@ defineExpose({ fetchRecurrings })
           Assinaturas Recorrentes
         </h4>
         <p class="text-body-1 text-center mb-6">
-          Cobranças que se repetem todo mês neste cartão. Alterações aqui afetam somente as próximas gerações.
+          Cobranças que se repetem todo mês neste cartão. Alterações aqui afetam as cobranças pendentes do mês atual em diante; as de meses anteriores ou já pagas não são alteradas.
         </p>
 
         <ApiErrorAlert
@@ -263,19 +248,6 @@ defineExpose({ fetchRecurrings })
                     icon
                     variant="text"
                     size="small"
-                    color="default"
-                    @click="openSchedule(recurring)"
-                  >
-                    <VIcon icon="tabler-calendar-cog" />
-                    <VTooltip activator="parent">
-                      Editar Agenda
-                    </VTooltip>
-                  </VBtn>
-
-                  <VBtn
-                    icon
-                    variant="text"
-                    size="small"
                     color="error"
                     @click="openDelete(recurring)"
                   >
@@ -316,12 +288,6 @@ defineExpose({ fetchRecurrings })
       :recurring="selectedRecurring"
       :categories="categories"
       @saved="onEdited"
-    />
-
-    <UpdateRecurringCreditCardSubscriptionScheduleDialog
-      v-model:is-dialog-visible="isScheduleDialogVisible"
-      :recurring="selectedRecurring"
-      @saved="onScheduleSaved"
     />
 
     <ConfirmDialog

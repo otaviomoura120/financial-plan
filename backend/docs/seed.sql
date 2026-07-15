@@ -1272,3 +1272,16 @@ WHERE r.name = 'MEMBER'
       WHERE rep.role_id = r.id AND rep.endpoint_permission_id = ep.id
   );
 -- =============================================================================
+
+-- =============================================================================
+-- 18. INCREMENTAL — remoção do endpoint .../schedule (Bills e Assinaturas de Cartão)
+--    "Editar Agenda" deixou de ser uma tela/endpoint separado — a data agora é
+--    editada junto com os demais campos em PUT /bills/{id} e
+--    PUT /credit-card-transactions/recurring/{id}. O DELETE cascateia para
+--    role_endpoint_permissions via ON DELETE CASCADE. Idempotente (seguro rodar
+--    mais de uma vez).
+-- =============================================================================
+
+DELETE FROM endpoint_permissions WHERE endpoint = '/bills/[0-9]+/schedule' AND type = 'API';
+DELETE FROM endpoint_permissions WHERE endpoint = '/credit-card-transactions/recurring/[0-9]+/schedule' AND type = 'API';
+-- =============================================================================

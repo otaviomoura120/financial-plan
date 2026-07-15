@@ -3,6 +3,7 @@ package com.devhouse.financial_plan.application.creditcardtransaction;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionRecurringResponse;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.UpdateCreditCardTransactionRecurringRequest;
 import com.devhouse.financial_plan.domain.Category;
+import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.CreditCardTransactionRecurring;
 import com.devhouse.financial_plan.domain.SubCategory;
@@ -48,6 +49,7 @@ public class UpdateCreditCardTransactionRecurringService {
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
         recurring.update(category, subCategory, request.defaultAmount(), request.description());
+        recurring.updateSchedule(request.startDate());
         recurring.validate();
         CreditCardTransactionRecurring updated = creditCardTransactionRecurringRepository.update(recurring);
         updateCurrentAndFutureTransactions(updated);
@@ -57,11 +59,18 @@ public class UpdateCreditCardTransactionRecurringService {
     private void updateCurrentAndFutureTransactions(CreditCardTransactionRecurring recurring) {
         LocalDate currentMonth = YearMonth.now().atDay(1);
         for (CreditCardTransaction transaction : creditCardTransactionRepository.findByCreditCardTransactionRecurringId(recurring.getId())) {
-            if (isFromCurrentMonthOrLater(transaction, currentMonth) && !isInvoiceAlreadyPaid(transaction)) {
-                transaction.update(recurring.getCategory(), recurring.getSubCategory(), recurring.getDefaultAmount(),
-                        transaction.getPurchaseDate(), recurring.getDescription());
-                creditCardTransactionRepository.update(transaction);
+            if (!isFromCurrentMonthOrLater(transaction, currentMonth) || isInvoiceAlreadyPaid(transaction, transaction.getReferenceMonth())) {
+                continue;
             }
+            LocalDate newPurchaseDate = resolvePurchaseDate(recurring, transaction.getPurchaseDate());
+            LocalDate newReferenceMonth = CreditCardInvoiceCycle.resolveReferenceMonth(newPurchaseDate, recurring.getCreditCard().getClosingDay());
+            if (isInvoiceAlreadyPaid(transaction, newReferenceMonth)) {
+                continue;
+            }
+            transaction.update(recurring.getCategory(), recurring.getSubCategory(), recurring.getDefaultAmount(), newPurchaseDate,
+                    recurring.getDescription());
+            transaction.setReferenceMonth(newReferenceMonth);
+            creditCardTransactionRepository.update(transaction);
         }
     }
 
@@ -69,9 +78,15 @@ public class UpdateCreditCardTransactionRecurringService {
         return !transaction.getReferenceMonth().isBefore(currentMonth);
     }
 
-    private boolean isInvoiceAlreadyPaid(CreditCardTransaction transaction) {
+    private boolean isInvoiceAlreadyPaid(CreditCardTransaction transaction, LocalDate referenceMonth) {
         return creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(
-                transaction.getCreditCard().getId(), transaction.getReferenceMonth()) != null;
+                transaction.getCreditCard().getId(), referenceMonth) != null;
+    }
+
+    private LocalDate resolvePurchaseDate(CreditCardTransactionRecurring recurring, LocalDate currentPurchaseDate) {
+        YearMonth purchaseMonth = YearMonth.from(currentPurchaseDate);
+        int dayOfMonth = Math.min(recurring.getStartDate().getDayOfMonth(), purchaseMonth.lengthOfMonth());
+        return purchaseMonth.atDay(dayOfMonth);
     }
 
     private Category resolveCategory(Long categoryId) {

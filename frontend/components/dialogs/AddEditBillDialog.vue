@@ -124,6 +124,7 @@ async function onSubmit() {
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
           defaultAmount: defaultAmount.value,
+          startDate: startDate.value,
         },
       })
     }
@@ -228,20 +229,21 @@ function onClose() {
               :rules="amountRules"
             />
 
-            <template v-if="!isEditMode">
-              <AppTextField
-                v-model="startDate"
-                type="date"
-                label="Data de Vencimento"
-                :rules="dateRules"
-              />
+            <AppTextField
+              v-model="startDate"
+              type="date"
+              label="Data de Vencimento"
+              :hint="isEditMode ? 'Alterar recalcula o vencimento das contas pendentes do mês atual em diante.' : undefined"
+              :persistent-hint="isEditMode"
+              :rules="dateRules"
+            />
 
-              <VCheckbox
-                v-model="recurring"
-                label="Conta recorrente (repete todo mês)"
-                hide-details
-              />
-            </template>
+            <VCheckbox
+              v-if="!isEditMode"
+              v-model="recurring"
+              label="Conta recorrente (repete todo mês)"
+              hide-details
+            />
           </div>
 
           <div class="d-flex align-center justify-center gap-4 mt-6">

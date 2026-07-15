@@ -49,7 +49,6 @@ const isLoading = shallowRef(false)
 const isDeleting = shallowRef(false)
 
 const isEditDialogVisible = shallowRef(false)
-const isScheduleDialogVisible = shallowRef(false)
 const isDeleteDialogVisible = shallowRef(false)
 
 const selectedBillRecurring = shallowRef<BillResponse | null>(null)
@@ -91,11 +90,6 @@ function openEdit(billRecurring: BillResponse) {
   isEditDialogVisible.value = true
 }
 
-function openSchedule(billRecurring: BillResponse) {
-  selectedBillRecurring.value = billRecurring
-  isScheduleDialogVisible.value = true
-}
-
 function openDelete(billRecurring: BillResponse) {
   selectedBillRecurring.value = billRecurring
   isDeleteDialogVisible.value = true
@@ -104,15 +98,6 @@ function openDelete(billRecurring: BillResponse) {
 function onEdited() {
   fetchBillRecurrings()
   showSuccess('Recorrência atualizada com sucesso.')
-}
-
-function onScheduleSaved(saved: BillResponse) {
-  const idx = billRecurrings.value.findIndex(b => b.id === saved.id)
-
-  if (idx >= 0)
-    billRecurrings.value[idx] = saved
-
-  showSuccess('Agenda atualizada com sucesso.')
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
@@ -251,19 +236,6 @@ function onClose() {
                     icon
                     variant="text"
                     size="small"
-                    color="default"
-                    @click="openSchedule(billRecurring)"
-                  >
-                    <VIcon icon="tabler-calendar-cog" />
-                    <VTooltip activator="parent">
-                      Editar Agenda
-                    </VTooltip>
-                  </VBtn>
-
-                  <VBtn
-                    icon
-                    variant="text"
-                    size="small"
                     color="error"
                     @click="openDelete(billRecurring)"
                   >
@@ -304,12 +276,6 @@ function onClose() {
       :bill="selectedBillRecurring"
       :categories="categories"
       @saved="onEdited"
-    />
-
-    <UpdateBillScheduleDialog
-      v-model:is-dialog-visible="isScheduleDialogVisible"
-      :bill="selectedBillRecurring"
-      @saved="onScheduleSaved"
     />
 
     <ConfirmDialog

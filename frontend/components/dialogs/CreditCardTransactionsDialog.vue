@@ -346,237 +346,226 @@ function onClose() {
   >
     <DialogCloseBtn @click="onClose" />
 
-    <div>
-      <VCard>
-        <VCardText
-          class="pa-5 v-application"
-          style="display: block;"
+    <VCard
+      class="d-flex flex-column"
+      style="block-size: 100%"
+    >
+      <VCardText class="d-flex align-center flex-wrap gap-4">
+        <h5
+          class="text-h5 text-truncate"
+          style="min-inline-size: 0"
         >
-          <div>
-            <VCard
-              class="d-flex flex-column"
-              style="block-size: 100%"
-            >
-              <VCardText class="d-flex align-center flex-wrap gap-4">
-                <h5
-                  class="text-h5 text-truncate"
-                  style="min-inline-size: 0"
-                >
-                  Lançamentos {{ creditCard ? `— ${creditCard.name}` : '' }}
-                </h5>
+          Lançamentos {{ creditCard ? `— ${creditCard.name}` : '' }}
+        </h5>
 
-                <VSpacer />
+        <VSpacer />
 
-                <div
-                  class="d-flex flex-wrap align-center gap-2"
-                  style="flex-grow: 1; justify-content: flex-end;"
-                >
-                  <MonthYearSelect
-                    v-model="selectedMonth"
-                    label="Mês de Referência"
-                  />
+        <div
+          class="d-flex flex-wrap align-center gap-2"
+          style="flex-grow: 1; justify-content: flex-end;"
+        >
+          <MonthYearSelect
+            v-model="selectedMonth"
+            label="Mês de Referência"
+          />
 
-                  <VBtn
-                    variant="tonal"
-                    prepend-icon="tabler-refresh"
-                    style="align-self: flex-end"
-                    @click="isSubscriptionsDialogVisible = true"
-                  >
-                    <span class="d-sm-inline">Assinaturas Recorrentes</span>
-                  </VBtn>
+          <VBtn
+            variant="tonal"
+            prepend-icon="tabler-refresh"
+            style="align-self: flex-end"
+            @click="isSubscriptionsDialogVisible = true"
+          >
+            <span class="d-sm-inline">Assinaturas Recorrentes</span>
+          </VBtn>
 
-                  <VBtn
-                    prepend-icon="tabler-plus"
-                    style="align-self: flex-end"
-                    @click="openCreate"
-                  >
-                    <span class="d-sm-inline">Adicionar</span>
-                  </VBtn>
-                </div>
-              </VCardText>
+          <VBtn
+            prepend-icon="tabler-plus"
+            style="align-self: flex-end"
+            @click="openCreate"
+          >
+            <span class="d-sm-inline">Adicionar</span>
+          </VBtn>
+        </div>
+      </VCardText>
 
-              <VDivider />
+      <VDivider />
 
-              <VCardText
-                class="flex-grow-1"
-                style="overflow-y: auto"
-              >
-                <ApiErrorAlert
-                  v-if="error"
-                  :error="error"
-                  class="mb-4"
-                />
+      <VCardText
+        class="flex-grow-1"
+        style="overflow-y: auto"
+      >
+        <ApiErrorAlert
+          v-if="error"
+          :error="error"
+          class="mb-4"
+        />
 
-                <VSnackbar
-                  v-model="snackbarVisible"
-                  :color="snackbarColor"
-                  :timeout="3000"
-                >
-                  <div class="d-flex align-center gap-2">
-                    <VIcon :icon="snackbarIcon" />
-                    {{ snackbarMessage }}
-                  </div>
-                </VSnackbar>
-
-                <div
-                  v-if="isLoading"
-                  class="d-flex justify-center py-10"
-                >
-                  <VProgressCircular indeterminate />
-                </div>
-
-                <div
-                  v-else
-                  style="overflow-x: auto"
-                >
-                  <VTable>
-                    <thead style="white-space: nowrap">
-                      <tr>
-                        <th>Data da Compra</th>
-                        <th style="min-width: 200px">
-                          Categoria
-                        </th>
-                        <th>Descrição</th>
-                        <th>Mês de Referência</th>
-                        <th>Parcela</th>
-                        <th class="text-right">
-                          Valor
-                        </th>
-                        <th class="text-center">
-                          Ações
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr
-                        v-for="transaction in paginatedTransactions"
-                        :key="transaction.id"
-                      >
-                        <td>{{ formatDate(transaction.purchaseDate) }}</td>
-                        <td>
-                          {{ categoryName(transaction.categoryId) }}
-                          <span
-                            v-if="subCategoryName(transaction.subCategoryId)"
-                            class="text-disabled"
-                          >
-                            / {{ subCategoryName(transaction.subCategoryId) }}
-                          </span>
-                        </td>
-                        <td class="text-disabled">
-                          {{ transaction.description || '—' }}
-                        </td>
-                        <td>
-                          {{ formatReferenceMonth(transaction.competenceMonth) }}
-                          <div class="text-caption text-disabled">
-                            Fatura: {{ formatReferenceMonth(transaction.referenceMonth) }}
-                          </div>
-                        </td>
-                        <td>
-                          <VChip
-                            v-if="transaction.totalInstallments > 1"
-                            size="small"
-                            variant="tonal"
-                            color="info"
-                          >
-                            {{ transaction.installmentNumber }}/{{ transaction.totalInstallments }}
-                          </VChip>
-                          <VChip
-                            v-else
-                            size="small"
-                            variant="tonal"
-                          >
-                            À vista
-                          </VChip>
-                          <VChip
-                            v-if="transaction.anticipated"
-                            size="small"
-                            variant="tonal"
-                            color="warning"
-                            class="ms-1"
-                          >
-                            Antecipada
-                          </VChip>
-                        </td>
-                        <td class="text-right">
-                          {{ currencyFormatter.format(transaction.amount) }}
-                          <div
-                            v-if="transaction.totalInstallments > 1"
-                            class="text-caption text-disabled"
-                          >
-                            Total: {{ currencyFormatter.format(transaction.totalAmount) }}
-                          </div>
-                        </td>
-                        <td
-                          class="text-center"
-                          style="white-space: nowrap"
-                        >
-                          <VBtn
-                            v-if="transaction.totalInstallments > 1 && transaction.installmentNumber < transaction.totalInstallments"
-                            icon
-                            variant="text"
-                            size="small"
-                            color="default"
-                            @click="openAnticipate(transaction)"
-                          >
-                            <VIcon icon="tabler-clock-up" />
-                            <VTooltip activator="parent">
-                              Antecipar parcelas
-                            </VTooltip>
-                          </VBtn>
-
-                          <VBtn
-                            icon
-                            variant="text"
-                            size="small"
-                            color="default"
-                            @click="openEdit(transaction)"
-                          >
-                            <VIcon icon="tabler-pencil" />
-                            <VTooltip activator="parent">
-                              Editar
-                            </VTooltip>
-                          </VBtn>
-
-                          <VBtn
-                            icon
-                            variant="text"
-                            size="small"
-                            color="error"
-                            @click="openDelete(transaction)"
-                          >
-                            <VIcon icon="tabler-trash" />
-                            <VTooltip activator="parent">
-                              Excluir
-                            </VTooltip>
-                          </VBtn>
-                        </td>
-                      </tr>
-
-                      <tr v-if="!isLoading && transactions.length === 0">
-                        <td
-                          colspan="7"
-                          class="text-center text-disabled py-8"
-                        >
-                          Nenhum lançamento encontrado para o período selecionado.
-                        </td>
-                      </tr>
-                    </tbody>
-                  </VTable>
-                </div>
-
-                <TablePagination
-                  v-if="transactions.length > 0"
-                  :page="page"
-                  :items-per-page="itemsPerPage"
-                  :total-items="transactions.length"
-                  @update:page="page = $event"
-                />
-              </VCardText>
-            </VCard>
+        <VSnackbar
+          v-model="snackbarVisible"
+          :color="snackbarColor"
+          :timeout="3000"
+        >
+          <div class="d-flex align-center gap-2">
+            <VIcon :icon="snackbarIcon" />
+            {{ snackbarMessage }}
           </div>
-        </VCardText>
-      </VCard>
-    </div>
+        </VSnackbar>
+
+        <div
+          v-if="isLoading"
+          class="d-flex justify-center py-10"
+        >
+          <VProgressCircular indeterminate />
+        </div>
+
+        <div
+          v-else
+          style="overflow-x: auto"
+        >
+          <VTable>
+            <thead style="white-space: nowrap">
+              <tr>
+                <th>Data da Compra</th>
+                <th style="min-width: 200px">
+                  Categoria
+                </th>
+                <th>Descrição</th>
+                <th>Mês de Referência</th>
+                <th>Parcela</th>
+                <th class="text-right">
+                  Valor
+                </th>
+                <th class="text-center">
+                  Ações
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="transaction in paginatedTransactions"
+                :key="transaction.id"
+              >
+                <td>{{ formatDate(transaction.purchaseDate) }}</td>
+                <td>
+                  {{ categoryName(transaction.categoryId) }}
+                  <span
+                    v-if="subCategoryName(transaction.subCategoryId)"
+                    class="text-disabled"
+                  >
+                    / {{ subCategoryName(transaction.subCategoryId) }}
+                  </span>
+                </td>
+                <td class="text-disabled">
+                  {{ transaction.description || '—' }}
+                </td>
+                <td>
+                  {{ formatReferenceMonth(transaction.competenceMonth) }}
+                  <div class="text-caption text-disabled">
+                    Fatura: {{ formatReferenceMonth(transaction.referenceMonth) }}
+                  </div>
+                </td>
+                <td>
+                  <VChip
+                    v-if="transaction.totalInstallments > 1"
+                    size="small"
+                    variant="tonal"
+                    color="info"
+                  >
+                    {{ transaction.installmentNumber }}/{{ transaction.totalInstallments }}
+                  </VChip>
+                  <VChip
+                    v-else
+                    size="small"
+                    variant="tonal"
+                  >
+                    À vista
+                  </VChip>
+                  <VChip
+                    v-if="transaction.anticipated"
+                    size="small"
+                    variant="tonal"
+                    color="warning"
+                    class="ms-1"
+                  >
+                    Antecipada
+                  </VChip>
+                </td>
+                <td class="text-right">
+                  {{ currencyFormatter.format(transaction.amount) }}
+                  <div
+                    v-if="transaction.totalInstallments > 1"
+                    class="text-caption text-disabled"
+                  >
+                    Total: {{ currencyFormatter.format(transaction.totalAmount) }}
+                  </div>
+                </td>
+                <td
+                  class="text-center"
+                  style="white-space: nowrap"
+                >
+                  <VBtn
+                    v-if="transaction.totalInstallments > 1 && transaction.installmentNumber < transaction.totalInstallments"
+                    icon
+                    variant="text"
+                    size="small"
+                    color="default"
+                    @click="openAnticipate(transaction)"
+                  >
+                    <VIcon icon="tabler-clock-up" />
+                    <VTooltip activator="parent">
+                      Antecipar parcelas
+                    </VTooltip>
+                  </VBtn>
+
+                  <VBtn
+                    icon
+                    variant="text"
+                    size="small"
+                    color="default"
+                    @click="openEdit(transaction)"
+                  >
+                    <VIcon icon="tabler-pencil" />
+                    <VTooltip activator="parent">
+                      Editar
+                    </VTooltip>
+                  </VBtn>
+
+                  <VBtn
+                    icon
+                    variant="text"
+                    size="small"
+                    color="error"
+                    @click="openDelete(transaction)"
+                  >
+                    <VIcon icon="tabler-trash" />
+                    <VTooltip activator="parent">
+                      Excluir
+                    </VTooltip>
+                  </VBtn>
+                </td>
+              </tr>
+
+              <tr v-if="!isLoading && transactions.length === 0">
+                <td
+                  colspan="7"
+                  class="text-center text-disabled py-8"
+                >
+                  Nenhum lançamento encontrado para o período selecionado.
+                </td>
+              </tr>
+            </tbody>
+          </VTable>
+        </div>
+
+        <TablePagination
+          v-if="transactions.length > 0"
+          :page="page"
+          :items-per-page="itemsPerPage"
+          :total-items="transactions.length"
+          @update:page="page = $event"
+        />
+      </VCardText>
+    </VCard>
 
     <AddEditCreditCardTransactionDialog
       v-model:is-dialog-visible="isAddEditDialogVisible"
