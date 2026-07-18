@@ -54,6 +54,20 @@ class CreditCardInvoiceCycleSpec extends Specification {
         CreditCardInvoiceCycle.resolveDueDate(LocalDate.of(2026, 3, 1), 10, 17) == LocalDate.of(2026, 3, 17)
     }
 
+    def "resolveReferenceMonth and resolveDueDate together reproduce the reported cycle: purchase on 2026-06-26 with closingDay 25 and dueDay 5 belongs to the invoice due 2026-08-05"() {
+        given:
+        int closingDay = 25
+        int dueDay = 5
+
+        when:
+        LocalDate referenceMonth = CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 6, 26), closingDay)
+        LocalDate dueDate = CreditCardInvoiceCycle.resolveDueDate(referenceMonth, closingDay, dueDay)
+
+        then:
+        referenceMonth == LocalDate.of(2026, 7, 1)
+        dueDate == LocalDate.of(2026, 8, 5)
+    }
+
     def "resolveDueDate clamps to the last day of a short due month"() {
         expect:
         CreditCardInvoiceCycle.resolveDueDate(LocalDate.of(2026, 1, 1), 10, 5) == LocalDate.of(2026, 2, 5)
