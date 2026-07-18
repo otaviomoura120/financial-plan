@@ -46,3 +46,7 @@ export const formatDateToMonthShort = (value: string, toTimeForCurrentDay = true
 }
 
 export const prefixWithPlus = (value: number) => value > 0 ? `+${value}` : value
+
+const currencyFormatterBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })
+
+export const formatCurrency = (value: number) => currencyFormatterBRL.format(value)

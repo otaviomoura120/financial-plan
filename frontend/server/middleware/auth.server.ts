@@ -1,9 +1,9 @@
-const PUBLIC_PATHS = ['/auth/', '/login']
+const PUBLIC_PATHS = ['/auth/']
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async event => {
   const url = getRequestURL(event)
 
-  if (PUBLIC_PATHS.some(p => url.pathname.startsWith(p)))
+  if (url.pathname === '/' || PUBLIC_PATHS.some(p => url.pathname.startsWith(p)))
     return
 
   const session = await useAuth0(event).getSession()

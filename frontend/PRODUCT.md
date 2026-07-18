@@ -6,15 +6,20 @@ product
 
 ## Users
 
-Internal operations and admin staff managing a SaaS platform. They work in the dashboard to control access structures: creating and editing roles, assigning endpoint and page permissions, and managing team spaces. Their context is operational — they're in a workflow, not browsing. Speed, clarity, and predictable behavior matter more than visual delight.
+Two audiences share this dashboard:
+
+- **Internal operations and admin staff**, managing access structures: creating and editing roles, assigning endpoint and page permissions, and managing team spaces. Their context is operational — they're in a workflow, not browsing. Speed, clarity, and predictable behavior matter more than visual delight.
+- **End users tracking their own or their family's finances** inside a Space: registering bank accounts, categorizing income/expenses, logging transactions and transfers, and reading reports. Their context is personal and recurring — they come back weekly or monthly to stay on top of money, not to configure a system. Trust and clarity about *their own numbers* matter more than admin-style density.
+
+Both groups use the same visual language and the same underlying permission model (a regular end user is simply a Space member with a non-admin Role) — the interface doesn't fork into two different products, but the financial pages (Bank Accounts, Categories, Payment Methods, Transactions, Reports) are read by people who are not IT professionals and should never feel like an ops console.
 
 ## Product Purpose
 
-An admin control plane for a SaaS platform. Lets ops teams manage roles, permissions (API + front-page), and workspace membership. Success means an admin can understand the permission structure at a glance and make changes confidently without fear of breaking access for real users.
+Two things, on the same platform: (1) an admin control plane letting ops teams manage roles, permissions (API + front-page), and workspace membership; and (2) a personal/family financial control tool letting Space members track bank account balances, categorize and record transactions (including transfers between accounts), and generate reports to understand where their money is going. Success means an admin can understand the permission structure at a glance and make changes confidently without fear of breaking access for real users, **and** an end user can look at a report and immediately trust the numbers reflect their real financial situation.
 
 ## Brand Personality
 
-Professional · Reliable · Clean. The interface should communicate that it's in control of complexity. No flair for flair's sake. Structured, scannable, well-labeled. When something is destructive or irreversible, it says so clearly.
+Professional · Reliable · Clean. The interface should communicate that it's in control of complexity. No flair for flair's sake. Structured, scannable, well-labeled. When something is destructive or irreversible, it says so clearly. On the financial pages this same personality reads as *trustworthy*, not *cold*: numbers are always presented plainly and predictably (never dramatized, never guilt-tripping about spending), because the person reading a balance or a report is trusting the app with their real money.
 
 ## Anti-references
 
@@ -24,7 +29,7 @@ Professional · Reliable · Clean. The interface should communicate that it's in
 
 ## Design Principles
 
-1. **Clarity over cleverness** — admins need to read state instantly; never sacrifice scannability for visual interest.
+1. **Clarity over cleverness** — admins and end users alike need to read state instantly (a permission list, an account balance, a report total); never sacrifice scannability for visual interest.
 2. **Progressive disclosure** — surface the most common operations first; reveal complexity only when needed.
 3. **Consistent weight** — same conceptual actions get the same visual weight throughout (primary/secondary/destructive never swap roles).
 4. **Trust through predictability** — interactions behave exactly as expected; no surprise side effects.

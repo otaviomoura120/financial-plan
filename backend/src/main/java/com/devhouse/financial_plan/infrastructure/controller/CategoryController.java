@@ -2,8 +2,13 @@ package com.devhouse.financial_plan.infrastructure.controller;
 
 import com.devhouse.financial_plan.application.category.*;
 import com.devhouse.financial_plan.application.category.dto.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/categories")
@@ -11,51 +16,85 @@ public class CategoryController {
 
     private final CreateCategoryService createCategoryService;
     private final UpdateCategoryService updateCategoryService;
+    private final UpdateCategoryStatusService updateCategoryStatusService;
     private final DeleteCategoryService deleteCategoryService;
     private final CreateSubCategoryService createSubCategoryService;
     private final UpdateSubCategoryService updateSubCategoryService;
+    private final UpdateSubCategoryStatusService updateSubCategoryStatusService;
     private final DeleteSubCategoryService deleteSubCategoryService;
+    private final ListCategoriesService listCategoriesService;
 
-    public CategoryController(CreateCategoryService createCategoryService, UpdateCategoryService updateCategoryService, DeleteCategoryService deleteCategoryService, CreateSubCategoryService createSubCategoryService, UpdateSubCategoryService updateSubCategoryService, DeleteSubCategoryService deleteSubCategoryService) {
+    public CategoryController(CreateCategoryService createCategoryService, UpdateCategoryService updateCategoryService,
+                               UpdateCategoryStatusService updateCategoryStatusService, DeleteCategoryService deleteCategoryService,
+                               CreateSubCategoryService createSubCategoryService, UpdateSubCategoryService updateSubCategoryService,
+                               UpdateSubCategoryStatusService updateSubCategoryStatusService, DeleteSubCategoryService deleteSubCategoryService,
+                               ListCategoriesService listCategoriesService) {
         this.createCategoryService = createCategoryService;
         this.updateCategoryService = updateCategoryService;
+        this.updateCategoryStatusService = updateCategoryStatusService;
         this.deleteCategoryService = deleteCategoryService;
         this.createSubCategoryService = createSubCategoryService;
         this.updateSubCategoryService = updateSubCategoryService;
+        this.updateSubCategoryStatusService = updateSubCategoryStatusService;
         this.deleteSubCategoryService = deleteSubCategoryService;
+        this.listCategoriesService = listCategoriesService;
+    }
+
+    @GetMapping
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public List<CategoryResponse> list(@RequestParam Long spaceId, Authentication authentication, HttpServletRequest request) {
+        return listCategoriesService.execute(spaceId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CategoryResponse create(@RequestBody CreateCategoryRequest request) {
-        return createCategoryService.execute(request);
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public CategoryResponse create(@RequestBody CreateCategoryRequest body, Authentication authentication, HttpServletRequest request) {
+        return createCategoryService.execute(body);
     }
 
     @PutMapping("/{id}")
-    public CategoryResponse update(@PathVariable Long id, @RequestBody UpdateCategoryRequest request) {
-        return updateCategoryService.execute(id, request);
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public CategoryResponse update(@PathVariable Long id, @RequestBody UpdateCategoryRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateCategoryService.execute(id, body);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public CategoryResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateCategoryStatusService.execute(id, Boolean.TRUE.equals(body.active()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
         deleteCategoryService.execute(id);
     }
 
     @PostMapping("/subcategories")
     @ResponseStatus(HttpStatus.CREATED)
-    public SubCategoryResponse createSubCategory(@RequestBody CreateSubCategoryRequest request) {
-        return createSubCategoryService.execute(request);
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public SubCategoryResponse createSubCategory(@RequestBody CreateSubCategoryRequest body, Authentication authentication, HttpServletRequest request) {
+        return createSubCategoryService.execute(body);
     }
 
     @PutMapping("/subcategories/{id}")
-    public SubCategoryResponse updateSubCategory(@PathVariable Long id, @RequestBody UpdateSubCategoryRequest request) {
-        return updateSubCategoryService.execute(id, request);
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public SubCategoryResponse updateSubCategory(@PathVariable Long id, @RequestBody UpdateSubCategoryRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateSubCategoryService.execute(id, body);
+    }
+
+    @PatchMapping("/subcategories/{id}/status")
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public SubCategoryResponse updateSubCategoryStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateSubCategoryStatusService.execute(id, Boolean.TRUE.equals(body.active()));
     }
 
     @DeleteMapping("/subcategories/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSubCategory(@PathVariable Long id) {
+    @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
+    public void deleteSubCategory(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
         deleteSubCategoryService.execute(id);
     }
 }

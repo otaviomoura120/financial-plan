@@ -43,13 +43,12 @@ const paginatedRoles = computed(() => {
 
 watch(
   () => spaceStore.activeSpace,
-  async (space) => {
-    if (space) {
+  async space => {
+    if (space)
       await fetchRoles()
-    }
-    else {
+
+    else
       roles.value = []
-    }
   },
   { immediate: true },
 )
@@ -147,7 +146,10 @@ function formatDate(iso: string) {
   <div>
     <VCard>
       <VCardText class="d-flex align-center flex-wrap gap-4">
-        <h5 class="text-h5 text-truncate" style="min-inline-size: 0">
+        <h5
+          class="text-h5 text-truncate"
+          style="min-inline-size: 0"
+        >
           Roles
         </h5>
 
@@ -219,92 +221,100 @@ function formatDate(iso: string) {
         <VProgressCircular indeterminate />
       </div>
 
-      <div v-else style="overflow-x: auto">
+      <div
+        v-else
+        style="overflow-x: auto"
+      >
         <VTable>
-        <thead style="white-space: nowrap">
-          <tr>
-            <th>Nome</th>
-            <th style="min-width: 200px">Descrição</th>
-            <th>Criado em</th>
-            <th class="text-center">
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="role in paginatedRoles"
-            :key="role.id"
-          >
-            <td>
-              <div class="d-flex align-center gap-2">
-                <span class="font-weight-medium">{{ role.name }}</span>
-                <VChip
-                  v-if="role.name === 'OWNER'"
-                  color="warning"
-                  size="x-small"
-                  variant="tonal"
-                >
-                  Especial
-                </VChip>
-              </div>
-            </td>
-            <td class="text-disabled">
-              {{ role.description ?? '—' }}
-            </td>
-            <td>{{ formatDate(role.createdAt) }}</td>
-            <td class="text-center" style="white-space: nowrap">
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                @click="openPermissions(role)"
-              >
-                <VIcon icon="tabler-shield-check" />
-                <VTooltip activator="parent">
-                  Gerenciar permissões
-                </VTooltip>
-              </VBtn>
-
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                @click="openEdit(role)"
-              >
-                <VIcon icon="tabler-pencil" />
-                <VTooltip activator="parent">
-                  Editar
-                </VTooltip>
-              </VBtn>
-
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                :disabled="role.name === 'OWNER'"
-                @click="openDelete(role)"
-              >
-                <VIcon icon="tabler-trash" />
-                <VTooltip activator="parent">
-                  {{ role.name === 'OWNER' ? 'Role especial não pode ser excluída' : 'Excluir' }}
-                </VTooltip>
-              </VBtn>
-            </td>
-          </tr>
-
-          <tr v-if="!isLoading && filteredRoles.length === 0">
-            <td
-              colspan="4"
-              class="text-center text-disabled py-8"
+          <thead style="white-space: nowrap">
+            <tr>
+              <th>Nome</th>
+              <th style="min-width: 200px">
+                Descrição
+              </th>
+              <th>Criado em</th>
+              <th class="text-center">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="role in paginatedRoles"
+              :key="role.id"
             >
-              {{ search ? 'Nenhuma role encontrada para a busca.' : 'Nenhuma role cadastrada.' }}
-            </td>
-          </tr>
-        </tbody>
+              <td>
+                <div class="d-flex align-center gap-2">
+                  <span class="font-weight-medium">{{ role.name }}</span>
+                  <VChip
+                    v-if="role.name === 'OWNER'"
+                    color="warning"
+                    size="x-small"
+                    variant="tonal"
+                  >
+                    Especial
+                  </VChip>
+                </div>
+              </td>
+              <td class="text-disabled">
+                {{ role.description ?? '—' }}
+              </td>
+              <td>{{ formatDate(role.createdAt) }}</td>
+              <td
+                class="text-center"
+                style="white-space: nowrap"
+              >
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  @click="openPermissions(role)"
+                >
+                  <VIcon icon="tabler-shield-check" />
+                  <VTooltip activator="parent">
+                    Gerenciar permissões
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  @click="openEdit(role)"
+                >
+                  <VIcon icon="tabler-pencil" />
+                  <VTooltip activator="parent">
+                    Editar
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="error"
+                  :disabled="role.name === 'OWNER'"
+                  @click="openDelete(role)"
+                >
+                  <VIcon icon="tabler-trash" />
+                  <VTooltip activator="parent">
+                    {{ role.name === 'OWNER' ? 'Role especial não pode ser excluída' : 'Excluir' }}
+                  </VTooltip>
+                </VBtn>
+              </td>
+            </tr>
+
+            <tr v-if="!isLoading && filteredRoles.length === 0">
+              <td
+                colspan="4"
+                class="text-center text-disabled py-8"
+              >
+                {{ search ? 'Nenhuma role encontrada para a busca.' : 'Nenhuma role cadastrada.' }}
+              </td>
+            </tr>
+          </tbody>
         </VTable>
       </div>
 

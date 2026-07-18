@@ -51,28 +51,92 @@ Represents a real financial account (bank, digital wallet, etc.). Tracks a runni
 ### Category + SubCategory
 Two-level classification hierarchy for transactions. Example: Category = "Food", SubCategory = "Groceries". Both are scoped to a Space and can be deactivated (soft delete).
 
-### PaymentMethod
-Defines how a transaction was paid — cash, credit card, debit card, pix, check, etc. Scoped to a Space.
-
 ### Transaction
 The **central entity** of the system. Represents a single financial event:
-- `type`: `INCOME` or `EXPENSE`
+- `type`: `INCOME`, `EXPENSE` or `TRANSFER`
 - `amount`: positive `BigDecimal`
 - `transactionDate`: `LocalDate` of when it happened
-- Links: `userId`, `bankAccountId`, `categoryId`, `subCategoryId`, `paymentMethodId`
+- Links: `userId`, `bankAccountId`, `destinationBankAccountId`, `categoryId`, `subCategoryId`
 - `description`: optional notes
+- `sourceType` / `sourceId`: optional traceability of an external origin (`TransactionSourceType`: `CREDIT_CARD_INVOICE_PAYMENT`, `BILL_INSTANCE_PAYMENT`). Both are `null` for a transaction created directly through `POST /transactions`; they are only populated when a transaction is generated automatically by paying a credit card invoice or a bill instance (credit card/bills modules)
+
+For `INCOME`/`EXPENSE`, `categoryId` is required and `destinationBankAccountId` must be null. For `TRANSFER`, `destinationBankAccountId` is required and must differ from `bankAccountId`; `categoryId` is not required. `TRANSFER` moves money between two bank accounts within the same space and is excluded from `totalIncome`/`totalExpense`/`balance` in Reports (see below), though it still appears in the transaction list.
+
+> There used to be a `PaymentMethod` entity (`/payment-methods`) recording how a transaction was paid. It was removed entirely — the concept no longer exists anywhere in the app (Transaction, Bill payment, Credit Card Invoice payment, Reports).
+
+`Transaction.isLinkedToSource()` returns `true` when `sourceType` is set. `UpdateTransactionService`/`DeleteTransactionService` reject (`DomainException`, HTTP 422) any edit or delete attempt on a linked transaction through the regular `/transactions` endpoints — reverting the balance effect of that kind of transaction is only allowed through a dedicated "undo payment" action in the module that created it (no cascade from the generic Transaction flow).
 
 ### EndpointPermission & RoleEndpointPermission
 `EndpointPermission` defines one access rule for an HTTP endpoint or a frontend page:
 - `endpoint`: Java regex matched against the request URI
 - `permittedMethods`: comma-separated HTTP methods (`GET,POST,PUT`)
-- `type`: `API` (backend route) or `FRONT_PAGE` (frontend route)
+- `type`: `API` (backend route), `FRONT_PAGE` (frontend route) or `WIDGET` (a UI section gated by key, not by URL — see `dashboard-widgets.md`)
 - `group`: optional grouping; `INTERNAL_MANAGEMENT` restricts to master admins
 
-`RoleEndpointPermission` is a join entity linking a `Role` to an `EndpointPermission` with an `ALLOW` or `DENY` decision. On every protected request, `SecurityService` resolves the user's role in the **active space** (identified by the `X-Space-Id` request header) and checks whether that role has an `ALLOW` entry for the matching rule.
+`RoleEndpointPermission` is a join entity linking a `Role` to an `EndpointPermission` with an `ALLOW` or `DENY` decision. On every protected request, `SecurityService` resolves the user's role in the **active space** (identified by the `X-Space-Id` request header) and checks whether that role has an `ALLOW` entry for the matching rule. For `WIDGET` rows there is no HTTP request to intercept — a dedicated endpoint (`GET /dashboard-widgets`) exposes the resolved ALLOW set directly, see `dashboard-widgets.md`.
 
 ### GroupMenu / GroupMenuChildren
 Hierarchical UI navigation menu. The menu structure is served to the frontend filtered by the authenticated user's permissions, so each user sees only the sections they can access.
+
+### CreditCard
+First entity of the new **credit card module** (in progress). Tenancy is direct, same pattern as `BankAccount`:
+- `name`, `limit` (informative only — never blocks a purchase, same philosophy as `BankAccount`'s negative balance), `closingDay`/`dueDay` (1-31, day-of-month of the invoice's closing and due date), `active`
+- optional `bankAccount` — the account this card "belongs to". Nullable, validated on create/update to belong to the same space (422 otherwise). Exists so the category report's `bankAccountId` filter can reach card purchases (see `report-by-category.md`, RPTC6); exposed as `bankAccountId`/`bankAccountName` in `CreditCardResponse`
+- `validate()` requires `name`, `space`, a positive `limit`, and `closingDay`/`dueDay` within 1-31 (`bankAccount` is not required)
+- `update(name, limit, closingDay, dueDay, bankAccount)` and `deactivate()`; optimistic locking via `setVersion`
+
+`CreditCardInvoiceCycle` is a stateless calculator (no repository, no persisted state) used to derive which monthly invoice a purchase belongs to and when that invoice is due:
+- `resolveClosingDate(YearMonth, closingDay)` — the closing date within that month, clamped to the month's last day (handles `closingDay=31` in a 28/30-day month)
+- `resolveReferenceMonth(purchaseDate, closingDay)` — first day of the invoice month a purchase falls into: the purchase's own month if made on or before that month's closing date, otherwise the next month
+- `resolveDueDate(referenceMonth, closingDay, dueDay)` — if `dueDay <= closingDay` the due date falls in the month **after** `referenceMonth` (the due date always trails the closing date by construction), otherwise within `referenceMonth` itself; always clamped to the resulting month's length
+
+CRUD is exposed via `CreditCardController` (`/credit-cards`, see REST API Reference below), protected by `@PreAuthorize` from the start — unlike the core module, this credit card controller never had the T10 authorization gap. `DELETE /credit-cards/{id}` maps to `DeactivateCreditCardService`, which soft-deletes (`active=false`, same as `BankAccount` before its DEL2 hard-delete rework) rather than removing the row — no hard delete/`existsBy` FK-guard exists yet for this entity. `seed.sql` grants `'Cartões de Crédito'` `ALLOW` to OWNER/ADMIN/MEMBER and adds its sidebar entry under the existing `'Contas e Pagamentos'` group.
+
+### CreditCardTransaction
+A single purchase (or a single installment of a parcelled purchase) made on a `CreditCard`. Tenancy is **indirect** — same pattern as `Transaction`/`SubCategory`: it holds a `CreditCard` (which itself belongs to a `Space`), not a `Space` directly.
+- Links: `creditCard`, `user`, `category`, `subCategory` (optional) — all resolved as domain objects with a real FK, matching the project's current convention (see REF1-4 in `IMPLEMENTATION_PLAN.md`); there is no `bankAccount` (a credit card purchase never touches a bank account balance directly — only paying the invoice does, see `CreditCardInvoicePayment`)
+- `amount` (positive `BigDecimal`), `purchaseDate` (`LocalDate`), `description` (optional)
+- No soft-delete — hard delete, like `Transaction`
+- **Paid-invoice guard:** `UpdateCreditCardTransactionService`/`DeleteCreditCardTransactionService` reject with `DomainException` ("cannot modify/delete a transaction from a paid invoice") whenever a `CreditCardInvoicePayment` already exists for `(creditCard, transaction.referenceMonth)`. `CreateCreditCardTransactionService` applies the same check against every installment's `referenceMonth` before creating any row — a new purchase can never land inside an invoice that's already paid.
+
+**Installments model.** A purchase split into N installments is stored as **N separate rows**, one per future invoice, linked by a shared group id — not as one row with an in-memory projection. A cash purchase is just the `totalInstallments=1` case of the same model, no special-casing:
+- `referenceMonth` (`LocalDate`, first day of month) — which monthly invoice this specific installment belongs to. Unlike a plain `Transaction`, this is **computed once and stored at creation**, not re-derived on every read: installment 1 uses `CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, card.closingDay)`; installment *i* (i>1) uses `referenceMonth(installment 1).plusMonths(i-1)`. `purchaseDate` keeps meaning "when the purchase was made" (same value across every installment of the group) and is no longer used to derive the invoice at read time.
+- `installmentGroupId` (`String`, UUID) — shared by every row of the same purchase (a cash purchase is a group of one)
+- `installmentNumber` (1-based) / `totalInstallments` (1-60) — position within the group and its size; `validate()` enforces `1 <= totalInstallments <= 60` and `1 <= installmentNumber <= totalInstallments`
+- `anticipated` / `originalReferenceMonth` — set by `anticipateTo(LocalDate targetReferenceMonth)`, which moves this installment to an earlier open invoice: on the *first* call it snapshots the current `referenceMonth` into `originalReferenceMonth` before overwriting it; a *second* anticipation of an already-anticipated row moves `referenceMonth` again but keeps the original `originalReferenceMonth` untouched (so it always reflects where the installment would have landed with no anticipation at all, not the last intermediate stop)
+- Per-installment amount rounding: `CreateCreditCardTransactionService` divides the total by `totalInstallments` truncated to 2 decimals (`RoundingMode.DOWN`), then the **last** installment gets `total - (base × (N-1))` — so the sum of all installments always equals the original amount exactly, even when it doesn't divide evenly (e.g. R$100,00 in 3x → R$33,33 / R$33,33 / R$33,34)
+
+Persistence (`CreditCardTransactionRepositoryImpl`) enforces `spaceId` isolation via subquery from the start (`credit_card_id IN (SELECT id FROM credit_cards WHERE space_id = :spaceId)`) — learned from the `T9b` gap in the core `Transaction` module, where this filter was missing until a dedicated task added it after the fact. `findByInstallmentGroupId` returns every row of a purchase (used later by installment-progress UI and by anticipation). The `(credit_card_id, reference_month)` index is **not unique** — several installments (from the same or different purchases, including anticipated ones) legitimately coexist in the same invoice month.
+
+CRUD is exposed via `CreditCardTransactionController` (`/credit-card-transactions`, see REST API Reference below), `@PreAuthorize` on every method from the start. `CreateCreditCardTransactionService` accepts an optional `totalInstallments` in the request: `<= 1` behaves like a single cash purchase (one row); `> 1` creates all N rows in one `@Transactional` call, sharing the same `installmentGroupId`. `GET /credit-card-transactions`'s `from`/`to` range filters by `referenceMonth` (invoice month), not `purchaseDate` — so each installment of a group only shows up while browsing its own invoice month, not all bunched into the purchase's month. `UpdateCreditCardTransactionService` operates on a single row — editing one installment never renumbers or recalculates the others in its group. `DeleteCreditCardTransactionService.execute(id, includeFuture)` deletes a single row by default; passing `includeFuture=true` on a row that belongs to a group (`totalInstallments > 1`) instead deletes that installment and every later one in the same group (`installmentNumber >= this row's`), rejecting the whole batch if any of them belongs to an already-paid invoice — it never renumbers the installments that are left behind. `GET /credit-card-transactions/installment-groups/{installmentGroupId}` (`ListInstallmentGroupService`) returns every row of a purchase sorted by `installmentNumber`, used by the UI to show progress (e.g. "3/12") and by the anticipation flow to pick eligible installments. Every `CreditCardTransactionResponse` also carries `totalAmount` — the sum of the whole installment group's `amount`s, computed on read (not persisted) via `findByInstallmentGroupId`, shown as a reference to the original purchase total.
+
+**Anticipation** (`AnticipateCreditCardInstallmentsService`, `POST .../installment-groups/{id}/anticipate`): moves the last N installments of a purchase into an earlier **open** invoice (`targetReferenceMonth`). It rejects if the target invoice is already paid, if `installmentsToAnticipate` is not positive, or if there aren't enough installments strictly after `targetReferenceMonth` to satisfy the request. Eligible installments are picked by descending `installmentNumber` (the last ones first), each moved via the domain's `anticipateTo(...)` (see above — safe against double-anticipation). **It never touches money** — no `TransactionBalanceEffectService` call here; the balance effect only happens later, when the target invoice is actually paid through `PayCreditCardInvoiceService` (CC6), like any other invoice. A full write-up of the invoice/anticipation flow lands in `backend/docs/credit-card-invoice.md` together with CC6.
+
+### BillRecurring
+A recurrence config (electricity, internet, rent) — the thing that produces monthly occurrences, not an occurrence itself (see `Bill` below). Only exists for bills the user marked recurring; a one-off bill never creates one. Tenancy is direct, same pattern as `CreditCard`/`BankAccount`:
+- `name`, `category`/`subCategory` (optional, used as the defaults copied into each generated occurrence), `defaultAmount` (positive `BigDecimal`, copied into each generated occurrence), `startDate` (`LocalDate` — anchors the first due date and the day-of-month of every future due date), `active`
+- `validate()` requires `name`, `space`, a positive `defaultAmount`, and a non-null `startDate`; `category`/`subCategory` are optional
+- `update(name, category, subCategory, defaultAmount)` — basic fields — and `updateSchedule(startDate)` are two **separate** methods on purpose: changing the schedule never touches name/category/subCategory/amount and vice-versa, and since occurrence generation always reads the `BillRecurring`'s current state on demand (see `Bill` below), a schedule change only ever affects occurrences not yet generated — anything already materialized (pending or paid) keeps its original `dueDate`
+- `deactivate()` (soft delete, same as `CreditCard`) and optimistic locking via `setVersion`
+
+A category/subCategory is stored as a real `Category`/`SubCategory` object with a physical FK, matching the project's current convention (see REF1-4 in `IMPLEMENTATION_PLAN.md`) rather than a raw `Long`.
+
+`CreateBillInstanceService` (`POST /bills/instances`) creates a standalone `Bill` (`PENDING`, `dueDate` = the requested date) directly, with no `BillRecurring` at all — a one-off bill is fully usable the moment it's created, with nothing else to generate and nothing left over afterward. `CreateBillService` (`POST /bills`) instead creates only a `BillRecurring`; its occurrences appear lazily, see `EnsureRecurringBillsGeneratedService` below.
+
+### Bill
+A single month's occurrence — the thing that actually gets paid, and the module's primary entity. Tenancy is **direct**: it always carries its own `space`, never derived through a join.
+- `space`, `billRecurring` (nullable — set only when generated by a `BillRecurring`, `null` for a standalone bill), `name`, `category`/`subCategory`, `referenceMonth` (`LocalDate`, first day of month — unique together with `billRecurring` at the database level), `dueDate`, `amount` (for a recurring-generated bill, starts as a copy of `BillRecurring`'s defaults at generation time; independently editable while `PENDING`), `deleted` (soft-delete flag)
+- `status` (`BillInstanceStatus`: `PENDING`/`PAID`) plus `paidDate`/`paymentTransactionId`/`bankAccountId`, all `null` until paid
+- Unlike `CreditCardInvoicePayment` (which only ever exists once, fully formed, and is never updated — see `credit-card-invoice.md`), `Bill` needs its own mutable lifecycle: it must be visible and payable **before** any `Transaction` exists for it, so there is no other row to derive a "paid" flag from by grouping. See `backend/docs/recurring-bills.md` for the full rationale, including why the entity was inverted from an earlier `Bill`(template)/`BillInstance`(occurrence) split.
+- `updateDetails(name, category, subCategory, amount, dueDate)`, `markDeleted()` and `markAsPaid(paidDate, paymentTransactionId, bankAccountId)` all reject (`DomainException`) if the bill is not currently `PENDING`; `revertToPending()` clears the payment fields and flips back to `PENDING` — used only by the dedicated undo action (`UndoBillInstancePaymentService`), never by the regular update/pay flow
+
+**Lazy generation** (`EnsureRecurringBillsGeneratedService`, no dedicated endpoint — called internally by `ListBillInstancesService` and by Reports, see `RPT1`): for every active `BillRecurring` in a space, generates the missing `PENDING` `Bill` rows from the month after the last one that already exists (or the `BillRecurring`'s `startMonth` if none exist yet) up to `min(month of the requested date, current month + 1)` — same "+1 lookahead, no scheduler" philosophy as the credit card module's invoice grouping, but here rows must actually be written ahead of time since there's nothing to compute from. Idempotent: it always checks `findByBillRecurringIdAndReferenceMonth` before inserting (this also matches soft-deleted rows, so a deleted occurrence's month is never regenerated), so calling it repeatedly (every list/report request) never creates duplicates. Standalone bills never go through this service.
+
+Persistence (`BillRepositoryImpl`) enforces `spaceId` isolation by filtering `Bill.space` directly — no join/subquery needed, since `Bill` (unlike the old `BillInstance`) always carries its own `spaceId`.
+
+**Editing/deleting** (`UpdateBillService`/`DeleteBillService`, `PUT`/`DELETE /bills/instances/{id}`) only work while `PENDING` (`422` otherwise) and only ever touch the individual `Bill` row — never the parent `BillRecurring`'s defaults, never other occurrences.
+
+**Paying** (`PayBillInstanceService`, `POST /bills/instances/{id}/pay`) and **undoing a payment** (`UndoBillInstancePaymentService`, `POST /bills/instances/{id}/undo-payment`) mirror `PayCreditCardInvoiceService`/`UndoCreditCardInvoicePaymentService` closely: the payer is the authenticated user (never a request field), category/subCategory always come from the `Bill` itself (no override in the request), the generated `Transaction` carries `sourceType=BILL_INSTANCE_PAYMENT`/`sourceId=bill.id` and is created **before** the bill is marked paid, and undo reverts the balance + hard-deletes that `Transaction` directly (bypassing the normal linked-transaction guard) before flipping the bill back to `PENDING`. Full write-up in `backend/docs/recurring-bills.md`.
 
 ---
 
@@ -84,24 +148,67 @@ POST /users          → create User (linked to Auth0 sub)
 POST /spaces         → create Space → auto-creates OWNER role → adds creator as SpaceMember(OWNER)
 POST /bank-accounts  → add bank account to the space
 POST /categories     → add categories (and subcategories)
-POST /payment-methods → add payment methods
 ```
 
 ### 2. Recording a Transaction
 ```
 POST /transactions
-  body: { type, userId, bankAccountId, categoryId, subCategoryId, paymentMethodId, amount, transactionDate, description }
-  → Transaction.validate() checks all IDs present and amount > 0
-  → stored and returned as TransactionResponse
+  body: { type, userId, bankAccountId, destinationBankAccountId, categoryId, subCategoryId, amount, transactionDate, description }
+  → CreateTransactionService validates that every referenced FK exists (userId, bankAccountId always;
+    destinationBankAccountId only for TRANSFER; categoryId only for INCOME/EXPENSE;
+    subCategoryId only when informed) → 422 DomainException if any is missing
+  → Transaction.validate() checks required fields per type and amount > 0
+  → TransactionBalanceEffectService.apply() credits/debits the bank account(s) involved (see transaction-balance-effect.md)
+  → stored and returned as TransactionResponse (all inside one @Transactional boundary)
+
+Editing a transaction (PUT /transactions/{id}) reverts the old balance effect and re-applies the new one — same
+service, same rules for FK validation — so changing type/amount/bankAccountId/destinationBankAccountId always
+leaves the affected bank account(s) with the correct resulting balance.
 ```
 
 ### 3. Financial Report
 ```
 POST /reports
-  body: { from, to, userId?, bankAccountId?, categoryId?, subCategoryId?, paymentMethodId?, type? }
-  → queries transactions matching all filters
-  → returns: { transactions[], totalIncome, totalExpense, balance }
+  body: { spaceId, from, to, userId?, bankAccountId?, categoryId?, subCategoryId?, type? }
+  → spaceId is required (422 DomainException if missing)
+  → queries transactions matching all filters, scoped to bank accounts of that space
+  → returns: { transactions[], totalIncome, totalExpense, balance,
+               currentBalance, pendingCreditCardInvoices[], pendingCreditCardTotal,
+               pendingBillInstances[], pendingBillTotal, projectedBalance }
 ```
+`spaceId` is mandatory and enforces multi-tenant isolation: `Transaction` has no `spaceId` column of its own (only
+`bankAccountId`), so `TransactionRepositoryImpl.findByFilter` restricts results with
+`bankAccountId IN (SELECT id FROM bank_accounts WHERE space_id = :spaceId)` — a report for one space can never
+return transactions whose bank account belongs to another space, regardless of the other filters supplied.
+
+`TRANSFER` transactions are included in `transactions[]` but excluded from `totalIncome`/`totalExpense`/`balance` —
+`Transaction.isIncome()`/`isExpense()` both return `false` for `TRANSFER`, so the sums naturally skip it without any
+extra branching in `GenerateReportService`. Also delete a transaction reverts its `TransactionBalanceEffectService`
+balance effect (see transaction-balance-effect.md), so recorded balances stay consistent for reporting purposes.
+
+**Projected balance (RPT1).** `GenerateReportService` also computes a forward-looking view, independent of the
+`transactions[]`/totals above:
+- `currentBalance` — sum of `balance` across every **active** `BankAccount` in the space, or just the filtered
+  account's `balance` when `bankAccountId` is informed (`BankAccountRepository.findById`/`findBySpaceId`).
+- `pendingCreditCardInvoices[]` / `pendingCreditCardTotal` — reuses `ListCreditCardInvoicesService` (see
+  `credit-card-invoice.md`) with `creditCardId=null`, keeping only invoices where `paid=false`. Since credit card
+  installments already carry their final `referenceMonth` at creation time (CC5), a future installment of a
+  parcelled purchase shows up here automatically the moment its `dueDate` falls inside `[from, to]` — no extra
+  generation step, unlike bills below.
+- `pendingBillInstances[]` / `pendingBillTotal` — calls `EnsureRecurringBillsGeneratedService.execute(spaceId, to ?? today)`
+  first (so the filtered period is fully materialized), then `BillRepository.findBySpaceAndPeriod(spaceId, from, to)`
+  filtered to `status=PENDING` (paid bills are excluded). `spaceId` isolation here comes directly from `Bill.space`,
+  not from a join through a parent template.
+- `projectedBalance = currentBalance - pendingCreditCardTotal - pendingBillTotal`.
+
+Both pending lists only include items whose `dueDate` falls within `[from, to]` — a pending invoice or bill instance
+due outside the filtered period simply doesn't affect `projectedBalance`, even though it still exists.
+
+**Report by Category.** `POST /reports/by-category` (`GenerateCategoryReportService`) is a second report on a
+different accrual basis: it groups the period's items by Category → SubCategory, includes credit card purchases by
+`purchaseDate` (never by invoice closing/payment — the matching `CREDIT_CARD_INVOICE_PAYMENT` transactions are
+excluded to avoid double counting), accepts the same filters plus `creditCardId`, and adds per-category
+percentages. Full contract, filter semantics and invariants (RPTC1-RPTC9) in `report-by-category.md`.
 
 ### 4. Access Control Flow
 ```
@@ -117,6 +224,19 @@ Incoming request  (must carry Authorization: Bearer <token> and X-Space-Id: <spa
       → userHasPermissionForRole  (space derived from role ID)
   → allowed or 403
 ```
+All core financial controllers (`BankAccountController`, `CategoryController`,
+`TransactionController`, `ReportController` — including their new `GET` list endpoints) now use
+`@PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")` on every method, the same
+pattern as `EndpointPermissionController`/`GroupMenuController`. Each endpoint has a corresponding `API` row in
+`endpoint_permissions` (see `seed.sql`, section 1) reusing the same `name` as the entity's existing `FRONT_PAGE` row
+(`'Contas Bancárias'`, `'Categorias'`, `'Transações'`, `'Relatórios'`), so ADMIN/MEMBER
+inherit `ALLOW` automatically through the existing `ep.name IN (...)` joins — no change needed to the ADMIN/MEMBER
+seed blocks. OWNER gets `ALLOW` on everything via the existing `CROSS JOIN`.
+
+There is no isolated Spock test for `@PreAuthorize` itself in this project (see `SecurityServiceSpec.groovy`, which
+tests the underlying matching logic generically). Verify manually per role before treating this as fully closed:
+call each new/existing endpoint with a MEMBER/ADMIN token that has no `ALLOW` for it and confirm `403`, then with a
+token that does and confirm success.
 
 ### 5. Managing Roles & Permissions
 ```
@@ -149,33 +269,76 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 ### Transactions `/transactions`
 | Method | Path | Purpose |
 |--------|------|---------|
-| POST | `/` | Record income or expense |
+| GET | `/?spaceId=&userId=&bankAccountId=&categoryId=&subCategoryId=&type=&from=&to=` | List transactions of a space (spaceId required, all other filters optional; no `from`/`to` = all transactions) |
+| POST | `/` | Record income, expense or transfer |
 | PUT | `/{id}` | Update transaction |
 | DELETE | `/{id}` | Delete transaction |
 
 ### Categories `/categories`
 | Method | Path | Purpose |
 |--------|------|---------|
+| GET | `/?spaceId=` | List categories of a space, each with its subcategories populated |
 | POST | `/` | Create category |
 | PUT | `/{id}` | Rename category |
-| DELETE | `/{id}` | Deactivate category |
+| PATCH | `/{id}/status` | Activate/deactivate category (`{active: boolean}`) |
+| DELETE | `/{id}` | Delete category (hard delete; rejects with 422 if linked subcategories or transactions exist) |
 | POST | `/subcategories` | Create subcategory |
 | PUT | `/subcategories/{id}` | Rename subcategory |
-| DELETE | `/subcategories/{id}` | Deactivate subcategory |
+| PATCH | `/subcategories/{id}/status` | Activate/deactivate subcategory (`{active: boolean}`) |
+| DELETE | `/subcategories/{id}` | Delete subcategory (hard delete; rejects with 422 if linked transactions exist) |
 
 ### Bank Accounts `/bank-accounts`
 | Method | Path | Purpose |
 |--------|------|---------|
+| GET | `/?spaceId=` | List bank accounts of a space |
 | POST | `/` | Create bank account |
 | PUT | `/{id}` | Update account metadata |
-| DELETE | `/{id}` | Deactivate account |
+| PATCH | `/{id}/status` | Activate/deactivate account (`{active: boolean}`) |
+| DELETE | `/{id}` | Delete account (hard delete; rejects with 422 if linked transactions exist) |
 
-### Payment Methods `/payment-methods`
+### Credit Cards `/credit-cards`
 | Method | Path | Purpose |
 |--------|------|---------|
-| POST | `/` | Create payment method |
-| PUT | `/{id}` | Rename payment method |
-| DELETE | `/{id}` | Deactivate payment method |
+| GET | `/?spaceId=` | List credit cards of a space |
+| POST | `/` | Create credit card (`name`, `limit`, `closingDay`, `dueDay`, `bankAccountId?` — must belong to the same space) |
+| PUT | `/{id}` | Update name/limit/closingDay/dueDay/bankAccountId |
+| DELETE | `/{id}` | Deactivate credit card (soft delete — `active=false`, no hard delete yet) |
+
+### Credit Card Transactions `/credit-card-transactions`
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/?spaceId=&creditCardId=&categoryId=&subCategoryId=&from=&to=&referenceMonth=` | List credit card transactions (filters optional, `from`/`to` match `referenceMonth` — the invoice month, not `purchaseDate`; `referenceMonth` is an exact-match filter; the repository also supports a `userId` filter, used internally by the category report) |
+| GET | `/installment-groups/{installmentGroupId}` | List every installment of a purchase, sorted by `installmentNumber` |
+| POST | `/` | Create a purchase (`creditCardId`, `userId`, `categoryId`, `subCategoryId?`, `amount`, `purchaseDate`, `description?`, `totalInstallments?`) — `totalInstallments > 1` creates all N rows at once |
+| PUT | `/{id}` | Update a single installment's `categoryId`/`subCategoryId`/`amount`/`purchaseDate`/`description` (rejects with 422 if its invoice is already paid) |
+| DELETE | `/{id}?includeFuture=` | Delete an installment (hard delete; rejects with 422 if its invoice is already paid). `includeFuture` defaults to `false` (deletes only this row); `includeFuture=true` on a grouped purchase (`totalInstallments > 1`) also deletes every later installment in the same group (rejects with 422, deleting nothing, if any of them belongs to an already-paid invoice) |
+| POST | `/installment-groups/{installmentGroupId}/anticipate` | Move the last N installments of a purchase to an earlier open invoice (`targetReferenceMonth`, `installmentsToAnticipate`); returns the whole updated group |
+
+### Credit Card Invoices `/credit-cards/invoices`, `/credit-cards/{id}/invoices/{referenceMonth}`
+Full cycle explained in `backend/docs/credit-card-invoice.md` — an invoice is never materialized until paid; "paid" == a `CreditCardInvoicePayment` row exists for `(creditCardId, referenceMonth)`.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/credit-cards/invoices?spaceId=&creditCardId=&from=&to=` | List invoices (grouped in memory from `CreditCardTransaction.referenceMonth`), marked paid/open; `from`/`to` filter by `dueDate` |
+| POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | Pay an open invoice (`bankAccountId`, `categoryId`, `subCategoryId`, `paidDate`) — creates an `EXPENSE` `Transaction` (`sourceType=CREDIT_CARD_INVOICE_PAYMENT`, `sourceId=creditCardId`) debiting `bankAccountId`, then persists `CreditCardInvoicePayment`; payer is the authenticated user, not a request field |
+| POST | `/credit-cards/{id}/invoices/{referenceMonth}/undo-payment` | Reverse a payment — reverts the bank account balance, hard-deletes the generated `Transaction` (bypassing the normal linked-transaction guard) and the `CreditCardInvoicePayment` row, so the invoice shows as open again |
+
+### Bills `/bills`
+Full cycle explained in `backend/docs/recurring-bills.md`. `/bills` itself is `BillRecurring` CRUD; `/bills/instances` is `Bill` (the actual occurrence) CRUD.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/?spaceId=` | List `BillRecurring` configs of a space |
+| POST | `/` | Create a `BillRecurring` (`name`, `categoryId?`, `subCategoryId?`, `defaultAmount`, `startDate`) — occurrences are generated lazily, none is created here |
+| PUT | `/{id}` | Update `name`/`categoryId`/`subCategoryId`/`defaultAmount` |
+| PUT | `/{id}/schedule` | Update `startDate` (dedicated — only affects occurrences not yet generated) |
+| DELETE | `/{id}` | Deactivate the `BillRecurring` (soft delete — `active=false`, no hard delete/reactivate yet) |
+| GET | `/instances?spaceId=&from=&to=` | List `Bill` occurrences due within `[from, to]` (both optional); lazily generates any missing recurring-bill occurrences up to the requested period before returning |
+| POST | `/instances` | Create a standalone `Bill` directly (`spaceId`, `name`, `categoryId?`, `subCategoryId?`, `amount`, `dueDate`) — no `BillRecurring` involved |
+| PUT | `/instances/{id}` | Update a pending `Bill`'s `name`/`categoryId`/`subCategoryId`/`amount`/`dueDate` (rejects with 422 if already paid); never touches a parent `BillRecurring` |
+| DELETE | `/instances/{id}` | Soft-delete a pending `Bill` (rejects with 422 if already paid) |
+| POST | `/instances/{id}/pay` | Pay a pending bill (`bankAccountId`, `paidDate` — no category override) — creates an `EXPENSE` `Transaction` (`sourceType=BILL_INSTANCE_PAYMENT`, `sourceId=bill.id`) debiting `bankAccountId` using the bill's own category/subCategory, then marks it `PAID`; payer is the authenticated user, not a request field |
+| POST | `/instances/{id}/undo-payment` | Reverse a payment — reverts the bank account balance, hard-deletes the generated `Transaction` (bypassing the normal linked-transaction guard) and flips the bill back to `PENDING` |
 
 ### Roles `/roles`
 | Method | Path | Purpose |
@@ -190,6 +353,7 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | Method | Path | Purpose |
 |--------|------|---------|
 | POST | `/` | Generate filtered financial report |
+| POST | `/by-category` | Generate the report grouped by category/subcategory — includes credit card purchases by `purchaseDate` with the card identified, excludes invoice-payment transactions and transfers, accepts the same filters plus `creditCardId` (see `report-by-category.md`) |
 
 ### Endpoint Permissions `/endpoint-permissions`
 | Method | Path | Purpose |
@@ -214,6 +378,11 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/` | Return role-filtered navigation menu for authenticated user |
+
+### Dashboard Widgets `/dashboard-widgets`
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/?spaceId=` | Return the widget keys (home page RBAC) the authenticated user's role in that space is `ALLOW`ed to see — see `dashboard-widgets.md` |
 
 ---
 

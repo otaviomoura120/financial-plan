@@ -7,6 +7,7 @@ interface Props {
   cancelTitle?: string
   cancelMsg?: string
   autoResult?: boolean
+  confirmColor?: string
 }
 
 interface Emit {
@@ -69,6 +70,7 @@ const onCancel = () => {
       <VCardText class="d-flex align-center justify-center gap-2">
         <VBtn
           variant="elevated"
+          :color="props.confirmColor"
           @click="onConfirmation"
         >
           Confirm

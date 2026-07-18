@@ -51,7 +51,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
     @Override
     public List<Category> findBySpaceId(Long spaceId) {
-        return jpaCategoryRepository.findBySpaceId(spaceId).stream()
+        return jpaCategoryRepository.findBySpaceIdOrderByNameAsc(spaceId).stream()
                 .map(this::toDomain)
                 .toList();
     }

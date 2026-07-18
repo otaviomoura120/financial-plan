@@ -9,9 +9,9 @@ public record CreateTransactionRequest(
         TransactionType type,
         Long userId,
         Long bankAccountId,
+        Long destinationBankAccountId,
         Long categoryId,
         Long subCategoryId,
-        Long paymentMethodId,
         BigDecimal amount,
         LocalDate transactionDate,
         String description

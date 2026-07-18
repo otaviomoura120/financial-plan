@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.transaction.dto;
 
+import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 
 import java.math.BigDecimal;
@@ -12,11 +13,14 @@ public record TransactionResponse(
         TransactionType type,
         Long userId,
         Long bankAccountId,
+        Long destinationBankAccountId,
         Long categoryId,
         Long subCategoryId,
-        Long paymentMethodId,
         BigDecimal amount,
         LocalDate transactionDate,
         String description,
-        Instant createdDate
+        Instant createdDate,
+        TransactionSourceType sourceType,
+        Long sourceId,
+        LocalDate creditCardInvoiceReferenceMonth
 ) {}

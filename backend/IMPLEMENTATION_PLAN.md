@@ -134,7 +134,7 @@ Sem domain próprio — deriva de `TransactionRepository.findByFilter`. `totalIn
 
 > **[coringa]** independente da cadeia principal — encaixar em qualquer sessão/grupo abaixo quando sobrar contexto.
 
-- [ ] **T1 — Persistência real de SubCategory**
+- [x] **T1 — Persistência real de SubCategory**
 Criar `infrastructure/repository/jpa/JpaSubCategoryRepository.java` (`extends JpaRepository<SubCategoryEntityJpa, Long>` + `findByCategoryId`). Reescrever `SubCategoryRepositoryImpl.java` com mapeamento direto (sem Space), seguindo o padrão de `PaymentMethodRepositoryImpl.java`. Independente do resto, pode ser feito a qualquer momento.
 **Testes (obrigatório):** specs de `CreateSubCategoryService`/`UpdateSubCategoryService`/`DeleteSubCategoryService` (mockando `SubCategoryRepository`, `CategoryRepository`) cobrindo sucesso e categoria pai inexistente — `./gradlew test` verde antes de fechar.
 **Docs:** revisar `backend/docs/APP_OVERVIEW.md` (seção SubCategory / REST API Reference) — confirmar que o contrato já descrito bate com o comportamento real agora que não é mais stub; nenhuma mudança de contrato esperada.
@@ -142,13 +142,13 @@ Criar `infrastructure/repository/jpa/JpaSubCategoryRepository.java` (`extends Jp
 
 ### [Grupo B1] Fundação: domínio TRANSFER + persistência de Transaction
 
-- [ ] **T2 — Suporte a TRANSFER no domain Transaction**
+- [x] **T2 — Suporte a TRANSFER no domain Transaction**
 Editar `domain/enums/TransactionType.java` (add `TRANSFER`). Editar `domain/Transaction.java`: novo campo `destinationBankAccountId`, atualizar construtor, `update(...)`, e `validate()` com a ramificação descrita acima.
 **Testes (obrigatório):** `domain/TransactionSpec.groovy` (criar se não existir) cobrindo `validate()` para os 3 tipos: INCOME/EXPENSE (categoryId/paymentMethodId obrigatórios), TRANSFER (destinationBankAccountId obrigatório e diferente de bankAccountId, categoryId/paymentMethodId dispensados).
 **Docs:** atualizar `backend/docs/APP_OVERVIEW.md` seção "Transaction" com o novo campo `destinationBankAccountId` e o valor `TRANSFER`.
 *Pronto quando:* `Transaction.validate()` cobre os três tipos corretamente e a spec passa.
 
-- [ ] **T3 — Persistência real de Transaction (já com destinationBankAccountId)**
+- [x] **T3 — Persistência real de Transaction (já com destinationBankAccountId)**
 Criar `infrastructure/repository/jpa/JpaTransactionRepository.java` — `extends JpaRepository<TransactionEntityJpa, Long> & JpaSpecificationExecutor<TransactionEntityJpa>` (specification para suportar os filtros opcionais de `findByFilter`). Adicionar coluna `destinationBankAccountId` em `TransactionEntityJpa`. Reescrever `TransactionRepositoryImpl.java` com mapeamento direto de campos escalares, seguindo a estrutura de `BankAccountRepositoryImpl.java` (sem resolver Space).
 *Depende de:* T2 (campo/enum já precisam existir para mapear).
 **Testes (obrigatório):** cobertura indireta via specs de T4/T6 (que mockam `TransactionRepository`, então a implementação JPA em si é validada por teste manual/integration — documentar no PR os cenários manuais executados: create/update/delete/findByFilter contra o MySQL local).
@@ -157,14 +157,14 @@ Criar `infrastructure/repository/jpa/JpaTransactionRepository.java` — `extends
 
 ### [Grupo B2] Validação de FKs + helper de efeito de saldo
 
-- [ ] **T4 — Atualizar DTOs e validação de FKs em CreateTransactionService**
+- [x] **T4 — Atualizar DTOs e validação de FKs em CreateTransactionService**
 Adicionar `destinationBankAccountId` em `CreateTransactionRequest`, `UpdateTransactionRequest`, `TransactionResponse` (`application/transaction/dto/`). Em `CreateTransactionService`, injetar `BankAccountRepository`, `CategoryRepository`, `SubCategoryRepository`, `PaymentMethodRepository`, `UserRepository` e validar existência de cada FK antes de montar a `Transaction` (padrão de `CreateBankAccountService`, que verifica `Space` existe): `bankAccountId` sempre; `destinationBankAccountId` só se `TRANSFER`; `categoryId`/`paymentMethodId` só se não-`TRANSFER`; `subCategoryId` se informado; `userId` sempre.
 *Depende de:* T3.
 **Testes (obrigatório):** `CreateTransactionServiceSpec.groovy` — sucesso INCOME/EXPENSE/TRANSFER, cada FK inexistente retornando `DomainException`, TRANSFER com `bankAccountId == destinationBankAccountId` rejeitado.
 **Docs:** atualizar `backend/docs/APP_OVERVIEW.md`, seção "Key Flows → 2. Recording a Transaction", com o novo campo e a validação de FKs.
 *Pronto quando:* `POST /transactions` com qualquer FK inexistente retorna 422 em vez de criar registro órfão, e a spec passa.
 
-- [ ] **T5 — Helper compartilhado de efeito de saldo**
+- [x] **T5 — Helper compartilhado de efeito de saldo**
 Criar uma classe de aplicação (ex: `application/transaction/TransactionBalanceEffectService.java`) injetável em Create/Update/Delete, com dois métodos:
 - `apply(Transaction t)`: INCOME → `bankAccountRepository.findById(t.bankAccountId).credit(amount)` + update; EXPENSE → mesma conta, `debit`; TRANSFER → `debit` na conta de origem + `credit` na conta de destino, ambas persistidas.
 - `revert(Transaction t)`: espelha o inverso de cada caso (INCOME→debit, EXPENSE→credit, TRANSFER→credit na origem + debit no destino).
@@ -176,14 +176,14 @@ Isso evita duplicar a lógica de "qual conta(s) afetar por tipo" nos três servi
 
 ### [Grupo B3] Integração de criação e atualização
 
-- [ ] **T6 — Integrar em CreateTransactionService**
+- [x] **T6 — Integrar em CreateTransactionService**
 Depois de validar FKs (T4) e antes de salvar, chamar `balanceEffectService.apply(transaction)`. Envolver em `@Transactional` para atomicidade entre update(s) de BankAccount e save da Transaction.
 *Depende de:* T4, T5.
 **Testes (obrigatório):** estender `CreateTransactionServiceSpec.groovy` de T4 com verificação de que `BankAccountRepository.update` foi chamado com o saldo correto para cada tipo.
 **Docs:** atualizar `backend/docs/transaction-balance-effect.md` (T5) e a seção "Key Flows → 2" do `APP_OVERVIEW.md` confirmando que criar uma transação já reflete no saldo.
 *Pronto quando:* criar INCOME/EXPENSE/TRANSFER reflete corretamente o(s) saldo(s) das conta(s) envolvidas e a spec passa.
 
-- [ ] **T7 — Integrar em UpdateTransactionService**
+- [x] **T7 — Integrar em UpdateTransactionService**
 Capturar a Transaction antiga completa antes de `update(...)`. Chamar `balanceEffectService.revert(old)`, então aplicar as mesmas validações de FK de T4 sobre os novos valores, montar a transaction atualizada e chamar `balanceEffectService.apply(updated)`. Cobre os casos de mudança de `type`, `amount`, `bankAccountId` e/ou `destinationBankAccountId`. `@Transactional`.
 *Depende de:* T6.
 **Testes (obrigatório):** `UpdateTransactionServiceSpec.groovy` — mudança de amount, mudança de type, mudança de bankAccountId/destinationBankAccountId, confirmando reversão + reaplicação corretas nas contas certas.
@@ -192,14 +192,14 @@ Capturar a Transaction antiga completa antes de `update(...)`. Chamar `balanceEf
 
 ### [Grupo B4] Fechamento do ciclo de vida + validação de Reports
 
-- [ ] **T8 — Integrar em DeleteTransactionService**
+- [x] **T8 — Integrar em DeleteTransactionService**
 Hoje o service só faz `transactionRepository.delete(id)` sem buscar antes. Mudar para: `findById` (lançar `DomainException("Transaction not found")` se `null`), `balanceEffectService.revert(transaction)`, então `delete(id)`. `@Transactional`.
 *Depende de:* T5, T3.
 **Testes (obrigatório):** `DeleteTransactionServiceSpec.groovy` — reversão correta do saldo, e cenário "transaction not found" retornando `DomainException`.
 **Docs:** atualizar `backend/docs/transaction-balance-effect.md` com o fluxo de delete (revert).
 *Pronto quando:* excluir uma transação restaura o(s) saldo(s) ao estado anterior à criação dela, e a spec passa.
 
-- [ ] **T9 — Validar Reports fim-a-fim**
+- [x] **T9 — Validar Reports fim-a-fim**
 Testar com transações reais (INCOME/EXPENSE/TRANSFER) criadas via T6, confirmando que TRANSFER aparece na lista de `transactions[]` mas não entra em `totalIncome`/`totalExpense`/`balance`.
 *Depende de:* T3, T6.
 **Testes (obrigatório):** `GenerateReportServiceSpec.groovy` (criar — hoje não existe nenhum teste para este service) cobrindo filtros combinados e a exclusão de TRANSFER dos totais.
@@ -208,7 +208,7 @@ Testar com transações reais (INCOME/EXPENSE/TRANSFER) criadas via T6, confirma
 
 ### [Grupo B5] Isolamento multi-tenant no filtro de Transaction
 
-- [ ] **T9b — Escopo por Space no filtro de Transaction (gap de isolamento multi-tenant)**
+- [x] **T9b — Escopo por Space no filtro de Transaction (gap de isolamento multi-tenant)**
 `Transaction` não guarda `spaceId` diretamente (só `bankAccountId`), e `TransactionRepository.findByFilter` hoje não recebe `spaceId` — uma consulta sem filtro de conta vazaria transações de **todos os spaces**. Adicionar `spaceId` como parâmetro obrigatório em `findByFilter(...)` e em `ReportFilterRequest`; na implementação JPA (`TransactionRepositoryImpl`, via `Specification`), restringir com uma subquery: `bankAccountId IN (SELECT id FROM bank_accounts WHERE space_id = :spaceId)`. Atualizar `GenerateReportService`/`ReportController` para exigir `spaceId` no request.
 *Depende de:* T3.
 **Testes (obrigatório):** estender `GenerateReportServiceSpec.groovy` (T9) com um cenário de duas contas em spaces diferentes, confirmando que o filtro por `spaceId` isola corretamente.
@@ -217,7 +217,7 @@ Testar com transações reais (INCOME/EXPENSE/TRANSFER) criadas via T6, confirma
 
 ### [Grupo B6] Endpoints de listagem
 
-- [ ] **T9c — Endpoints GET/listagem faltantes (bloqueiam o frontend)**
+- [x] **T9c — Endpoints GET/listagem faltantes (bloqueiam o frontend)**
 Nenhum destes controllers tem endpoint de listagem hoje — sem isso as telas novas não têm como popular a tabela:
 - `GET /bank-accounts?spaceId=` → novo `ListBankAccountsService`, reaproveitando `BankAccountRepository.findBySpaceId` (já existe).
 - `GET /categories?spaceId=` → novo `ListCategoriesService`; para cada `Category`, buscar suas `SubCategory` via `SubCategoryRepository.findByCategoryId` e popular `CategoryResponse.subCategories` (hoje sempre retornado vazio nos outros services — aqui passa a ser real).
@@ -230,7 +230,7 @@ Nenhum destes controllers tem endpoint de listagem hoje — sem isso as telas no
 
 ### [Grupo B7] Segurança fina nos controllers
 
-- [ ] **T10 — Segurança fina nos controllers do módulo core**
+- [x] **T10 — Segurança fina nos controllers do módulo core**
 Adicionar `@PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")` (padrão de `EndpointPermissionController.java`) em **todos** os métodos (incluindo os novos GETs de T9c) de `BankAccountController`, `CategoryController`, `PaymentMethodController`, `TransactionController`, `ReportController`.
 
 **Atualizar `backend/docs/seed.sql` a cada endpoint novo** (regra permanente para qualquer tela nova daqui pra frente, não só desta rodada): adicionar um `INSERT INTO endpoint_permissions` (type=API) por endpoint, seguindo a numeração de `sequence` já usada. Importante: reaproveitar exatamente os mesmos `name` que já existem nas linhas `FRONT_PAGE` da seção 2 do seed (`'Contas Bancárias'`, `'Categorias'`, `'Formas de Pagamento'`, `'Transações'`, `'Relatórios'`) — os blocos de `ADMIN`/`MEMBER` na seção 5 já fazem `JOIN ... ON ep.name IN (...)` usando esses nomes, então as novas linhas API herdam `ALLOW` automaticamente sem precisar editar os blocos de ADMIN/MEMBER. `OWNER` já recebe tudo via `CROSS JOIN`. Lembrar que `CreateEndpointPermissionService` cria `DENY` automático para roles existentes ao criar uma `EndpointPermission` em runtime — o seed é o caminho recomendado para popular de uma vez.
@@ -240,7 +240,7 @@ Adicionar `@PreAuthorize("@securityService.userHasPermissionForURL(authenticatio
 
 > **[coringa]** independente — distribuir entre as sessões dos grupos acima em vez de reservar uma sessão só para isso.
 
-- [ ] **T11 — Specs Groovy/Spock remanescentes (fora do fluxo de Transaction)**
+- [x] **T11 — Specs Groovy/Spock remanescentes (fora do fluxo de Transaction)**
 Cobrir os services que ficaram sem spec e não fazem parte da cadeia T1-T9c: `UpdateBankAccountServiceSpec`, `DeleteBankAccountServiceSpec`, `UpdateCategoryServiceSpec`, `DeleteCategoryServiceSpec`, `UpdatePaymentMethodServiceSpec`, `DeletePaymentMethodServiceSpec` — padrão de `CreateBankAccountServiceSpec.groovy` (mockando as interfaces de repository, nunca os `*RepositoryImpl`).
 *Depende de:* nenhuma (independente, pode ser feito a qualquer momento em paralelo).
 **Testes (obrigatório):** as próprias specs listadas acima, `./gradlew test` verde.
@@ -248,7 +248,7 @@ Cobrir os services que ficaram sem spec e não fazem parte da cadeia T1-T9c: `Up
 
 ### [Grupo B8] Gate final
 
-- [ ] **T12 — ArchUnit + suíte completa (gate final)**
+- [x] **T12 — ArchUnit + suíte completa (gate final)**
 Rodar `./gradlew test` (inclui `ArchitectureTest` + todas as specs de T1-T11). Confirmar que nenhuma regra de camada foi violada (o novo `TransactionBalanceEffectService` fica em `application`, não em `domain`/`infrastructure`).
 *Depende de:* todas as anteriores.
 **Testes (obrigatório):** este É o gate de teste — `./gradlew test` 100% verde é o critério de pronto.
@@ -282,7 +282,7 @@ Hoje **nenhuma página financeira existe** — nem `bank-accounts`, `categories`
 
 ### [Grupo F1] Payment Methods (piloto do padrão)
 
-- [ ] **F1 — Payment Methods** (`pages/payment-methods/`)
+- [x] **F1 — Payment Methods** (`pages/payment-methods/`)
 Tela mais simples (só `name` + `active`) — bom ponto de partida para validar o padrão. CRUD completo + `server/api/payment-methods/*`.
 *Depende de:* backend T10 (endpoint com `@PreAuthorize` + seed) e o GET de T9c.
 **Verificação:** rodar `pnpm dev`, abrir `/payment-methods`, criar/editar/excluir manualmente no navegador (este projeto não tem suíte de teste de frontend — a verificação é funcional/manual, seguindo a skill `verify`).
@@ -290,7 +290,7 @@ Tela mais simples (só `name` + `active`) — bom ponto de partida para validar 
 
 ### [Grupo F2] Bank Accounts
 
-- [ ] **F2 — Bank Accounts** (`pages/bank-accounts/`)
+- [x] **F2 — Bank Accounts** (`pages/bank-accounts/`)
 Form de criação: `name`, `bankName`, `initialBalance`. Form de edição: só `name`/`bankName` (balance não é editável diretamente, só via transações — refletir isso na UI, sem campo de saldo editável no form de edição, só exibido como read-only na tabela). Exclusão = soft delete (`active=false`, backend já faz isso).
 *Depende de:* mesma base de F1 (padrão), backend T9c/T10.
 **Verificação:** manual no navegador — criar conta, conferir saldo inicial exibido, editar nome/banco, desativar.
@@ -298,7 +298,7 @@ Form de criação: `name`, `bankName`, `initialBalance`. Form de edição: só `
 
 ### [Grupo F3] Categories + SubCategories
 
-- [ ] **F3 — Categories + SubCategories** (`pages/categories/`)
+- [x] **F3 — Categories + SubCategories** (`pages/categories/`)
 Lista de categorias (`name`, `active`). Gerenciar subcategorias como sub-recurso: seguir o padrão de `RolePermissionsDialog.vue` (dialog secundário aberto a partir de uma linha da tabela) — um `ManageSubCategoriesDialog.vue` que lista/cria/edita/exclui as subcategorias daquela categoria (`server/api/categories/[id]/subcategories/*`, espelhando `server/api/roles/[id]/permissions/*`).
 *Depende de:* backend T1 (persistência real de SubCategory) + T9c.
 **Verificação:** manual no navegador — criar categoria, abrir subcategorias, criar/editar/excluir subcategoria.
@@ -306,7 +306,7 @@ Lista de categorias (`name`, `active`). Gerenciar subcategorias como sub-recurso
 
 ### [Grupo F4] Transactions (página principal)
 
-- [ ] **F4 — Transactions** (`pages/transactions/`) — página principal
+- [x] **F4 — Transactions** (`pages/transactions/`) — página principal
 Form: `type` (INCOME/EXPENSE/TRANSFER — select), `bankAccountId` (select, populado por F2/GET bank-accounts do space ativo), `destinationBankAccountId` (só aparece se `type=TRANSFER`, mesma lista de contas, excluindo a selecionada em `bankAccountId`), `categoryId`+`subCategoryId` (selects em cascata, só aparecem se `type≠TRANSFER`, populados por F3), `paymentMethodId` (select, só se `type≠TRANSFER`, populado por F1), `amount`, `transactionDate` (date picker), `description` (opcional). Lista com filtro de período (date range, default mês atual) usando o novo `GET /transactions`.
 *Depende de:* F1, F2, F3 (para os selects) e backend T2-T9c completos (domain+persistência+efeito de saldo+listagem funcionando).
 **Verificação:** manual no navegador — criar INCOME/EXPENSE/TRANSFER, conferir que o saldo das contas envolvidas muda (checando em `/bank-accounts`), editar e excluir uma transação e conferir reversão do saldo.
@@ -314,7 +314,7 @@ Form: `type` (INCOME/EXPENSE/TRANSFER — select), `bankAccountId` (select, popu
 
 ### [Grupo F5] Reports
 
-- [ ] **F5 — Reports** (`pages/reports/`)
+- [x] **F5 — Reports** (`pages/reports/`)
 Página só de leitura: formulário de filtro (`from`/`to` obrigatórios, demais opcionais — mesmos campos de `ReportFilterRequest`) + cards de resumo (`totalIncome`/`totalExpense`/`balance`, seguir estilo de "informativo, não alarmante" do `PRODUCT.md`) + tabela das transações do período (reaproveitar a formatação de linha usada em F4, sem ações de editar/excluir aqui). `server/api/reports/index.post.ts` proxy simples.
 *Depende de:* F4 (mesmos componentes de formatação de linha), backend T9b (escopo por space).
 **Verificação:** manual no navegador — filtrar por período, conferir totais e que TRANSFER aparece na lista mas não nos totais.
@@ -322,7 +322,7 @@ Página só de leitura: formulário de filtro (`from`/`to` obrigatórios, demais
 
 > **[coringa]** sem dependência técnica de nenhuma tela — encaixar a qualquer momento, inclusive em paralelo aos grupos acima.
 
-- [ ] **F6 — Ajustar `frontend/PRODUCT.md`**
+- [x] **F6 — Ajustar `frontend/PRODUCT.md`**
 O doc atual descreve o produto só como "admin control plane" (roles/permissions/spaces) e não menciona nada financeiro — está desatualizado frente ao propósito real do app (`backend/docs/APP_OVERVIEW.md`). Atualizar para refletir que o público final também inclui o usuário comum controlando as próprias finanças, não só admins operacionais.
 *Baixa prioridade, pode ser feito a qualquer momento.*
 **Docs:** esta tarefa É a própria atualização de doc (`frontend/PRODUCT.md`).
@@ -431,7 +431,7 @@ Uma compra parcelada em X vezes é modelada como **1 registro por parcela** (X l
 
 ### [Grupo P1] Fundação compartilhada: rastreabilidade de pagamento em Transaction
 
-- [ ] **P1 — `sourceType`/`sourceId` em Transaction + bloqueio de edição/exclusão**
+- [x] **P1 — `sourceType`/`sourceId` em Transaction + bloqueio de edição/exclusão**
 Editar `domain/enums/TransactionSourceType.java` (novo). Editar `domain/Transaction.java`: campos `sourceType`/`sourceId`, `isLinkedToSource()`. Editar `TransactionEntityJpa`/`TransactionRepositoryImpl` (2 colunas nullable). Editar `UpdateTransactionService` e `DeleteTransactionService` para rejeitar (`DomainException`) qualquer transação vinculada — sem cascade, só bloqueio.
 *Depende de:* core T3, T7, T8 (mexe nos arquivos já estabilizados por eles).
 **Testes (obrigatório):** estender `TransactionSpec.groovy` + `UpdateTransactionServiceSpec.groovy` + `DeleteTransactionServiceSpec.groovy` com o cenário "transação vinculada rejeita update/delete".
@@ -442,7 +442,7 @@ Editar `domain/enums/TransactionSourceType.java` (novo). Editar `domain/Transact
 
 ### [Grupo CC1] Domínio e persistência: CreditCard + CreditCardInvoiceCycle
 
-- [ ] **CC1 — CreditCard + CreditCardInvoiceCycle: domain + persistência**
+- [x] **CC1 — CreditCard + CreditCardInvoiceCycle: domain + persistência**
 Criar `domain/CreditCard.java`, `domain/CreditCardInvoiceCycle.java` (calculadora pura), `domain/repository/CreditCardRepository.java` (`save/update/findById/findBySpaceId/delete`), `CreditCardEntityJpa`, `JpaCreditCardRepository`, `CreditCardRepositoryImpl` (padrão `BankAccountRepositoryImpl`, tenancy direta).
 *Depende de:* nenhuma.
 **Testes (obrigatório):** `CreditCardSpec.groovy` (validate) + `CreditCardInvoiceCycleSpec.groovy` (resolveReferenceMonth/resolveDueDate cobrindo closingDay antes/depois de dueDay, e clamp de mês curto).
@@ -451,7 +451,7 @@ Criar `domain/CreditCard.java`, `domain/CreditCardInvoiceCycle.java` (calculador
 
 ### [Grupo CC2] CRUD de CreditCard + controller + seed
 
-- [ ] **CC2 — CreditCard: services CRUD + controller + `@PreAuthorize` desde o início**
+- [x] **CC2 — CreditCard: services CRUD + controller + `@PreAuthorize` desde o início**
 `CreateCreditCardService`, `UpdateCreditCardService`, `DeactivateCreditCardService`, `ListCreditCardsService` + DTOs + `CreditCardController` (`POST/PUT/DELETE/GET /credit-cards`) já com `@PreAuthorize` (não repetir o gap do T10 core).
 *Depende de:* CC1.
 **Testes (obrigatório):** uma spec por service.
@@ -460,7 +460,7 @@ Criar `domain/CreditCard.java`, `domain/CreditCardInvoiceCycle.java` (calculador
 
 ### [Grupo CC3] Domínio e persistência: CreditCardInvoicePayment
 
-- [ ] **CC3 — CreditCardInvoicePayment: domain + persistência**
+- [x] **CC3 — CreditCardInvoicePayment: domain + persistência**
 Criar `domain/CreditCardInvoicePayment.java`, `domain/repository/CreditCardInvoicePaymentRepository.java` (`save/findById/findByCreditCardIdAndReferenceMonth/deleteById`), JPA entity (índice único `credit_card_id+reference_month`), `JpaCreditCardInvoicePaymentRepository`, `CreditCardInvoicePaymentRepositoryImpl`.
 *Depende de:* CC1.
 **Testes (obrigatório):** `CreditCardInvoicePaymentSpec.groovy` (validate).
@@ -469,7 +469,7 @@ Criar `domain/CreditCardInvoicePayment.java`, `domain/repository/CreditCardInvoi
 
 ### [Grupo CC4] Domínio e persistência: CreditCardTransaction
 
-- [ ] **CC4 — CreditCardTransaction: domain + persistência (isolamento por Space desde o início)**
+- [x] **CC4 — CreditCardTransaction: domain + persistência (isolamento por Space desde o início)**
 Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento — ver spec acima: `referenceMonth`, `installmentGroupId`, `installmentNumber`, `totalInstallments`, `anticipated`, `originalReferenceMonth`), `domain/repository/CreditCardTransactionRepository.java` (`save/update/findById/findByFilter(spaceId, creditCardId, categoryId, subCategoryId, from, to)/findByInstallmentGroupId(String)/delete`), JPA entity, `JpaCreditCardTransactionRepository` (`JpaSpecificationExecutor`), `CreditCardTransactionRepositoryImpl` com filtro por `spaceId` via subquery **já embutido** (aprender com o gap de T9b do core). Índice não-único em `(credit_card_id, reference_month)` para acelerar o agrupamento de fatura (não é único como em `CreditCardInvoicePayment` — várias parcelas, inclusive de compras diferentes ou antecipadas, coexistem na mesma fatura).
 *Depende de:* CC1.
 **Testes (obrigatório):** `CreditCardTransactionSpec.groovy` (incluindo `validate()` dos campos de parcelamento: `totalInstallments` fora de 1-60, `installmentNumber` fora de 1-`totalInstallments`, e o método `anticipateTo`).
@@ -478,7 +478,7 @@ Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento —
 
 ### [Grupo CC5] CRUD de CreditCardTransaction com guarda de fatura paga + parcelamento
 
-- [ ] **CC5 — CreditCardTransaction: services CRUD + guarda "mês já pago" + parcelamento + controller**
+- [x] **CC5 — CreditCardTransaction: services CRUD + guarda "mês já pago" + parcelamento + controller**
 `CreateCreditCardTransactionService` (valida FKs; ganha parâmetro opcional `totalInstallments` no request — default 1: se `<= 1`, comportamento simples de hoje (1 linha, `installmentGroupId` novo, `installmentNumber=1`); se `> 1`, gera as `totalInstallments` linhas em uma única chamada `@Transactional`, mesmo `installmentGroupId`, `installmentNumber` de 1 a N, `referenceMonth` sequencial mês a mês a partir da parcela 1, valor dividido com arredondamento de 2 casas e a última parcela absorvendo o resíduo), `UpdateCreditCardTransactionService`, `DeleteCreditCardTransactionService` (operam por linha individual — sem cascata entre parcelas do mesmo grupo; editar/excluir uma parcela não renumera nem recalcula as demais), `ListCreditCardTransactionsService`, `ListInstallmentGroupService` (novo — retorna todas as parcelas de um `installmentGroupId`, usado pela UI para mostrar progresso e pela antecipação para listar candidatas). As 3 primeiras leem `transaction.referenceMonth` direto (já não recalculam via `CreditCardInvoiceCycle`) + `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` para rejeitar alteração de mês já pago. Controller `/credit-card-transactions` com `@PreAuthorize`, incluindo `GET /credit-card-transactions/installment-groups/{installmentGroupId}`.
 *Depende de:* CC1, CC3, CC4.
 **Testes (obrigatório):** uma spec por service, incluindo "mês já pago rejeita" e "compra em N parcelas" (`installmentGroupId` compartilhado, `referenceMonth` sequencial, soma dos valores igual ao total, arredondamento correto quando não divide exato).
@@ -487,7 +487,7 @@ Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento —
 
 ### [Grupo CC5b] Antecipação de parcelas
 
-- [ ] **CC5b — AnticipateCreditCardInstallmentsService + controller**
+- [x] **CC5b — AnticipateCreditCardInstallmentsService + controller**
 `execute(installmentGroupId, targetReferenceMonth, installmentsToAnticipate)`: (1) busca todas as linhas do grupo via `findByInstallmentGroupId` (vazio → `DomainException`); (2) valida que a fatura alvo está **aberta** — `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` deve ser nulo, senão `DomainException("Cannot anticipate into a paid invoice")`; (3) filtra elegíveis = linhas do grupo com `referenceMonth > targetReferenceMonth` (estritamente futuras em relação ao alvo); (4) se `installmentsToAnticipate > elegíveis.size()`, `DomainException("Not enough remaining installments to anticipate")`; (5) ordena elegíveis por `installmentNumber` decrescente e pega as `installmentsToAnticipate` primeiras (as últimas parcelas, de trás pra frente); (6) para cada uma, `transaction.anticipateTo(targetReferenceMonth)` + `repository.update(transaction)`. `@Transactional`. **Não move dinheiro nem chama `TransactionBalanceEffectService`** — só reatribui a quais faturas as parcelas pertencem; o efeito no saldo só acontece quando a fatura alvo for de fato paga via `PayCreditCardInvoiceService` (CC6), como qualquer outra fatura. Controller: `POST /credit-card-transactions/installment-groups/{installmentGroupId}/anticipate` (body `{targetReferenceMonth, installmentsToAnticipate}`), `@PreAuthorize`.
 *Depende de:* CC4, CC5 (não depende de CC6/CC7).
 **Testes (obrigatório):** `AnticipateCreditCardInstallmentsServiceSpec.groovy` — sucesso (move exatamente as N últimas, preserva as intermediárias, marca `anticipated=true` e grava `originalReferenceMonth`), fatura alvo já paga rejeitada, `installmentsToAnticipate` maior que o disponível rejeitado, grupo inexistente rejeitado, antecipar uma parcela já antecipada antes não sobrescreve o `originalReferenceMonth` original.
@@ -501,7 +501,7 @@ Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento —
 
 ### [Grupo CC6] Pagamento de fatura + listagem
 
-- [ ] **CC6 — PayCreditCardInvoiceService + ListCreditCardInvoicesService**
+- [x] **CC6 — PayCreditCardInvoiceService + ListCreditCardInvoicesService**
 `ListCreditCardInvoicesService(spaceId, creditCardId?, from, to)`: agrupa `CreditCardTransaction` por `(creditCardId, referenceMonth)` **direto pelo campo armazenado** `referenceMonth` (não mais via `CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, closingDay)` em tempo de leitura — `CreditCardInvoiceCycle` continua usado só para calcular `dueDate`/`closingDate` de exibição a partir do `referenceMonth` de cada grupo), marca pago/aberto conforme existência de `CreditCardInvoicePayment`. `PayCreditCardInvoiceService.execute(creditCardId, referenceMonth, {bankAccountId, categoryId, paymentMethodId, paidDate})`: rejeita se já paga ou soma zero; soma as `CreditCardTransaction` do mês (incluindo parcelas antecipadas de outras compras, que já chegam com `referenceMonth` ajustado); chama `CreateTransactionService` (reaproveita `TransactionBalanceEffectService` de T5/T6 do core, `type=EXPENSE`, `sourceType=CREDIT_CARD_INVOICE_PAYMENT`); persiste `CreditCardInvoicePayment` com o `paymentTransactionId`. `@Transactional`. Controller: `GET /credit-cards/invoices?spaceId=&creditCardId=&from=&to=`, `POST /credit-cards/{id}/invoices/{referenceMonth}/pay`.
 *Depende de:* CC3, CC5, P1, core T5/T6.
 **Testes (obrigatório):** `PayCreditCardInvoiceServiceSpec.groovy` (sucesso, já paga, mês vazio, FK inexistente), `ListCreditCardInvoicesServiceSpec.groovy` (mistura aberto/pago).
@@ -510,7 +510,7 @@ Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento —
 
 ### [Grupo CC7] Desfazer pagamento de fatura (ação dedicada)
 
-- [ ] **CC7 — UndoCreditCardInvoicePaymentService + controller**
+- [x] **CC7 — UndoCreditCardInvoicePaymentService + controller**
 `UndoCreditCardInvoicePaymentService(creditCardId, referenceMonth)`: busca `CreditCardInvoicePayment` (senão `DomainException`), busca a `Transaction` via `paymentTransactionId`, chama `TransactionBalanceEffectService.revert(transaction)` + `TransactionRepository.delete(transaction.id)` diretamente (não via `DeleteTransactionService`, que bloqueia transações vinculadas), depois `creditCardInvoicePaymentRepository.deleteById(payment.id)`. `@Transactional`. Controller: `POST /credit-cards/{id}/invoices/{referenceMonth}/undo-payment`, `@PreAuthorize`.
 *Depende de:* CC6, P1.
 **Testes (obrigatório):** `UndoCreditCardInvoicePaymentServiceSpec.groovy` (sucesso — saldo revertido e fatura volta a aberta; fatura inexistente/não paga rejeitada).
@@ -521,7 +521,7 @@ Criar `domain/CreditCardTransaction.java` (já com os campos de parcelamento —
 
 ### [Grupo AP1] Domínio e persistência: Bill
 
-- [ ] **AP1 — Bill: domain + persistência**
+- [x] **AP1 — Bill: domain + persistência**
 Criar `domain/Bill.java`, `domain/repository/BillRepository.java`, JPA entity, `JpaBillRepository`, `BillRepositoryImpl` (tenancy direta).
 *Depende de:* nenhuma.
 **Testes (obrigatório):** `BillSpec.groovy` (validate, update, updateSchedule).
@@ -530,7 +530,7 @@ Criar `domain/Bill.java`, `domain/repository/BillRepository.java`, JPA entity, `
 
 ### [Grupo AP2] Domínio e persistência: BillInstance
 
-- [ ] **AP2 — BillInstance: domain + persistência (isolamento por Space desde o início)**
+- [x] **AP2 — BillInstance: domain + persistência (isolamento por Space desde o início)**
 Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domain/repository/BillInstanceRepository.java` (`save/update/findById/findByBillIdAndReferenceMonth/findByBillId/findBySpaceAndPeriod`), JPA entity (índice único), `JpaBillInstanceRepository`, `BillInstanceRepositoryImpl` com filtro por `spaceId` via subquery já embutido.
 *Depende de:* AP1.
 **Testes (obrigatório):** `BillInstanceSpec.groovy` (validate, updateAmount bloqueado se PAID, markAsPaid bloqueado se já PAID, revertToPending).
@@ -539,7 +539,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo AP3] CRUD de Bill (básico + agenda) + instância automática avulsa + controller
 
-- [ ] **AP3 — Bill: services CRUD completos + auto-criação de instância única (não-recorrente) + controller**
+- [x] **AP3 — Bill: services CRUD completos + auto-criação de instância única (não-recorrente) + controller**
 `CreateBillService` (se `recurring=false`, cria imediatamente 1 `BillInstance` PENDING com `dueDate=startDate`, na mesma transação), `UpdateBillService` (nome/categoria/defaultAmount), `UpdateBillScheduleService` (recurring/startDate — dedicado, só afeta futuro), `DeactivateBillService`, `ListBillsService` + controller `/bills` com `@PreAuthorize`.
 *Depende de:* AP1, AP2.
 **Testes (obrigatório):** uma spec por service, incluindo "Bill não-recorrente já nasce com 1 instância" e "updateSchedule não altera instâncias já geradas".
@@ -548,7 +548,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo AP4] Geração preguiçosa + listagem "contas do mês"
 
-- [ ] **AP4 — EnsureBillInstancesGeneratedService + ListBillInstancesService**
+- [x] **AP4 — EnsureBillInstancesGeneratedService + ListBillInstancesService**
 `EnsureBillInstancesGeneratedService(spaceId, upToDate)`: gera `BillInstance` PENDING faltantes por `Bill` ativo+recorrente, do último mês existente até `min(mês de upToDate, mês atual+1)`, idempotente. `ListBillInstancesService(spaceId, from, to)`: chama o ensure-service, depois `findBySpaceAndPeriod`. Controller: `GET /bills/instances?spaceId=&from=&to=`.
 *Depende de:* AP2, AP3.
 **Testes (obrigatório):** `EnsureBillInstancesGeneratedServiceSpec.groovy` (gera só o que falta, respeita o cap, idempotente), `ListBillInstancesServiceSpec.groovy`.
@@ -557,7 +557,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo AP5] Pagamento + edição de valor
 
-- [ ] **AP5 — PayBillInstanceService + UpdateBillInstanceAmountService**
+- [x] **AP5 — PayBillInstanceService + UpdateBillInstanceAmountService**
 `UpdateBillInstanceAmountService(id, newAmount)` (bloqueia se PAID). `PayBillInstanceService.execute(id, {bankAccountId, paymentMethodId, categoryId?, paidDate})`: resolve categoria (request → `Bill.categoryId` → erro), chama `CreateTransactionService` (`type=EXPENSE`, `sourceType=BILL_INSTANCE_PAYMENT`), `billInstance.markAsPaid(...)`. `@Transactional`. Controller: `PUT /bills/instances/{id}/amount`, `POST /bills/instances/{id}/pay`.
 *Depende de:* AP2, AP4, P1, core T5/T6.
 **Testes (obrigatório):** `PayBillInstanceServiceSpec.groovy` (sucesso, já paga, sem categoria resolvível), `UpdateBillInstanceAmountServiceSpec.groovy`.
@@ -566,7 +566,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo AP6] Desfazer pagamento de conta (ação dedicada)
 
-- [ ] **AP6 — UndoBillInstancePaymentService + controller**
+- [x] **AP6 — UndoBillInstancePaymentService + controller**
 `UndoBillInstancePaymentService(billInstanceId)`: busca `BillInstance` (valida `status==PAID`, senão `DomainException`), busca a `Transaction` via `paymentTransactionId`, `TransactionBalanceEffectService.revert(transaction)` + `TransactionRepository.delete(...)` diretamente, `billInstance.revertToPending()` + `update()`. `@Transactional`. Controller: `POST /bills/instances/{id}/undo-payment`, `@PreAuthorize`.
 *Depende de:* AP5, P1.
 **Testes (obrigatório):** `UndoBillInstancePaymentServiceSpec.groovy` (sucesso, instância não paga rejeitada).
@@ -577,7 +577,7 @@ Criar `domain/enums/BillInstanceStatus.java`, `domain/BillInstance.java`, `domai
 
 ### [Grupo RPT1] Saldo previsto no Report
 
-- [ ] **RPT1 — Saldo previsto em GenerateReportService**
+- [x] **RPT1 — Saldo previsto em GenerateReportService**
 Editar `ReportFilterRequest`/`ReportResponse` (campos novos da spec acima). Editar `GenerateReportService`: injeta `BankAccountRepository`, `CreditCardRepository`, `CreditCardTransactionRepository`, `CreditCardInvoicePaymentRepository`, `EnsureBillInstancesGeneratedService`, `BillInstanceRepository`; calcula `currentBalance`, pendências de cartão e de contas, `projectedBalance`.
 *Depende de:* CC6, AP5 (única tarefa que toca `GenerateReportService` para os dois módulos, evita reabrir o arquivo duas vezes).
 **Nota sobre parcelas de cartão:** ao contrário de `BillInstance` (que depende de `EnsureBillInstancesGeneratedService` rodando sob demanda), as parcelas de `CreditCardTransaction` já nascem materializadas na criação da compra (ver CC5) — então `pendingCreditCardInvoices`/`pendingCreditCardTotal` já enxergam parcelas de meses futuros dentro do período filtrado (`from`/`to`) sem nenhum passo de geração adicional; só é preciso que a consulta agrupe pelo `referenceMonth` armazenado (ver CC4/CC6), não há necessidade de um serviço de geração análogo ao de Bills para o cartão.
@@ -587,7 +587,7 @@ Editar `ReportFilterRequest`/`ReportResponse` (campos novos da spec acima). Edit
 
 ### [Grupo GATE1] Gate final dos dois módulos
 
-- [ ] **GATE1 — ArchUnit + suíte completa (gate final CC+AP)**
+- [x] **GATE1 — ArchUnit + suíte completa (gate final CC+AP)**
 Rodar `./gradlew test` (inclui `ArchitectureTest` + todas as specs de P1/CC1-7/AP1-6/RPT1). Confirmar que nenhum service novo vazou de camada.
 *Depende de:* todas as anteriores desta seção.
 **Testes (obrigatório):** `./gradlew test` 100% verde.
@@ -601,7 +601,7 @@ Reaproveitam integralmente o padrão já estabelecido no plano core (página + `
 
 ### [Grupo FCC1] Cadastro de Cartões
 
-- [ ] **FCC1 — Credit Cards** (`pages/credit-cards/`)
+- [x] **FCC1 — Credit Cards** (`pages/credit-cards/`)
 Form: `name`, `limit`, `closingDay`, `dueDay`. CRUD completo, mesmo padrão de F2 (Bank Accounts).
 *Depende de:* backend CC2.
 **Verificação:** manual no navegador — criar/editar/desativar cartão.
@@ -609,7 +609,7 @@ Form: `name`, `limit`, `closingDay`, `dueDay`. CRUD completo, mesmo padrão de F
 
 ### [Grupo FCC2] Lançamentos no cartão
 
-- [ ] **FCC2 — Lançamentos de Cartão** (dialog secundário a partir da linha do cartão, `ManageCreditCardTransactionsDialog.vue`)
+- [x] **FCC2 — Lançamentos de Cartão** (implementado como página dedicada `pages/credit-cards/[id]/transactions.vue`, não como dialog secundário — decisão validada com o usuário na sessão de implementação, já que só existe entrada de sidebar para `/credit-cards`)
 Lista/cria/edita/exclui `CreditCardTransaction` do cartão selecionado: `categoryId`+`subCategoryId` (cascata, selects de F3), `amount`, `purchaseDate`, `description`, `totalInstallments` (campo opcional "parcelar em X vezes" — se preenchido >1, a UI só cria, não edita/exclui em lote). Cada linha da lista mostra "N/total" quando fizer parte de um grupo parcelado (via `GET .../installment-groups/{id}`) e um selo "antecipada" quando `anticipated=true`. Ação "Antecipar parcelas" na linha de uma compra parcelada (dialog: escolher quantas das últimas parcelas antecipar para a fatura aberta atual) chamando `POST .../installment-groups/{id}/anticipate` (backend CC5b). Filtro de período.
 *Depende de:* FCC1, F3 (selects de categoria), backend CC5, CC5b.
 **Verificação:** manual no navegador — lançar compra parcelada em 6x e conferir as 6 linhas geradas; tentar editar/excluir uma compra de mês já pago (depois de FCC3 existir) e confirmar bloqueio; antecipar as 2 últimas parcelas e conferir que só elas mudam de fatura.
@@ -617,7 +617,7 @@ Lista/cria/edita/exclui `CreditCardTransaction` do cartão selecionado: `categor
 
 ### [Grupo FCC3] Fatura, pagamento e reversão
 
-- [ ] **FCC3 — Fatura do Cartão** (`pages/credit-cards/[id]/invoices.vue` ou dialog)
+- [x] **FCC3 — Fatura do Cartão** (`pages/credit-cards/[id]/invoices.vue`)
 Lista meses (aberto/pago) com totais; dialog "Pagar Fatura" (`bankAccountId`, `categoryId`, `paymentMethodId`, `paidDate`); ação "Desfazer Pagamento" com confirmação explícita dedicada ("Tem certeza? O saldo da conta X será revertido em R$Y").
 *Depende de:* FCC2, backend CC6, CC7.
 **Verificação:** manual no navegador — pagar fatura, conferir saldo da conta escolhida em `/bank-accounts`, desfazer o pagamento e confirmar que a fatura volta a "aberta" e o saldo é revertido.
@@ -625,7 +625,7 @@ Lista meses (aberto/pago) com totais; dialog "Pagar Fatura" (`bankAccountId`, `c
 
 ### [Grupo FAP1] Cadastro de Contas a Pagar
 
-- [ ] **FAP1 — Bills** (`pages/bills/`)
+- [x] **FAP1 — Bills** (`pages/bills/`)
 Form básico (`name`, `categoryId`, `defaultAmount`) + seção separada "Agenda" (`recurring`/`startDate`, editável via ação própria). CRUD (update básico + update de agenda conforme AP3).
 *Depende de:* backend AP3, F3 (categorias).
 **Verificação:** manual no navegador — criar conta avulsa (confirmar 1 instância já aparece em FAP2) e conta recorrente; editar a agenda de uma recorrente e confirmar que só instâncias futuras mudam.
@@ -633,7 +633,7 @@ Form básico (`name`, `categoryId`, `defaultAmount`) + seção separada "Agenda"
 
 ### [Grupo FAP2] Contas do mês (pagar/desfazer)
 
-- [ ] **FAP2 — Contas do Mês** (`pages/bills/instances.vue` ou seção da mesma página)
+- [x] **FAP2 — Contas do Mês** (`pages/bills/instances.vue`)
 Lista `BillInstance` do período selecionado (default mês atual), com edição inline de `amount` (só se PENDING), dialog "Marcar como Paga" (`bankAccountId`, `categoryId?`, `paymentMethodId`, `paidDate`) e ação "Desfazer Pagamento" com confirmação dedicada.
 *Depende de:* FAP1, backend AP4/AP5/AP6.
 **Verificação:** manual no navegador — editar valor de uma pendente, pagar, conferir saldo da conta, desfazer o pagamento e confirmar retorno a pendente.
@@ -641,11 +641,20 @@ Lista `BillInstance` do período selecionado (default mês atual), com edição 
 
 ### [Grupo FRPT1] Atualização da tela de Reports
 
-- [ ] **FRPT1 — Saldo previsto em Reports** (atualização de `pages/reports/` de F5)
+- [x] **FRPT1 — Saldo previsto em Reports** (atualização de `pages/reports/` de F5)
 Adicionar cards de `currentBalance`/`projectedBalance` e duas listas (faturas pendentes, contas pendentes) ao lado dos cards já existentes de `totalIncome`/`totalExpense`/`balance`.
 *Depende de:* F5 (já existente), backend RPT1.
 **Verificação:** manual no navegador — conferir que `projectedBalance` bate com `currentBalance - faturas pendentes - contas pendentes` do período filtrado.
 **Docs:** `frontend/docs/reports.md` (atualizar, não recriar).
+
+**Pendente de verificação manual (ambiente sem `pnpm`/binário nativo compatível disponível nesta
+sessão):** `nuxt dev` falhou ao subir por um binding nativo do `oxc-parser` ausente para a
+arquitetura do sandbox (`Cannot find module '@oxc-parser/binding-linux-arm64-gnu'`) — limitação de
+ambiente, não relacionada ao código escrito. Validado nesta sessão apenas via `eslint . -c
+.eslintrc.cjs --fix --ext .ts,.js,.cjs,.vue,.tsx,.jsx` (limpo em todos os arquivos novos/alterados
+de FCC1-3/FAP1-2/FRPT1; os 2 problemas remanescentes são pré-existentes em arquivos não tocados
+por esta rodada). Rodar o roteiro de verificação manual abaixo (item 4) em um ambiente com
+`pnpm`/dev server funcional antes de considerar FCC1-3/FAP1-2/FRPT1 100% fechadas.
 
 ---
 
@@ -682,3 +691,43 @@ Adicionar cards de `currentBalance`/`projectedBalance` e duas listas (faturas pe
    - Editar o valor de uma `BillInstance` pendente, marcar como paga → conferir débito na conta escolhida; usar "Desfazer Pagamento" → confirmar reversão do saldo e retorno a PENDING.
    - Editar a agenda (`recurring`/`startDate`) de uma `Bill` recorrente já em andamento → confirmar que instâncias já geradas (pendentes ou pagas) não mudam, só as futuras.
    - `POST /reports` no período → conferir que `projectedBalance` bate com `currentBalance - pendências (fatura + contas) com vencimento dentro do período filtrado`.
+
+---
+
+# Exclusão real + Ativar/Inativar (BankAccount, Category, SubCategory, PaymentMethod)
+
+## Contexto
+
+Nas telas já entregues (F1-F3), "Excluir" sempre foi soft delete disfarçado: `Delete*Service` chamava `entity.deactivate()` + `repository.update(entity)`, nunca `repository.delete(id)` (que já existia nas interfaces/impls, só estava morto). Pedido do usuário: separar em duas ações — (a) ativar/inativar nos dois sentidos, (b) excluir de fato, validando dependências (FK) antes e retornando ao front qual dependência bloqueia. Decisão validada: a exclusão funciona independente do status atual — a única trava é a checagem de FK.
+
+Como pré-requisito, um levantamento do domínio mostrou que `Transaction` (6 campos) e `SubCategory` (`categoryId`) fugiam do padrão majoritário do projeto (objeto de domínio + FK física real via `@ManyToOne`, já usado em `Category`, `PaymentMethod`, `Role`, `SpaceMember` etc.) — guardavam só `Long` cru, sem objeto nem FK física. `BankAccount.space` também divergia (objeto no domínio, mas `Long spaceId` + query manual na JPA). Corrigido nos grupos REF1-REF4 abaixo como base para os grupos DEL1-DEL4, mantendo o contrato JSON da API inalterado (só a representação interna em domain/JPA mudou).
+
+## Parte 1 — Backend: referências por objeto (REF)
+
+- [x] **REF1** — `BankAccount.space`: `Long spaceId` → `@ManyToOne SpaceEntityJpa space` (FK física real), removendo a resolução manual (`resolveSpace`). Ajustada também a subquery `bankAccountIdsInSpace` em `TransactionRepositoryImpl` (Criteria API não faz travessia automática de propriedade aninhada como o Spring Data — precisa de `root.get("space").get("id")` explícito).
+- [x] **REF2** — `SubCategory.categoryId` (Long) → `SubCategory.category` (`Category`, objeto + FK física real). `SubCategoryRepositoryImpl` builda `Category`/`Space` via helpers privados (padrão já usado em `CategoryRepositoryImpl`). `CreateSubCategoryService`/`ListCategoriesService`/`UpdateSubCategoryService` ajustados; contrato JSON de `SubCategoryResponse` inalterado.
+- [x] **REF3** — `Transaction`: `userId`/`bankAccountId`/`destinationBankAccountId` → `User`/`BankAccount`/`BankAccount` (objetos + FK física real, dois `@ManyToOne` distintos para `BankAccountEntityJpa`). `CreateTransactionService`/`UpdateTransactionService` reaproveitam os objetos já resolvidos para validação em vez de descartá-los. `TransactionBalanceEffectService` continua buscando fresh via repository antes de `credit()`/`debit()` (preserva lock otimista).
+- [x] **REF4** — `Transaction`: `categoryId`/`subCategoryId`/`paymentMethodId` → `Category`/`SubCategory`/`PaymentMethod` (mesma mecânica). `buildSpecification` em `TransactionRepositoryImpl` ajustado para os novos paths (`root.get("category").get("id")` etc.).
+- [x] **REF-GATE** — `./gradlew test` verde (165 testes) após REF1-REF4.
+
+## Parte 2 — Backend: exclusão real (hard delete) + ativar/inativar (DEL)
+
+- [x] **DEL1** — `TransactionRepository`/`SubCategoryRepository` ganham métodos `existsBy*` (checagem de FK na aplicação, já que não há FK física entre `transactions`/`sub_categories` e as tabelas pai). Confirmado que os métodos derivados do Spring Data (`existsByCategoryId` etc.) funcionam sem alteração de nome mesmo depois de REF2-REF4 trocarem `Long` por associação, graças à travessia de propriedade aninhada.
+- [x] **DEL2** — `BankAccount.activate()` + `UpdateBankAccountStatusService` (`PATCH /bank-accounts/{id}/status`) + `DeleteBankAccountService` reescrito (hard delete + `existsByBankAccountId`). Specs + `APP_OVERVIEW.md` + `seed.sql`.
+- [x] **DEL3** — Mesmo padrão para `PaymentMethod` (`PATCH /payment-methods/{id}/status`, `existsByPaymentMethodId`).
+- [x] **DEL4** — Mesmo padrão para `Category`+`SubCategory` (`PATCH /categories/{id}/status`, `PATCH /categories/subcategories/{id}/status`). `DeleteCategoryService` checa primeiro subcategorias vinculadas (`existsByCategoryId` do `SubCategoryRepository`), depois transações.
+- [x] **DEL-GATE** — `./gradlew test` verde (192 testes, incluindo `ArchitectureTest`).
+
+## Parte 3 — Frontend
+
+- [x] **FDEL0** — Dois bugs pré-existentes corrigidos na cadeia de propagação de erro (ambos necessários — descobertos em duas rodadas, o segundo só apareceu ao testar exclusão com FK de verdade):
+  1. `useApiError.ts`/`useSnackbar.ts` só extraíam `data.message` (objeto); como `GlobalHandlerException` devolve `DomainException` como string crua, a mensagem nunca chegava ao client. Ajustado para tratar `typeof data === 'string'`.
+  2. As rotas Nitro (`server/api/**/[id].delete.ts` e as novas `.../status.patch.ts`) faziam só `return $fetch(...)` sem `try/catch` — quando o backend respondia 422, o erro do `$fetch` do lado servidor (ofetch) vazava sem tratamento e o Nitro devolvia pro browser uma mensagem genérica tipo `[DELETE] "http://localhost:8080/categories/2": 422`, perdendo o texto real do `DomainException`. Corrigido reaproveitando o padrão já existente em `server/api/invites/[token]/accept.post.ts` — `try/catch` + `throw createError({statusCode, statusMessage: fetchError.data, data: fetchError.data})` — aplicado nas 4 rotas `[id].delete.ts` (bank-accounts, payment-methods, categories, categories/subcategories) e nas 4 novas `.../status.patch.ts`.
+- [x] **FDEL1** — `ConfirmDialog.vue` ganhou prop opcional `confirmColor` para a variante destrutiva (excluir).
+- [x] **FDEL2** — Payment Methods: `server/api/payment-methods/[id]/status.patch.ts` novo; botão de toggle ativar/inativar sempre habilitado; botão excluir sem `disabled`, `ConfirmDialog` destrutivo, remove item da lista no sucesso.
+- [x] **FDEL3** — Mesmo padrão para Bank Accounts.
+- [x] **FDEL4** — Mesmo padrão para Categories (`pages/categories/index.vue`) e SubCategories (`ManageSubCategoriesDialog.vue`), nos dois níveis.
+
+Docs atualizadas: `backend/docs/APP_OVERVIEW.md`, `backend/docs/seed.sql`, `frontend/docs/payment-methods.md`, `frontend/docs/bank-accounts.md`, `frontend/docs/categories.md`.
+
+**Pendente de verificação manual (ambiente sem MySQL/Docker disponível nesta sessão):** o roteiro end-to-end contra um banco real (criar registros, `PATCH .../status`, `DELETE` com e sem dependência, conferir 422 com mensagem específica, testar as 3 páginas no navegador) não pôde ser executado aqui — só a suíte automatizada (specs Groovy/Spock com repositórios mockados) e `eslint` no frontend foram validados. Rodar o roteiro descrito no início deste arquivo ("Verificação end-to-end") antes de considerar esta seção 100% fechada.

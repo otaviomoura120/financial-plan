@@ -5,7 +5,7 @@ interface RoleEndpointPermissionResponse {
   endpointPermissionId: number
   name: string
   endpoint: string
-  type: 'API' | 'FRONT_PAGE'
+  type: 'API' | 'FRONT_PAGE' | 'WIDGET'
   group: string
   permission: 'ALLOW' | 'DENY'
 }
@@ -44,7 +44,7 @@ const groupedPermissions = computed(() => {
 
 watch(
   () => props.isDialogVisible,
-  async (visible) => {
+  async visible => {
     if (visible && props.roleId !== null) {
       await fetchPermissions()
     }
@@ -102,9 +102,16 @@ function onClose() {
   emit('update:isDialogVisible', false)
 }
 
-const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
+const typeLabel: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
   API: 'API',
   FRONT_PAGE: 'Página',
+  WIDGET: 'Widget',
+}
+
+const typeColor: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
+  API: 'primary',
+  FRONT_PAGE: 'secondary',
+  WIDGET: 'success',
 }
 </script>
 
@@ -149,9 +156,8 @@ const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
           class="permissions-table"
         >
           <colgroup>
-            <col style="inline-size: 28%">
-            <col style="inline-size: 80px">
             <col>
+            <col style="inline-size: 100px">
             <col style="inline-size: 150px">
           </colgroup>
 
@@ -162,9 +168,6 @@ const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
               </th>
               <th class="text-left">
                 Tipo
-              </th>
-              <th class="text-left">
-                Endpoint
               </th>
               <th class="text-center">
                 Acesso
@@ -178,7 +181,10 @@ const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
               :key="group"
             >
               <tr class="group-header-row">
-                <td colspan="4" class="ps-4">
+                <td
+                  colspan="3"
+                  class="ps-4"
+                >
                   <span class="group-label text-primary">{{ group }}</span>
                 </td>
               </tr>
@@ -193,16 +199,13 @@ const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
                 </td>
                 <td class="py-3">
                   <VChip
-                    :color="perm.type === 'API' ? 'primary' : 'secondary'"
+                    :color="typeColor[perm.type]"
                     size="x-small"
                     variant="tonal"
                     label
                   >
                     {{ typeLabel[perm.type] }}
                   </VChip>
-                </td>
-                <td class="py-3">
-                  <code class="text-caption text-disabled">{{ perm.endpoint }}</code>
                 </td>
                 <td class="py-3">
                   <div class="d-flex align-center justify-center gap-2">
@@ -274,7 +277,6 @@ const typeLabel: Record<'API' | 'FRONT_PAGE', string> = {
   padding-block: 10px;
   border-block-end: none;
 }
-
 
 .group-label {
   font-size: 0.6875rem;

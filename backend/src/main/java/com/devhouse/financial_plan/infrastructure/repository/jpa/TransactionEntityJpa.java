@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.repository.jpa;
 
+import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import jakarta.persistence.*;
 
@@ -18,38 +19,48 @@ public class TransactionEntityJpa {
     private Integer version;
     @Enumerated(EnumType.STRING)
     private TransactionType type;
-    @Column(name = "user_id")
-    private Long userId;
-    @Column(name = "bank_account_id")
-    private Long bankAccountId;
-    @Column(name = "category_id")
-    private Long categoryId;
-    @Column(name = "sub_category_id")
-    private Long subCategoryId;
-    @Column(name = "payment_method_id")
-    private Long paymentMethodId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private UserEntityJpa user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "bank_account_id")
+    private BankAccountEntityJpa bankAccount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "destination_bank_account_id")
+    private BankAccountEntityJpa destinationBankAccount;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    private CategoryEntityJpa category;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sub_category_id")
+    private SubCategoryEntityJpa subCategory;
     private BigDecimal amount;
     @Column(name = "transaction_date")
     private LocalDate transactionDate;
     private String description;
     @Column(name = "created_at")
     private Instant createdAt;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_type")
+    private TransactionSourceType sourceType;
+    @Column(name = "source_id")
+    private Long sourceId;
 
     public Long getId() { return id; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
     public TransactionType getType() { return type; }
     public void setType(TransactionType type) { this.type = type; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-    public Long getBankAccountId() { return bankAccountId; }
-    public void setBankAccountId(Long bankAccountId) { this.bankAccountId = bankAccountId; }
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
-    public Long getSubCategoryId() { return subCategoryId; }
-    public void setSubCategoryId(Long subCategoryId) { this.subCategoryId = subCategoryId; }
-    public Long getPaymentMethodId() { return paymentMethodId; }
-    public void setPaymentMethodId(Long paymentMethodId) { this.paymentMethodId = paymentMethodId; }
+    public UserEntityJpa getUser() { return user; }
+    public void setUser(UserEntityJpa user) { this.user = user; }
+    public BankAccountEntityJpa getBankAccount() { return bankAccount; }
+    public void setBankAccount(BankAccountEntityJpa bankAccount) { this.bankAccount = bankAccount; }
+    public BankAccountEntityJpa getDestinationBankAccount() { return destinationBankAccount; }
+    public void setDestinationBankAccount(BankAccountEntityJpa destinationBankAccount) { this.destinationBankAccount = destinationBankAccount; }
+    public CategoryEntityJpa getCategory() { return category; }
+    public void setCategory(CategoryEntityJpa category) { this.category = category; }
+    public SubCategoryEntityJpa getSubCategory() { return subCategory; }
+    public void setSubCategory(SubCategoryEntityJpa subCategory) { this.subCategory = subCategory; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public LocalDate getTransactionDate() { return transactionDate; }
@@ -58,4 +69,8 @@ public class TransactionEntityJpa {
     public void setDescription(String description) { this.description = description; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+    public TransactionSourceType getSourceType() { return sourceType; }
+    public void setSourceType(TransactionSourceType sourceType) { this.sourceType = sourceType; }
+    public Long getSourceId() { return sourceId; }
+    public void setSourceId(Long sourceId) { this.sourceId = sourceId; }
 }

@@ -5,7 +5,9 @@ import com.devhouse.financial_plan.application.user.DeleteUserService;
 import com.devhouse.financial_plan.application.user.FindUserByAuth0SubService;
 import com.devhouse.financial_plan.application.user.FindUserByEmailService;
 import com.devhouse.financial_plan.application.user.UpdateUserService;
+import com.devhouse.financial_plan.application.user.UpdateUserStatusService;
 import com.devhouse.financial_plan.application.user.dto.CreateUserRequest;
+import com.devhouse.financial_plan.application.user.dto.UpdateStatusRequest;
 import com.devhouse.financial_plan.application.user.dto.UpdateUserRequest;
 import com.devhouse.financial_plan.application.user.dto.UserMeResponse;
 import com.devhouse.financial_plan.application.user.dto.UserResponse;
@@ -22,15 +24,17 @@ public class UserController {
 
     private final CreateUserService createUserService;
     private final UpdateUserService updateUserService;
+    private final UpdateUserStatusService updateUserStatusService;
     private final DeleteUserService deleteUserService;
     private final FindUserByAuth0SubService findUserByAuth0SubService;
     private final FindUserByEmailService findUserByEmailService;
 
     public UserController(CreateUserService createUserService, UpdateUserService updateUserService,
-                          DeleteUserService deleteUserService, FindUserByAuth0SubService findUserByAuth0SubService,
-                          FindUserByEmailService findUserByEmailService) {
+                          UpdateUserStatusService updateUserStatusService, DeleteUserService deleteUserService,
+                          FindUserByAuth0SubService findUserByAuth0SubService, FindUserByEmailService findUserByEmailService) {
         this.createUserService = createUserService;
         this.updateUserService = updateUserService;
+        this.updateUserStatusService = updateUserStatusService;
         this.deleteUserService = deleteUserService;
         this.findUserByAuth0SubService = findUserByAuth0SubService;
         this.findUserByEmailService = findUserByEmailService;
@@ -55,6 +59,12 @@ public class UserController {
     @PreAuthorize("@securityService.isSelf(authentication, #id)")
     public UserResponse update(@PathVariable Long id, @RequestBody UpdateUserRequest request) {
         return updateUserService.execute(id, request);
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("@securityService.isSelf(authentication, #id)")
+    public UserResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body) {
+        return updateUserStatusService.execute(id, Boolean.TRUE.equals(body.active()));
     }
 
     @DeleteMapping("/{id}")

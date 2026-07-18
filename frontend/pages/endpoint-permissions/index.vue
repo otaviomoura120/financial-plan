@@ -125,7 +125,10 @@ function toggleSearch() {
   <div>
     <VCard>
       <VCardText class="d-flex align-center flex-wrap gap-4">
-        <h5 class="text-h5 text-truncate" style="min-inline-size: 0">
+        <h5
+          class="text-h5 text-truncate"
+          style="min-inline-size: 0"
+        >
           Permissões de Endpoint
         </h5>
 
@@ -197,86 +200,102 @@ function toggleSearch() {
         <VProgressCircular indeterminate />
       </div>
 
-      <div v-else style="overflow-x: auto">
+      <div
+        v-else
+        style="overflow-x: auto"
+      >
         <VTable>
-        <thead style="white-space: nowrap">
-          <tr>
-            <th style="min-width: 200px">Nome</th>
-            <th style="min-width: 200px">Endpoint</th>
-            <th style="min-width: 150px">Tipo</th>
-            <th style="min-width: 200px">Grupo</th>
-            <th style="min-width: 100px">Métodos</th>
-            <th>Sequência</th>
-            <th class="text-center">
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="item in paginatedItems"
-            :key="item.id"
-          >
-            <td class="font-weight-medium">
-              {{ item.name }}
-            </td>
-            <td class="text-disabled">
-              <code>{{ item.endpoint }}</code>
-            </td>
-            <td>
-              <VChip
-                :color="item.type === 'API' ? 'info' : 'success'"
-                size="small"
-                variant="tonal"
-              >
-                {{ item.type === 'FRONT_PAGE' ? 'Front Page' : 'API' }}
-              </VChip>
-            </td>
-            <td>{{ item.group }}</td>
-            <td class="text-disabled">
-              {{ item.permittedMethods ?? '—' }}
-            </td>
-            <td class="text-disabled">
-              {{ item.sequence ?? '—' }}
-            </td>
-            <td class="text-center" style="white-space: nowrap">
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                @click="openEdit(item)"
-              >
-                <VIcon icon="tabler-pencil" />
-                <VTooltip activator="parent">
-                  Editar
-                </VTooltip>
-              </VBtn>
-
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                @click="openDelete(item)"
-              >
-                <VIcon icon="tabler-trash" />
-                <VTooltip activator="parent">
-                  Excluir
-                </VTooltip>
-              </VBtn>
-            </td>
-          </tr>
-
-          <tr v-if="!isLoading && filteredItems.length === 0">
-            <td
-              colspan="7"
-              class="text-center text-disabled py-8"
+          <thead style="white-space: nowrap">
+            <tr>
+              <th style="min-width: 200px">
+                Nome
+              </th>
+              <th style="min-width: 200px">
+                Endpoint
+              </th>
+              <th style="min-width: 150px">
+                Tipo
+              </th>
+              <th style="min-width: 200px">
+                Grupo
+              </th>
+              <th style="min-width: 100px">
+                Métodos
+              </th>
+              <th>Sequência</th>
+              <th class="text-center">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="item in paginatedItems"
+              :key="item.id"
             >
-              {{ search ? 'Nenhuma permissão encontrada para a busca.' : 'Nenhuma permissão cadastrada.' }}
-            </td>
-          </tr>
-        </tbody>
+              <td class="font-weight-medium">
+                {{ item.name }}
+              </td>
+              <td class="text-disabled">
+                <code>{{ item.endpoint }}</code>
+              </td>
+              <td>
+                <VChip
+                  :color="item.type === 'API' ? 'info' : 'success'"
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ item.type === 'FRONT_PAGE' ? 'Front Page' : 'API' }}
+                </VChip>
+              </td>
+              <td>{{ item.group }}</td>
+              <td class="text-disabled">
+                {{ item.permittedMethods ?? '—' }}
+              </td>
+              <td class="text-disabled">
+                {{ item.sequence ?? '—' }}
+              </td>
+              <td
+                class="text-center"
+                style="white-space: nowrap"
+              >
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  @click="openEdit(item)"
+                >
+                  <VIcon icon="tabler-pencil" />
+                  <VTooltip activator="parent">
+                    Editar
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="error"
+                  @click="openDelete(item)"
+                >
+                  <VIcon icon="tabler-trash" />
+                  <VTooltip activator="parent">
+                    Excluir
+                  </VTooltip>
+                </VBtn>
+              </td>
+            </tr>
+
+            <tr v-if="!isLoading && filteredItems.length === 0">
+              <td
+                colspan="7"
+                class="text-center text-disabled py-8"
+              >
+                {{ search ? 'Nenhuma permissão encontrada para a busca.' : 'Nenhuma permissão cadastrada.' }}
+              </td>
+            </tr>
+          </tbody>
         </VTable>
       </div>
 

@@ -4,9 +4,8 @@ export function buildBackendHeaders(event: H3Event, accessToken: string): Record
   const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` }
   const spaceId = getCookie(event, 'activeSpaceId')
 
-  if (spaceId) {
+  if (spaceId)
     headers['X-Space-Id'] = spaceId
-  }
 
   return headers
 }

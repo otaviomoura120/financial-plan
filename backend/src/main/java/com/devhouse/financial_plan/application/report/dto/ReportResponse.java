@@ -9,5 +9,11 @@ public record ReportResponse(
         List<TransactionResponse> transactions,
         BigDecimal totalIncome,
         BigDecimal totalExpense,
-        BigDecimal balance
+        BigDecimal balance,
+        BigDecimal currentBalance,
+        List<PendingCreditCardInvoiceResponse> pendingCreditCardInvoices,
+        BigDecimal pendingCreditCardTotal,
+        List<PendingBillInstanceResponse> pendingBillInstances,
+        BigDecimal pendingBillTotal,
+        BigDecimal projectedBalance
 ) {}

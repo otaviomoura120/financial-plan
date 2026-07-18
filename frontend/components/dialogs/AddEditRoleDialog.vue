@@ -41,7 +41,7 @@ const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
 
 watch(
   () => props.isDialogVisible,
-  (visible) => {
+  visible => {
     if (visible) {
       name.value = props.role?.name ?? ''
       description.value = props.role?.description ?? ''

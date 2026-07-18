@@ -152,11 +152,11 @@ export default defineNuxtConfig({
       clientSecret: `${process.env.NUXT_AUTH0_CLIENT_SECRET}`,
       sessionSecret: `${process.env.NUXT_AUTH0_SESSION_SECRET}`,
       appBaseUrl: `${process.env.NUXT_AUTH0_APP_BASE_URL}`,
-      audience: `${process.env.NUXT_AUTH0_AUDIENCE}`
+      audience: `${process.env.NUXT_AUTH0_AUDIENCE}`,
     },
     public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://api.example.com'
-    }
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://api.example.com',
+    },
   },
 
   compatibilityDate: '2025-07-15',

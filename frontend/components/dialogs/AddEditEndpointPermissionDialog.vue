@@ -8,7 +8,7 @@ interface EndpointPermissionResponse {
   name: string
   icon?: string
   sequence?: number
-  type: 'API' | 'FRONT_PAGE'
+  type: 'API' | 'FRONT_PAGE' | 'WIDGET'
   permittedMethods?: string
   group: string
   createdAt: string
@@ -37,7 +37,7 @@ const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 const name = shallowRef('')
 const endpoint = shallowRef('')
 const group = shallowRef('')
-const type = shallowRef<'API' | 'FRONT_PAGE'>('API')
+const type = shallowRef<'API' | 'FRONT_PAGE' | 'WIDGET'>('API')
 const icon = shallowRef('')
 const sequence = shallowRef<number | null>(null)
 const permittedMethods = shallowRef('')
@@ -48,13 +48,14 @@ const isEditMode = computed(() => props.item !== null)
 const typeOptions = [
   { title: 'API', value: 'API' },
   { title: 'Front Page', value: 'FRONT_PAGE' },
+  { title: 'Widget', value: 'WIDGET' },
 ]
 
 const requiredRule = (label: string) => (v: string) => !!v || `${label} é obrigatório`
 
 watch(
   () => props.isDialogVisible,
-  (visible) => {
+  visible => {
     if (visible) {
       name.value = props.item?.name ?? ''
       endpoint.value = props.item?.endpoint ?? ''

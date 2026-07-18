@@ -7,9 +7,15 @@ function extractMessage(e: unknown): string {
     return e || FALLBACK
 
   if (e instanceof Error) {
-    const fetchErr = e as { data?: { message?: string }; statusMessage?: string }
+    const fetchErr = e as { data?: unknown; statusMessage?: string }
+    const data = fetchErr.data
 
-    return fetchErr.data?.message ?? fetchErr.statusMessage ?? e.message ?? FALLBACK
+    if (typeof data === 'string' && data)
+      return data
+
+    const dataMessage = (data as { message?: string } | undefined)?.message
+
+    return dataMessage ?? fetchErr.statusMessage ?? e.message ?? FALLBACK
   }
 
   return FALLBACK

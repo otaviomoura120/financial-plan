@@ -9,9 +9,9 @@ public record UpdateTransactionRequest(
         Integer version,
         TransactionType type,
         Long bankAccountId,
+        Long destinationBankAccountId,
         Long categoryId,
         Long subCategoryId,
-        Long paymentMethodId,
         BigDecimal amount,
         LocalDate transactionDate,
         String description
