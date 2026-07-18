@@ -16,7 +16,7 @@ public final class CreditCardInvoiceCycle {
     public static LocalDate resolveReferenceMonth(LocalDate purchaseDate, int closingDay) {
         YearMonth purchaseMonth = YearMonth.from(purchaseDate);
         LocalDate closingDate = resolveClosingDate(purchaseMonth, closingDay);
-        YearMonth referenceMonth = purchaseDate.isAfter(closingDate) ? purchaseMonth.plusMonths(1) : purchaseMonth;
+        YearMonth referenceMonth = purchaseDate.isBefore(closingDate) ? purchaseMonth : purchaseMonth.plusMonths(1);
         return referenceMonth.atDay(1);
     }
 

@@ -68,8 +68,7 @@ public class UpdateCreditCardTransactionRecurringService {
                 continue;
             }
             transaction.update(recurring.getCategory(), recurring.getSubCategory(), recurring.getDefaultAmount(), newPurchaseDate,
-                    recurring.getDescription());
-            transaction.setReferenceMonth(newReferenceMonth);
+                    recurring.getDescription(), newReferenceMonth);
             creditCardTransactionRepository.update(transaction);
         }
     }

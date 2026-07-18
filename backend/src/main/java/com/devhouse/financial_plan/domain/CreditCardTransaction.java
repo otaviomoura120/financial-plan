@@ -85,12 +85,14 @@ public class CreditCardTransaction {
         }
     }
 
-    public void update(Category category, SubCategory subCategory, BigDecimal amount, LocalDate purchaseDate, String description) {
+    public void update(Category category, SubCategory subCategory, BigDecimal amount, LocalDate purchaseDate, String description,
+                        LocalDate referenceMonth) {
         this.category = category;
         this.subCategory = subCategory;
         this.amount = amount;
         this.purchaseDate = purchaseDate;
         this.description = description;
+        this.referenceMonth = referenceMonth;
         this.updatedDate = Instant.now();
     }
 

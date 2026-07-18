@@ -3,6 +3,7 @@ package com.devhouse.financial_plan.application.creditcardtransaction;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.UpdateCreditCardTransactionRequest;
 import com.devhouse.financial_plan.domain.Category;
+import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.exception.DomainException;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Service
 public class UpdateCreditCardTransactionService {
@@ -38,16 +40,25 @@ public class UpdateCreditCardTransactionService {
         if (transaction == null) {
             throw new DomainException("Credit card transaction not found");
         }
-        rejectIfMonthAlreadyPaid(transaction);
+        rejectIfMonthAlreadyPaid(transaction.getCreditCard().getId(), transaction.getReferenceMonth());
         transaction.setVersion(request.version());
 
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        LocalDate referenceMonth = resolveReferenceMonth(transaction, request.purchaseDate());
+        rejectIfMonthAlreadyPaid(transaction.getCreditCard().getId(), referenceMonth);
 
-        transaction.update(category, subCategory, request.amount(), request.purchaseDate(), request.description());
+        transaction.update(category, subCategory, request.amount(), request.purchaseDate(), request.description(), referenceMonth);
         transaction.validate();
         CreditCardTransaction updated = creditCardTransactionRepository.update(transaction);
         return toResponse(updated, resolveTotalAmount(updated));
+    }
+
+    private LocalDate resolveReferenceMonth(CreditCardTransaction transaction, LocalDate purchaseDate) {
+        if (transaction.isAnticipated()) {
+            return transaction.getReferenceMonth();
+        }
+        return CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, transaction.getCreditCard().getClosingDay());
     }
 
     private BigDecimal resolveTotalAmount(CreditCardTransaction transaction) {
@@ -59,9 +70,8 @@ public class UpdateCreditCardTransactionService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private void rejectIfMonthAlreadyPaid(CreditCardTransaction transaction) {
-        boolean alreadyPaid = creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(
-                transaction.getCreditCard().getId(), transaction.getReferenceMonth()) != null;
+    private void rejectIfMonthAlreadyPaid(Long creditCardId, LocalDate referenceMonth) {
+        boolean alreadyPaid = creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(creditCardId, referenceMonth) != null;
         if (alreadyPaid) {
             throw new DomainException("Cannot modify a transaction from a paid invoice");
         }

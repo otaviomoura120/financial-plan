@@ -174,7 +174,8 @@ class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specific
 
     def "execute skips a month whose invoice is already paid, without throwing, and still generates other months"() {
         given:
-        CreditCardTransactionRecurring recurring = buildRecurring(LocalDate.of(2021, 1, 10))
+        CreditCard creditCard = buildCreditCard(15, 17)
+        CreditCardTransactionRecurring recurring = buildRecurring(LocalDate.of(2021, 1, 10), true, creditCard)
         creditCardTransactionRecurringRepository.findBySpaceId(1L) >> [recurring]
         creditCardTransactionRepository.findByCreditCardTransactionRecurringId(10L) >> []
         creditCardTransactionRepository.findByCreditCardTransactionRecurringIdAndPurchaseMonth(10L, _) >> []

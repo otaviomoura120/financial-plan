@@ -22,25 +22,25 @@ class CreditCardInvoiceCycleSpec extends Specification {
         CreditCardInvoiceCycle.resolveClosingDate(YearMonth.of(2028, 2), 31) == LocalDate.of(2028, 2, 29)
     }
 
-    def "resolveReferenceMonth keeps the purchase in its own month when made on or before closing"() {
+    def "resolveReferenceMonth keeps the purchase in its own month when made before closing"() {
         expect:
         CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, 10) == LocalDate.of(2026, 3, 1)
 
         where:
-        purchaseDate << [LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 9), LocalDate.of(2026, 3, 10)]
+        purchaseDate << [LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 9)]
     }
 
-    def "resolveReferenceMonth pushes the purchase to the next month when made after closing"() {
+    def "resolveReferenceMonth pushes the purchase to the next month when made on or after closing"() {
         expect:
         CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, 10) == LocalDate.of(2026, 4, 1)
 
         where:
-        purchaseDate << [LocalDate.of(2026, 3, 11), LocalDate.of(2026, 3, 31)]
+        purchaseDate << [LocalDate.of(2026, 3, 10), LocalDate.of(2026, 3, 11), LocalDate.of(2026, 3, 31)]
     }
 
     def "resolveReferenceMonth clamps the closing date on a short month before comparing"() {
         expect:
-        CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 2, 28), 31) == LocalDate.of(2026, 2, 1)
+        CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 2, 28), 31) == LocalDate.of(2026, 3, 1)
         CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 3, 1), 31) == LocalDate.of(2026, 3, 1)
     }
 

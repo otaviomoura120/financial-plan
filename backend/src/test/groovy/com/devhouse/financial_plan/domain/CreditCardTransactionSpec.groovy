@@ -235,7 +235,8 @@ class CreditCardTransactionSpec extends Specification {
         SubCategory newSubCategory = new SubCategory(30L, 0, newCategory, "Flights", true, null, null)
 
         when:
-        transaction.update(newCategory, newSubCategory, new BigDecimal("250.00"), LocalDate.of(2026, 3, 20), "new desc")
+        transaction.update(newCategory, newSubCategory, new BigDecimal("250.00"), LocalDate.of(2026, 3, 20), "new desc",
+                LocalDate.of(2026, 3, 1))
 
         then:
         transaction.getCategory() == newCategory
@@ -254,7 +255,7 @@ class CreditCardTransactionSpec extends Specification {
 
         when:
         transaction.update(transaction.getCategory(), transaction.getSubCategory(), transaction.getAmount(),
-                LocalDate.of(2026, 4, 20), "new desc")
+                LocalDate.of(2026, 4, 20), "new desc", transaction.getReferenceMonth())
 
         then:
         transaction.getCompetenceMonth() == LocalDate.of(2026, 6, 1)
