@@ -8,13 +8,40 @@ This means:
 - Adding, editing, deleting, or anticipating installments never needs to touch a separate invoice record — they just change which `(creditCardId, referenceMonth)` bucket a `CreditCardTransaction` falls into.
 - `CreditCardInvoiceCycle` (pure calculator, no repository) is only consulted for **display metadata** — `closingDate`/`dueDate` — derived from a group's `referenceMonth`; it is never re-run to decide which group a transaction belongs to after creation (that happens once, at creation time — see CC4/CC5 in `APP_OVERVIEW.md`).
 
+## Credit transactions (cashback / bank benefit)
+
+A `CreditCardTransaction` can be a **credit** instead of a purchase — a value that *reduces* the invoice balance (cashback, a bank benefit/refund). It shows up negative on the invoice.
+
+**Modeling — one boolean, magnitude stays positive.** The domain carries a `boolean credit` flag; `amount` is still always stored **positive** (the existing `validate()` rule "Amount must be positive" is unchanged and applies to the magnitude). The sign is applied only when aggregating or displaying, through the rich method:
+
+```java
+public BigDecimal getSignedAmount() {
+    if (credit) {
+        return amount.negate();
+    }
+    return amount;
+}
+```
+
+This avoids double-negation: every consumer that needs the net value calls `getSignedAmount()`; anything showing the raw magnitude keeps using `getAmount()` plus the `credit` flag.
+
+**A credit is always a single entry.** `validate()` rejects `credit == true` with `totalInstallments != 1` (`"Credit transaction must be a single installment"`), and `CreateCreditCardTransactionService` forces `totalInstallments = 1` when `credit` is set, ignoring any parcelas sent. Recurring credits are not supported (the recurring generation path always creates purchases). The flag is set **only at creation** — `UpdateCreditCardTransactionService`/`update(...)` never touch it, so editing a credit only changes value/category/date/description and preserves its nature.
+
+**Where the sign is honored (net) vs. ignored:**
+- `ListCreditCardInvoicesService` (invoice `totalAmount`) and `PayCreditCardInvoiceService` (amount actually paid) sum `getSignedAmount()` — so the total, the paid `EXPENSE` transaction, and the Reports **projected balance** (which reads the invoice `totalAmount` via `resolvePendingCreditCardInvoices`) all net out credits automatically.
+- **Not** applied: `GenerateCategoryReportService` still sums `getAmount()` — the by-category report intentionally does not net credits for now (a credit appears there as an expense-magnitude line). This is a known, deliberate limitation.
+
+**Persistence & transport:** a `credit` column on `CreditCardTransactionEntityJpa` (created by `ddl-auto=update`, defaulting to `false`/`0` for existing rows); `credit` added to `CreateCreditCardTransactionRequest` and `CreditCardTransactionResponse`. `UpdateCreditCardTransactionRequest` is unchanged. No new endpoint — the existing `POST /credit-card-transactions` just carries the extra field — so `seed.sql`'s `endpoint_permissions` need no change.
+
+**Frontend:** the lançamento dialog has a "Lançar como crédito (abate da fatura)" checkbox (creation only, mutually exclusive with parcelas and recurring); the transaction lists and invoice-items view render credits negative (green) with a "Crédito" chip.
+
 ## Listing invoices — `ListCreditCardInvoicesService`
 
 `GET /credit-cards/invoices?spaceId=&creditCardId=&from=&to=`
 
 1. Resolve the candidate `CreditCard`s: `creditCardRepository.findBySpaceId(spaceId)`, optionally narrowed to one card if `creditCardId` is given (a mismatched id simply yields no results — no separate "wrong space" error).
 2. For each card, fetch **every** `CreditCardTransaction` (`findByCreditCardId`, no date filter — an installment's `referenceMonth` can be months away from its `purchaseDate`) and group them by `referenceMonth`.
-3. For each group, compute `closingDate`/`dueDate` via `CreditCardInvoiceCycle`, sum the amounts, and check `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` to mark it `paid`/open.
+3. For each group, compute `closingDate`/`dueDate` via `CreditCardInvoiceCycle`, sum the **signed** amounts (`CreditCardTransaction::getSignedAmount` — credits count as negative, see "Credit transactions" below), and check `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` to mark it `paid`/open. A month with more credits than debits legitimately produces a negative `totalAmount`.
 4. Keep only groups whose `dueDate` falls within `[from, to]` (same convention later used for pending items in Reports — see RPT1).
 
 Since an invoice group can only exist when at least one `CreditCardTransaction` exists for that month, there is no "phantom empty invoice" case to filter out.
@@ -27,7 +54,7 @@ To let the frontend list the actual transactions composing one invoice (rather t
 
 1. Resolve the `CreditCard` (404-style `DomainException` if missing) and the authenticated user — the payer is **derived from the session**, not the request body: the controller passes `authentication.getName()` (the Auth0 sub) through, and the service resolves it via `UserRepository.findByAuth0Sub(...)`, the same pattern already used by `AcceptInviteService`/`ListMyInvitesService` for the same reason (an invoice payment isn't something the client should be able to attribute to an arbitrary `userId`).
 2. Reject if `CreditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth` already returns a row (`"Invoice already paid"`).
-3. Sum `CreditCardTransactionRepository.findByCreditCardIdAndReferenceMonth(creditCardId, referenceMonth)` — this already includes installments anticipated *into* this month from other purchases (they carry this `referenceMonth` once anticipated, see CC5b). Reject if the sum is not positive (`"Invoice has no transactions to pay"`).
+3. Sum the **signed** amounts of `CreditCardTransactionRepository.findByCreditCardIdAndReferenceMonth(creditCardId, referenceMonth)` (`getSignedAmount`, so credits subtract) — this already includes installments anticipated *into* this month from other purchases (they carry this `referenceMonth` once anticipated, see CC5b). Reject if the net sum is not positive (`"Invoice has no transactions to pay"`); this now also covers a credit-only or net-negative invoice, which cannot be "paid" as an expense.
 4. Compute `dueDate` via `CreditCardInvoiceCycle.resolveDueDate(...)`.
 5. **Create the Transaction before the payment row** (order matters — see below): calls `CreateTransactionService.execute(request, TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, creditCard.getId())` — an internal overload of the same public service used by `POST /transactions`, so it goes through the exact same FK validation and `TransactionBalanceEffectService.apply()` (debits `bankAccountId`) as any other `EXPENSE`. The public `CreateTransactionRequest`/`POST /transactions` contract is untouched — only this internal overload accepts a `sourceType`/`sourceId`, so a normal API client can never forge one.
 6. Only now build and `save()` the `CreditCardInvoicePayment`, with `paymentTransactionId` already set to the just-created transaction's id.

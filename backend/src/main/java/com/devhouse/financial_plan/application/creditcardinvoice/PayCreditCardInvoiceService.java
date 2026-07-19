@@ -53,7 +53,7 @@ public class PayCreditCardInvoiceService {
 
         List<CreditCardTransaction> transactions = creditCardTransactionRepository.findByCreditCardIdAndReferenceMonth(creditCardId, referenceMonth);
         BigDecimal totalAmount = transactions.stream()
-                .map(CreditCardTransaction::getAmount)
+                .map(CreditCardTransaction::getSignedAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new DomainException("Invoice has no transactions to pay");

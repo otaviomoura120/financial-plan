@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 public record CreditCardTransactionResponse(Long id, Integer version, Long creditCardId, Long userId, Long categoryId,
-                                             Long subCategoryId, BigDecimal amount, LocalDate purchaseDate, String description,
+                                             Long subCategoryId, BigDecimal amount, boolean credit, LocalDate purchaseDate, String description,
                                              LocalDate referenceMonth, LocalDate competenceMonth, LocalDate dueDate, String installmentGroupId,
                                              Integer installmentNumber, Integer totalInstallments, boolean anticipated,
                                              LocalDate originalReferenceMonth, Instant createdDate, BigDecimal totalAmount) {}

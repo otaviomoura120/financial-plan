@@ -32,6 +32,7 @@ public class CreditCardTransactionEntityJpa {
     @JoinColumn(name = "sub_category_id")
     private SubCategoryEntityJpa subCategory;
     private BigDecimal amount;
+    private boolean credit;
     @Column(name = "purchase_date")
     private LocalDate purchaseDate;
     private String description;
@@ -64,6 +65,8 @@ public class CreditCardTransactionEntityJpa {
     public void setSubCategory(SubCategoryEntityJpa subCategory) { this.subCategory = subCategory; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public boolean isCredit() { return credit; }
+    public void setCredit(boolean credit) { this.credit = credit; }
     public LocalDate getPurchaseDate() { return purchaseDate; }
     public void setPurchaseDate(LocalDate purchaseDate) { this.purchaseDate = purchaseDate; }
     public String getDescription() { return description; }

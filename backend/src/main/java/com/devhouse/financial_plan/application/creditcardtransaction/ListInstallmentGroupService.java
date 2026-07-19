@@ -33,7 +33,7 @@ public class ListInstallmentGroupService {
         LocalDate dueDate = CreditCardInvoiceCycle.resolveDueDate(t.getReferenceMonth(), t.getCreditCard().getClosingDay(), t.getCreditCard().getDueDay());
         return new CreditCardTransactionResponse(t.getId(), t.getVersion(), t.getCreditCard().getId(), t.getUser().getId(),
                 t.getCategory() != null ? t.getCategory().getId() : null,
-                t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(), t.getPurchaseDate(),
+                t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(), t.isCredit(), t.getPurchaseDate(),
                 t.getDescription(), t.getReferenceMonth(), t.getCompetenceMonth(), dueDate, t.getInstallmentGroupId(), t.getInstallmentNumber(),
                 t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate(), totalAmount);
     }

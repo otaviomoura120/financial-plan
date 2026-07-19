@@ -35,8 +35,12 @@ class ListCreditCardInvoicesServiceSpec extends Specification {
     }
 
     private CreditCardTransaction buildTransaction(CreditCard creditCard, BigDecimal amount, LocalDate referenceMonth) {
+        buildTransaction(creditCard, amount, referenceMonth, false)
+    }
+
+    private CreditCardTransaction buildTransaction(CreditCard creditCard, BigDecimal amount, LocalDate referenceMonth, boolean credit) {
         new CreditCardTransaction(1L, 0, creditCard, null, buildUser(), new Category(20L, 0, null, "Food", true, Instant.now(), null),
-                null, amount, LocalDate.of(2026, 1, 5), "desc", referenceMonth, "group-1", 1, 1, false, null,
+                null, amount, credit, LocalDate.of(2026, 1, 5), "desc", referenceMonth, "group-1", 1, 1, false, null,
                 Instant.now(), null)
     }
 
@@ -67,6 +71,24 @@ class ListCreditCardInvoicesServiceSpec extends Specification {
         paid.totalAmount() == new BigDecimal("200.00")
         paid.paidAmount() == new BigDecimal("200.00")
         paid.paymentTransactionId() == 99L
+    }
+
+    def "execute subtracts credit transactions from the invoice total"() {
+        given:
+        CreditCard creditCard = buildCreditCard(10L)
+        creditCardRepository.findBySpaceId(1L) >> [creditCard]
+        creditCardTransactionRepository.findByCreditCardId(10L) >> [
+                buildTransaction(creditCard, new BigDecimal("300.00"), LocalDate.of(2026, 3, 1)),
+                buildTransaction(creditCard, new BigDecimal("50.00"), LocalDate.of(2026, 3, 1), true)
+        ]
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
+
+        when:
+        List<CreditCardInvoiceResponse> responses = service.execute(1L, null, null, null)
+
+        then:
+        responses.size() == 1
+        responses[0].totalAmount() == new BigDecimal("250.00")
     }
 
     def "execute filters invoices whose due date falls outside the requested period"() {

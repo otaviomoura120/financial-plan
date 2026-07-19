@@ -74,7 +74,7 @@ public class EnsureRecurringCreditCardTransactionsGeneratedService {
             return;
         }
         CreditCardTransaction transaction = new CreditCardTransaction(null, 0, recurring.getCreditCard(), recurring, recurring.getUser(),
-                recurring.getCategory(), recurring.getSubCategory(), recurring.getDefaultAmount(), purchaseDate,
+                recurring.getCategory(), recurring.getSubCategory(), recurring.getDefaultAmount(), false, purchaseDate,
                 recurring.getDescription(), referenceMonth, UUID.randomUUID().toString(), 1, 1, false, null, Instant.now(), null);
         transaction.validate();
         creditCardTransactionRepository.save(transaction);

@@ -28,7 +28,7 @@ All already implemented with `@PreAuthorize`.
 | GET | `/credit-card-transactions` | `spaceId, creditCardId?, categoryId?, subCategoryId?, from?, to?, referenceMonth?` (query) | `CreditCardTransactionResponse[]` |
 | GET | `/credit-card-transactions/installment-groups/{installmentGroupId}` | — | `CreditCardTransactionResponse[]` (sorted by `installmentNumber`) |
 | POST | `/credit-card-transactions/installment-groups/{id}/anticipate` | `{ targetReferenceMonth, installmentsToAnticipate }` | `CreditCardTransactionResponse[]` |
-| POST | `/credit-card-transactions` | `{ creditCardId, userId, categoryId, subCategoryId, amount, purchaseDate, description, totalInstallments }` | `CreditCardTransactionResponse` |
+| POST | `/credit-card-transactions` | `{ creditCardId, userId, categoryId, subCategoryId, amount, credit, purchaseDate, description, totalInstallments }` | `CreditCardTransactionResponse` |
 | PUT | `/credit-card-transactions/{id}` | `{ version, categoryId, subCategoryId, amount, purchaseDate, description }` | `CreditCardTransactionResponse` |
 | DELETE | `/credit-card-transactions/{id}` | `includeFuture?` (query, default `false`) | `204` (rejected with `422` if the reference month is already paid; when `includeFuture=true` on a grouped purchase, also deletes every later installment of the group, rejecting the whole batch if any of them is already paid) |
 | GET | `/credit-cards/invoices` | `spaceId, creditCardId?, from?, to?` (query) | `CreditCardInvoiceResponse[]` |
@@ -43,7 +43,9 @@ purchases — see `backend/docs/report-by-category.md` (RPTC6) and
 [`reports-by-category.md`](./reports-by-category.md). `bankAccountName` is denormalized into the
 response so the list/report don't need an extra lookup.
 
-`CreditCardTransactionResponse`: `{ id, version, creditCardId, userId, categoryId, subCategoryId, amount, purchaseDate, description, referenceMonth, installmentGroupId, installmentNumber, totalInstallments, anticipated, originalReferenceMonth, createdDate, totalAmount }`. `totalAmount` is the sum of every installment's `amount` in the group — computed on read (not persisted) via `findByInstallmentGroupId`, equal to `amount` itself for a single (`totalInstallments <= 1`) purchase — shown in the UI as a reference to the original purchase total next to the per-installment `amount`.
+`CreditCardTransactionResponse`: `{ id, version, creditCardId, userId, categoryId, subCategoryId, amount, credit, purchaseDate, description, referenceMonth, installmentGroupId, installmentNumber, totalInstallments, anticipated, originalReferenceMonth, createdDate, totalAmount }`. `totalAmount` is the sum of every installment's `amount` in the group — computed on read (not persisted) via `findByInstallmentGroupId`, equal to `amount` itself for a single (`totalInstallments <= 1`) purchase — shown in the UI as a reference to the original purchase total next to the per-installment `amount`.
+
+`credit` marks a **credit** entry (cashback/bank benefit) that abates the invoice. `amount` stays positive (magnitude); the UI renders it negative (green, "Crédito" chip) and the backend nets it out of the invoice total (`getSignedAmount`). A credit is single-entry only — set at creation via the "Lançar como crédito (abate da fatura)" checkbox (mutually exclusive with parcelas/recorrência), immutable on edit. See [`backend/docs/credit-card-invoice.md`](../../backend/docs/credit-card-invoice.md) ("Credit transactions") for the full rationale.
 
 `CreditCardInvoiceResponse`: `{ creditCardId, creditCardName, referenceMonth, closingDate, dueDate, totalAmount, paid, paidDate, paidAmount, paymentTransactionId }` — an invoice is never materialized until paid; open invoices are computed on the fly by grouping `CreditCardTransaction` rows by the stored `referenceMonth`.
 
@@ -113,7 +115,12 @@ a "Total: R$ ..." caption below it for parceled rows, `totalInstallments > 1`, s
 full group via `GET .../installment-groups/{id}` to compute how many future installments are
 eligible before calling the anticipate endpoint. Create/edit follow the standard dialog pattern —
 a newly created/edited row is spliced into the local list only when its `referenceMonth` matches
-`selectedMonth`. Delete: a single (`totalInstallments <= 1`) row uses the standard `ConfirmDialog`;
+`selectedMonth`. A **credit** row (`credit === true`) is rendered with its amount negative in green
+and a "Crédito" chip in place of the "N/total"/"À vista" chip; the same rendering is used in
+`InvoiceTransactionsDialog`. In `AddEditCreditCardTransactionDialog` the "Lançar como crédito
+(abate da fatura)" checkbox is creation-only and mutually exclusive with the Parcelas field and the
+"Assinatura recorrente" checkbox (checking one clears the others); on edit the type is fixed and
+shown as a read-only chip. Delete: a single (`totalInstallments <= 1`) row uses the standard `ConfirmDialog`;
 a row that belongs to an installment group instead opens `DeleteInstallmentDialog`, which asks
 whether to delete just this installment or this one and every later one in the group
 (`DELETE .../{id}?includeFuture=true`) — the removed rows are pruned from the local list by

@@ -179,6 +179,7 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
         entity.setSubCategory(creditCardTransaction.getSubCategory() != null
                 ? jpaSubCategoryRepository.getReferenceById(creditCardTransaction.getSubCategory().getId()) : null);
         entity.setAmount(creditCardTransaction.getAmount());
+        entity.setCredit(creditCardTransaction.isCredit());
         entity.setPurchaseDate(creditCardTransaction.getPurchaseDate());
         entity.setDescription(creditCardTransaction.getDescription());
         entity.setReferenceMonth(creditCardTransaction.getReferenceMonth());
@@ -197,7 +198,7 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
         Category category = entity.getCategory() != null ? buildCategory(entity.getCategory()) : null;
         SubCategory subCategory = entity.getSubCategory() != null ? buildSubCategory(entity.getSubCategory()) : null;
         return new CreditCardTransaction(entity.getId(), entity.getVersion(), creditCard, recurring, user, category, subCategory,
-                entity.getAmount(), entity.getPurchaseDate(), entity.getDescription(), entity.getReferenceMonth(),
+                entity.getAmount(), entity.isCredit(), entity.getPurchaseDate(), entity.getDescription(), entity.getReferenceMonth(),
                 entity.getInstallmentGroupId(), entity.getInstallmentNumber(), entity.getTotalInstallments(),
                 entity.isAnticipated(), entity.getOriginalReferenceMonth(), entity.getCreatedAt(), null);
     }

@@ -24,7 +24,7 @@ class ListInstallmentGroupServiceSpec extends Specification {
                 null, null, Instant.now(), null, false)
         Category category = new Category(20L, 0, null, "Food", true, Instant.now(), null)
         new CreditCardTransaction(installmentNumber as Long, 0, creditCard, null, user, category, null,
-                new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc",
+                new BigDecimal("33.33"), false, LocalDate.of(2026, 3, 5), "desc",
                 LocalDate.of(2026, 3, 1).plusMonths(installmentNumber - 1),
                 "group-1", installmentNumber, 3, false, null, Instant.now(), null)
     }

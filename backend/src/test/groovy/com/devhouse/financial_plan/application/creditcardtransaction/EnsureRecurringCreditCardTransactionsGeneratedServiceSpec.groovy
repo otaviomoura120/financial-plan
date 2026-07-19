@@ -50,7 +50,7 @@ class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specific
 
     private CreditCardTransaction buildGeneratedTransaction(LocalDate purchaseDate, LocalDate referenceMonth) {
         new CreditCardTransaction(1L, 0, buildCreditCard(), buildRecurring(purchaseDate), buildUser(), buildCategory(), null,
-                new BigDecimal("39.90"), purchaseDate, "Netflix", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
+                new BigDecimal("39.90"), false, purchaseDate, "Netflix", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
     }
 
     def "execute generates through at least 6 months ahead of the current month, even when the requested upToDate is only the current month"() {

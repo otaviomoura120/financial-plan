@@ -55,7 +55,8 @@ public class CreateCreditCardTransactionService {
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
 
-        int totalInstallments = request.totalInstallments() == null || request.totalInstallments() <= 1
+        boolean credit = Boolean.TRUE.equals(request.credit());
+        int totalInstallments = credit || request.totalInstallments() == null || request.totalInstallments() <= 1
                 ? 1 : request.totalInstallments();
         LocalDate firstReferenceMonth = CreditCardInvoiceCycle.resolveReferenceMonth(request.purchaseDate(), creditCard.getClosingDay());
         List<LocalDate> referenceMonths = new ArrayList<>();
@@ -70,7 +71,7 @@ public class CreateCreditCardTransactionService {
         CreditCardTransaction firstInstallment = null;
         for (int i = 0; i < totalInstallments; i++) {
             CreditCardTransaction installment = new CreditCardTransaction(null, 0, creditCard, null, user, category, subCategory,
-                    installmentAmounts.get(i), request.purchaseDate(), request.description(), referenceMonths.get(i),
+                    installmentAmounts.get(i), credit, request.purchaseDate(), request.description(), referenceMonths.get(i),
                     installmentGroupId, i + 1, totalInstallments, false, null, Instant.now(), null);
             installment.validate();
             CreditCardTransaction saved = creditCardTransactionRepository.save(installment);
@@ -144,7 +145,7 @@ public class CreateCreditCardTransactionService {
         LocalDate dueDate = CreditCardInvoiceCycle.resolveDueDate(t.getReferenceMonth(), t.getCreditCard().getClosingDay(), t.getCreditCard().getDueDay());
         return new CreditCardTransactionResponse(t.getId(), t.getVersion(), t.getCreditCard().getId(), t.getUser().getId(),
                 t.getCategory() != null ? t.getCategory().getId() : null,
-                t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(), t.getPurchaseDate(),
+                t.getSubCategory() != null ? t.getSubCategory().getId() : null, t.getAmount(), t.isCredit(), t.getPurchaseDate(),
                 t.getDescription(), t.getReferenceMonth(), t.getCompetenceMonth(), dueDate, t.getInstallmentGroupId(), t.getInstallmentNumber(),
                 t.getTotalInstallments(), t.isAnticipated(), t.getOriginalReferenceMonth(), t.getCreatedDate(), totalAmount);
     }

@@ -61,7 +61,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
                       amount: new BigDecimal("80.00"), date: LocalDate.of(2026, 7, 15),
                       referenceMonth: LocalDate.of(2026, 8, 1)] + overrides
         new CreditCardTransaction(values.id, 0, values.creditCard, null, user, values.category, values.subCategory,
-                values.amount, values.date, "purchase", values.referenceMonth,
+                values.amount, false, values.date, "purchase", values.referenceMonth,
                 "group-1", 1, 3, false, null, Instant.now(), null)
     }
 

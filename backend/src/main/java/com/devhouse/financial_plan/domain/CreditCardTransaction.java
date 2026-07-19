@@ -19,6 +19,7 @@ public class CreditCardTransaction {
     private Category category;
     private SubCategory subCategory;
     private BigDecimal amount;
+    private boolean credit;
     private LocalDate purchaseDate;
     private String description;
     private LocalDate referenceMonth;
@@ -32,7 +33,7 @@ public class CreditCardTransaction {
 
     public CreditCardTransaction(Long id, Integer version, CreditCard creditCard, CreditCardTransactionRecurring creditCardTransactionRecurring,
                                   User user, Category category, SubCategory subCategory,
-                                  BigDecimal amount, LocalDate purchaseDate, String description, LocalDate referenceMonth,
+                                  BigDecimal amount, boolean credit, LocalDate purchaseDate, String description, LocalDate referenceMonth,
                                   String installmentGroupId, Integer installmentNumber, Integer totalInstallments,
                                   boolean anticipated, LocalDate originalReferenceMonth, Instant createdDate, Instant updatedDate) {
         this.id = id;
@@ -43,6 +44,7 @@ public class CreditCardTransaction {
         this.category = category;
         this.subCategory = subCategory;
         this.amount = amount;
+        this.credit = credit;
         this.purchaseDate = purchaseDate;
         this.description = description;
         this.referenceMonth = referenceMonth;
@@ -67,6 +69,9 @@ public class CreditCardTransaction {
         }
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new DomainException("Amount must be positive");
+        }
+        if (credit && (totalInstallments == null || totalInstallments != 1)) {
+            throw new DomainException("Credit transaction must be a single installment");
         }
         if (purchaseDate == null) {
             throw new DomainException("Purchase date is required");
@@ -133,6 +138,16 @@ public class CreditCardTransaction {
     public void setSubCategory(SubCategory subCategory) { this.subCategory = subCategory; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public boolean isCredit() { return credit; }
+    public void setCredit(boolean credit) { this.credit = credit; }
+
+    public BigDecimal getSignedAmount() {
+        if (credit) {
+            return amount.negate();
+        }
+        return amount;
+    }
+
     public LocalDate getPurchaseDate() { return purchaseDate; }
     public void setPurchaseDate(LocalDate purchaseDate) { this.purchaseDate = purchaseDate; }
     public String getDescription() { return description; }

@@ -56,7 +56,7 @@ public class ListCreditCardInvoicesService {
 
     private CreditCardInvoiceResponse toResponse(CreditCard creditCard, LocalDate referenceMonth, List<CreditCardTransaction> transactions) {
         BigDecimal totalAmount = transactions.stream()
-                .map(CreditCardTransaction::getAmount)
+                .map(CreditCardTransaction::getSignedAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         LocalDate closingDate = CreditCardInvoiceCycle.resolveClosingDate(YearMonth.from(referenceMonth), creditCard.getClosingDay());
         LocalDate dueDate = CreditCardInvoiceCycle.resolveDueDate(referenceMonth, creditCard.getClosingDay(), creditCard.getDueDay());

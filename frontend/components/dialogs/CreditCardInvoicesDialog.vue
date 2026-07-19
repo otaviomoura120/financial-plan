@@ -367,7 +367,10 @@ function onClose() {
                 <td class="text-disabled">
                   {{ formatDate(invoice.closingDate) }}
                 </td>
-                <td class="text-right">
+                <td
+                  class="text-right"
+                  :class="{ 'text-success': invoice.totalAmount < 0 }"
+                >
                   {{ currencyFormatter.format(invoice.totalAmount) }}
                 </td>
                 <td>

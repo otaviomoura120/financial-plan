@@ -52,7 +52,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
     private CreditCardTransaction buildGeneratedTransaction(Long id, LocalDate purchaseDate, LocalDate referenceMonth, CreditCard creditCard = buildCreditCard()) {
         Category category = new Category(30L, 0, null, "Assinaturas", true, Instant.now(), null)
         new CreditCardTransaction(id, 0, creditCard, buildRecurring(creditCard), buildUser(), category, null,
-                new BigDecimal("39.90"), purchaseDate, "Netflix", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
+                new BigDecimal("39.90"), false, purchaseDate, "Netflix", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
     }
 
     def "execute updates category, defaultAmount and startDate"() {

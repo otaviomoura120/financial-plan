@@ -45,8 +45,12 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
     }
 
     private CreditCardTransaction buildTransaction(BigDecimal amount) {
+        buildTransaction(amount, false)
+    }
+
+    private CreditCardTransaction buildTransaction(BigDecimal amount, boolean credit) {
         new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), new Category(20L, 0, null, "Food", true, Instant.now(), null),
-                null, amount, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1), "group-1", 1, 1, false, null,
+                null, amount, credit, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1), "group-1", 1, 1, false, null,
                 Instant.now(), null)
     }
 
@@ -84,6 +88,32 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
         response.paidAmount() == new BigDecimal("150.00")
         response.paymentTransactionId() == 99L
         response.bankAccountId() == 2L
+    }
+
+    def "execute pays the net amount, subtracting credit transactions from the invoice total"() {
+        given:
+        creditCardRepository.findById(10L) >> buildCreditCard()
+        userRepository.findByAuth0Sub("auth0|1") >> buildUser()
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> null
+        creditCardTransactionRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >>
+                [buildTransaction(new BigDecimal("300.00")), buildTransaction(new BigDecimal("50.00"), true)]
+        TransactionResponse transactionResponse = new TransactionResponse(99L, 0, TransactionType.EXPENSE, 1L, 2L, null,
+                30L, null, new BigDecimal("250.00"), LocalDate.of(2026, 4, 5), "Pagamento de fatura - Nubank", Instant.now(),
+                null, null, null)
+        CreateTransactionRequest capturedRequest = null
+        createTransactionService.execute(_, TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 10L) >> { CreateTransactionRequest req, srcType, srcId ->
+            capturedRequest = req
+            transactionResponse
+        }
+        creditCardInvoicePaymentRepository.save(_) >> { CreditCardInvoicePayment p -> p }
+        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, 30L, 31L, LocalDate.of(2026, 4, 5))
+
+        when:
+        CreditCardInvoicePaymentResponse response = service.execute(10L, LocalDate.of(2026, 3, 1), request, "auth0|1")
+
+        then:
+        capturedRequest.amount() == new BigDecimal("250.00")
+        response.paidAmount() == new BigDecimal("250.00")
     }
 
     def "execute throws DomainException when the invoice is already paid"() {

@@ -7,6 +7,7 @@ interface CreditCardTransactionResponse {
   categoryId: number | null
   subCategoryId: number | null
   amount: number
+  credit: boolean
   purchaseDate: string
   description?: string | null
   referenceMonth: string
@@ -223,7 +224,15 @@ function onClose() {
                 </td>
                 <td>
                   <VChip
-                    v-if="item.totalInstallments > 1"
+                    v-if="item.credit"
+                    size="small"
+                    variant="tonal"
+                    color="success"
+                  >
+                    Crédito
+                  </VChip>
+                  <VChip
+                    v-else-if="item.totalInstallments > 1"
                     size="small"
                     variant="tonal"
                     color="info"
@@ -247,8 +256,11 @@ function onClose() {
                     Antecipada
                   </VChip>
                 </td>
-                <td class="text-right">
-                  {{ currencyFormatter.format(item.amount) }}
+                <td
+                  class="text-right"
+                  :class="{ 'text-success': item.credit }"
+                >
+                  {{ currencyFormatter.format(item.credit ? -item.amount : item.amount) }}
                 </td>
               </tr>
 

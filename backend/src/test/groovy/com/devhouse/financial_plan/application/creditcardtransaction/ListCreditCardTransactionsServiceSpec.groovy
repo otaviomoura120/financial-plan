@@ -36,7 +36,7 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
     def "execute returns the credit card transactions matching the filter"() {
         given:
         CreditCardTransaction transaction = new CreditCardTransaction(1L, 0, creditCard(), null, user(), category(), null,
-                new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
+                new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
         creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, null) >> [transaction]
 
@@ -89,7 +89,7 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
         given:
         LocalDate referenceMonth = LocalDate.of(2026, 3, 1)
         CreditCardTransaction transaction = new CreditCardTransaction(1L, 0, creditCard(), null, user(), category(), null,
-                new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", referenceMonth,
+                new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", referenceMonth,
                 "group-1", 1, 1, false, null, Instant.now(), null)
 
         when:
@@ -105,10 +105,10 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
         given:
         LocalDate competenceMonth = LocalDate.of(2026, 7, 1)
         CreditCardTransaction matching = new CreditCardTransaction(1L, 0, creditCard(), null, user(), category(), null,
-                new BigDecimal("100.00"), LocalDate.of(2026, 7, 12), "desc", LocalDate.of(2026, 8, 1),
+                new BigDecimal("100.00"), false, LocalDate.of(2026, 7, 12), "desc", LocalDate.of(2026, 8, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
         CreditCardTransaction other = new CreditCardTransaction(2L, 0, creditCard(), null, user(), category(), null,
-                new BigDecimal("50.00"), LocalDate.of(2026, 6, 12), "desc", LocalDate.of(2026, 7, 1),
+                new BigDecimal("50.00"), false, LocalDate.of(2026, 6, 12), "desc", LocalDate.of(2026, 7, 1),
                 "group-2", 1, 1, false, null, Instant.now(), null)
         creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, null) >> [matching, other]
 
@@ -125,10 +125,10 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
     def "execute filters by the from/to competenceMonth range in memory"() {
         given:
         CreditCardTransaction inRange = new CreditCardTransaction(1L, 0, creditCard(), null, user(), category(), null,
-                new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
+                new BigDecimal("33.33"), false, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
         CreditCardTransaction outOfRange = new CreditCardTransaction(2L, 0, creditCard(), null, user(), category(), null,
-                new BigDecimal("33.33"), LocalDate.of(2026, 4, 5), "desc", LocalDate.of(2026, 4, 1),
+                new BigDecimal("33.33"), false, LocalDate.of(2026, 4, 5), "desc", LocalDate.of(2026, 4, 1),
                 "group-2", 1, 1, false, null, Instant.now(), null)
         creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, null) >> [inRange, outOfRange]
 
@@ -146,7 +146,7 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
         CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 25, 5, true, Instant.now(), null)
         CreditCardTransaction transaction = new CreditCardTransaction(1L, 0, creditCard, null, user(), category(), null,
-                new BigDecimal("100.00"), LocalDate.of(2026, 6, 25), "desc", LocalDate.of(2026, 7, 1),
+                new BigDecimal("100.00"), false, LocalDate.of(2026, 6, 25), "desc", LocalDate.of(2026, 7, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
         creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, null) >> [transaction]
 
@@ -162,10 +162,10 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
     def "execute computes totalAmount by summing every installment of the group, once per group"() {
         given:
         CreditCardTransaction installment1 = new CreditCardTransaction(1L, 0, creditCard(), null, user(), category(), null,
-                new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
+                new BigDecimal("33.33"), false, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 3, false, null, Instant.now(), null)
         CreditCardTransaction installment2 = new CreditCardTransaction(2L, 0, creditCard(), null, user(), category(), null,
-                new BigDecimal("33.33"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 4, 1),
+                new BigDecimal("33.33"), false, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 4, 1),
                 "group-1", 2, 3, false, null, Instant.now(), null)
         creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, null) >> [installment1, installment2]
 
@@ -176,7 +176,7 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
         then:
         1 * creditCardTransactionRepository.findByInstallmentGroupId("group-1") >>
                 [installment1, installment2, new CreditCardTransaction(3L, 0, creditCard(), null, user(), category(), null,
-                        new BigDecimal("33.34"), LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 5, 1),
+                        new BigDecimal("33.34"), false, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 5, 1),
                         "group-1", 3, 3, false, null, Instant.now(), null)]
         responses.size() == 2
         responses[0].totalAmount() == new BigDecimal("100.00")

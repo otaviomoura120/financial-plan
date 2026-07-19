@@ -9,6 +9,7 @@ interface CreditCardTransactionResponse {
   categoryId: number | null
   subCategoryId: number | null
   amount: number
+  credit: boolean
   purchaseDate: string
   description?: string | null
   referenceMonth: string
@@ -75,6 +76,7 @@ const purchaseDate = shallowRef<string>('')
 const description = shallowRef('')
 const totalInstallments = shallowRef<string>('')
 const isRecurringSubscription = shallowRef(false)
+const isCredit = shallowRef(false)
 const isLoading = shallowRef(false)
 
 const isEditMode = computed(() => props.transaction !== null)
@@ -126,14 +128,24 @@ watch(
       description.value = t?.description ?? ''
       totalInstallments.value = ''
       isRecurringSubscription.value = false
+      isCredit.value = false
       clearError()
     }
   },
 )
 
 watch(isRecurringSubscription, recurring => {
-  if (recurring)
+  if (recurring) {
     totalInstallments.value = ''
+    isCredit.value = false
+  }
+})
+
+watch(isCredit, credit => {
+  if (credit) {
+    totalInstallments.value = ''
+    isRecurringSubscription.value = false
+  }
 })
 
 async function onSubmit() {
@@ -190,6 +202,7 @@ async function onSubmit() {
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
           amount: amount.value,
+          credit: isCredit.value,
           purchaseDate: purchaseDate.value,
           description: description.value || undefined,
           totalInstallments: totalInstallments.value !== '' ? Number(totalInstallments.value) : undefined,
@@ -226,9 +239,26 @@ function onClose() {
         <h4 class="text-h4 text-center mb-2">
           {{ isEditMode ? 'Editar Lançamento' : 'Adicionar Lançamento' }}
         </h4>
-        <p class="text-body-1 text-center mb-6">
+        <p class="text-body-1 text-center mb-2">
           {{ isEditMode ? 'Atualize os dados do lançamento.' : 'Preencha os dados da nova compra no cartão.' }}
         </p>
+
+        <div
+          v-if="isEditMode && props.transaction?.credit"
+          class="d-flex justify-center mb-6"
+        >
+          <VChip
+            size="small"
+            variant="tonal"
+            color="success"
+          >
+            Crédito (abate da fatura)
+          </VChip>
+        </div>
+        <div
+          v-else
+          class="mb-6"
+        />
 
         <ApiErrorAlert
           v-if="error"
@@ -303,7 +333,7 @@ function onClose() {
             </VCol>
 
             <VCol
-              v-if="!isEditMode && !isRecurringSubscription"
+              v-if="!isEditMode && !isRecurringSubscription && !isCredit"
               cols="12"
               md="6"
             >
@@ -321,7 +351,7 @@ function onClose() {
             </VCol>
 
             <VCol
-              v-if="!isEditMode"
+              v-if="!isEditMode && !isCredit"
               cols="12"
               :md="isRecurringSubscription ? 12 : 6"
               class="d-flex align-center"
@@ -329,6 +359,19 @@ function onClose() {
               <VCheckbox
                 v-model="isRecurringSubscription"
                 label="Assinatura recorrente (cobra todo mês)"
+                hide-details
+              />
+            </VCol>
+
+            <VCol
+              v-if="!isEditMode && !isRecurringSubscription"
+              cols="12"
+              :md="isCredit ? 12 : 6"
+              class="d-flex align-center"
+            >
+              <VCheckbox
+                v-model="isCredit"
+                label="Lançar como crédito (abate da fatura)"
                 hide-details
               />
             </VCol>

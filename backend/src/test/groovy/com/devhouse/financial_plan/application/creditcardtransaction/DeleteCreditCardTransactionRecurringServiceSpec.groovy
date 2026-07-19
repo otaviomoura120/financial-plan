@@ -44,7 +44,7 @@ class DeleteCreditCardTransactionRecurringServiceSpec extends Specification {
     private CreditCardTransaction buildGeneratedTransaction(Long id, CreditCardTransactionRecurring recurring, LocalDate referenceMonth) {
         new CreditCardTransaction(id, 0, buildCreditCard(), recurring, buildUser(),
                 new Category(30L, 0, null, "Assinaturas", true, Instant.now(), null), null, new BigDecimal("39.90"),
-                referenceMonth, "Netflix", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
+                false, referenceMonth, "Netflix", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
     }
 
     def "execute deletes transactions from the current month onward and detaches (keeps) past transactions"() {

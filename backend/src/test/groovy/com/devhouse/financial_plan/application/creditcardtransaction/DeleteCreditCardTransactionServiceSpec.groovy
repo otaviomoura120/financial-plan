@@ -30,7 +30,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
                 null, null, Instant.now(), null, false)
         Category category = new Category(20L, 0, null, "Food", true, Instant.now(), null)
         new CreditCardTransaction(id, 0, creditCard, null, user, category, null,
-                new BigDecimal("100.00"), LocalDate.of(2026, 3, 5), "desc", referenceMonth,
+                new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", referenceMonth,
                 groupId, installmentNumber, totalInstallments, false, null, Instant.now(), null)
     }
 
