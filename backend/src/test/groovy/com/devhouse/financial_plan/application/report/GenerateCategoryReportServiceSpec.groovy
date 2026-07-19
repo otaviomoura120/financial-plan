@@ -138,6 +138,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
             totalInstallments() == 3
             date() == LocalDate.of(2026, 7, 15)
             referenceMonth() == LocalDate.of(2026, 8, 1)
+            dueDate() == LocalDate.of(2026, 8, 17)
         }
     }
 
@@ -157,7 +158,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         response.groups()[0].subGroups()[0].items()[0].id() == 200L
     }
 
-    def "execute leaves referenceMonth null for regular transaction items"() {
+    def "execute leaves referenceMonth and dueDate null for regular transaction items"() {
         given:
         transactionRepository.findByFilter(*_) >> [transaction(id: 100L)]
         creditCardTransactionRepository.findByFilter(*_) >> []
@@ -167,6 +168,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
 
         then:
         response.groups()[0].subGroups()[0].items()[0].referenceMonth() == null
+        response.groups()[0].subGroups()[0].items()[0].dueDate() == null
     }
 
     def "execute computes totalAmount by summing the installment group, once per group"() {

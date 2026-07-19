@@ -20,6 +20,7 @@ interface CategoryReportItemResponse {
   totalInstallments: number | null
   totalAmount: number | null
   referenceMonth: string | null
+  dueDate: string | null
 }
 
 interface CategoryReportSubGroupResponse {
@@ -591,10 +592,10 @@ function formatReferenceMonth(isoDate: string) {
                                     <td>
                                       {{ formatDate(item.date) }}
                                       <div
-                                        v-if="item.source === 'CREDIT_CARD' && item.referenceMonth"
+                                        v-if="item.source === 'CREDIT_CARD' && item.dueDate"
                                         class="text-caption text-disabled"
                                       >
-                                        Fatura: {{ formatReferenceMonth(item.referenceMonth) }}
+                                        Fatura: {{ formatReferenceMonth(item.dueDate) }}
                                       </div>
                                     </td>
                                     <td>
@@ -687,10 +688,10 @@ function formatReferenceMonth(isoDate: string) {
                     <td>
                       {{ formatDate(item.date) }}
                       <div
-                        v-if="item.source === 'CREDIT_CARD' && item.referenceMonth"
+                        v-if="item.source === 'CREDIT_CARD' && item.dueDate"
                         class="text-caption text-disabled"
                       >
-                        Fatura: {{ formatReferenceMonth(item.referenceMonth) }}
+                        Fatura: {{ formatReferenceMonth(item.dueDate) }}
                       </div>
                     </td>
                     <td>

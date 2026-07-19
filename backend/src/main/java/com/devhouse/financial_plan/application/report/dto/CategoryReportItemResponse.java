@@ -19,5 +19,6 @@ public record CategoryReportItemResponse(
         Integer installmentNumber,
         Integer totalInstallments,
         BigDecimal totalAmount,
-        LocalDate referenceMonth
+        LocalDate referenceMonth,
+        LocalDate dueDate
 ) {}

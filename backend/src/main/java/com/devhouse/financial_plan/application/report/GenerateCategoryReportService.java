@@ -9,6 +9,7 @@ import com.devhouse.financial_plan.application.report.dto.CategoryReportSubGroup
 import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.CreditCard;
+import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.Transaction;
@@ -113,13 +114,16 @@ public class GenerateCategoryReportService {
                 CategoryReportItemSource.TRANSACTION, transaction.getType(), transaction.getTransactionDate(),
                 transaction.getDescription(), transaction.getAmount(), transaction.getUser().getId(),
                 transaction.getBankAccount().getId(),
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null);
         return new CategoryReportEntry(transaction.getCategory(), transaction.getSubCategory(), item);
     }
 
     private CategoryReportEntry toEntry(CreditCardTransaction purchase, BigDecimal totalAmount) {
         CreditCard creditCard = purchase.getCreditCard();
         BankAccount bankAccount = creditCard != null ? creditCard.getBankAccount() : null;
+        LocalDate dueDate = creditCard != null
+                ? CreditCardInvoiceCycle.resolveDueDate(purchase.getReferenceMonth(), creditCard.getClosingDay(), creditCard.getDueDay())
+                : null;
         CategoryReportItemResponse item = new CategoryReportItemResponse(purchase.getId(),
                 CategoryReportItemSource.CREDIT_CARD, TransactionType.EXPENSE, purchase.getPurchaseDate(),
                 purchase.getDescription(), purchase.getAmount(),
@@ -127,7 +131,7 @@ public class GenerateCategoryReportService {
                 bankAccount != null ? bankAccount.getId() : null,
                 creditCard != null ? creditCard.getId() : null,
                 creditCard != null ? creditCard.getName() : null,
-                purchase.getInstallmentNumber(), purchase.getTotalInstallments(), totalAmount, purchase.getReferenceMonth());
+                purchase.getInstallmentNumber(), purchase.getTotalInstallments(), totalAmount, purchase.getReferenceMonth(), dueDate);
         return new CategoryReportEntry(purchase.getCategory(), purchase.getSubCategory(), item);
     }
 

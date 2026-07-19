@@ -36,6 +36,7 @@ interface Props {
   isDialogVisible: boolean
   creditCardId: number | null
   referenceMonth: string | null
+  dueDate: string | null
   categories: CategoryResponse[]
 }
 
@@ -154,7 +155,7 @@ function onClose() {
     >
       <VCardText style="overflow: visible; flex-shrink: 0;">
         <h4 class="text-h4 text-center mb-2">
-          Itens da Fatura {{ referenceMonth ? `— ${formatReferenceMonth(referenceMonth)}` : '' }}
+          Itens da Fatura {{ dueDate ? `— ${formatReferenceMonth(dueDate)}` : '' }}
         </h4>
         <p class="text-body-1 text-center mb-0">
           Lançamentos que compõem esta fatura, ordenados por data.

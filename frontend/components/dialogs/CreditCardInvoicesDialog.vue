@@ -456,6 +456,7 @@ function onClose() {
       v-model:is-dialog-visible="isInvoiceTransactionsDialogVisible"
       :credit-card-id="props.creditCardId"
       :reference-month="selectedInvoiceForItems?.referenceMonth ?? null"
+      :due-date="selectedInvoiceForItems?.dueDate ?? null"
       :categories="categories"
     />
   </VDialog>
