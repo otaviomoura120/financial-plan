@@ -23,6 +23,7 @@ interface CreditCardTransactionResponse {
   description?: string | null
   referenceMonth: string
   competenceMonth: string
+  dueDate: string
   installmentGroupId: string
   installmentNumber: number
   totalInstallments: number
@@ -77,7 +78,7 @@ function currentOpenReferenceMonth(closingDay: number) {
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const clampedClosingDay = Math.min(closingDay, daysInMonth)
 
-  const referenceMonthDate = now.getDate() <= clampedClosingDay
+  const referenceMonthDate = now.getDate() < clampedClosingDay
     ? new Date(now.getFullYear(), now.getMonth(), 1)
     : new Date(now.getFullYear(), now.getMonth() + 1, 1)
 
@@ -468,7 +469,7 @@ function onClose() {
                 <td>
                   {{ formatReferenceMonth(transaction.competenceMonth) }}
                   <div class="text-caption text-disabled">
-                    Fatura: {{ formatReferenceMonth(transaction.referenceMonth) }}
+                    Fatura: {{ formatReferenceMonth(transaction.dueDate) }}
                   </div>
                 </td>
                 <td>

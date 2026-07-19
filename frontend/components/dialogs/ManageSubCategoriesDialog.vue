@@ -39,6 +39,10 @@ const isDeleting = shallowRef(false)
 const isStatusDialogVisible = shallowRef(false)
 const isTogglingStatus = shallowRef(false)
 
+const sortedSubCategories = computed(() =>
+  [...localSubCategories.value].sort((a, b) => a.name.localeCompare(b.name)),
+)
+
 watch(
   () => props.isDialogVisible,
   visible => {

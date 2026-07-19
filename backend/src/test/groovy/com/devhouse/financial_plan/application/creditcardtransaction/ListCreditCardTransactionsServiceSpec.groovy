@@ -141,6 +141,24 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
         responses[0].id() == 1L
     }
 
+    def "execute computes the dueDate from the credit card's closing/due day, one month after a competencia month whose referenceMonth is already pushed past closing"() {
+        given:
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 25, 5, true, Instant.now(), null)
+        CreditCardTransaction transaction = new CreditCardTransaction(1L, 0, creditCard, null, user(), category(), null,
+                new BigDecimal("100.00"), LocalDate.of(2026, 6, 25), "desc", LocalDate.of(2026, 7, 1),
+                "group-1", 1, 1, false, null, Instant.now(), null)
+        creditCardTransactionRepository.findByFilter(1L, 10L, null, null, null, null) >> [transaction]
+
+        when:
+        List<CreditCardTransactionResponse> responses = service.execute(1L, 10L, null, null, null, null, null, null)
+
+        then:
+        responses.size() == 1
+        responses[0].referenceMonth() == LocalDate.of(2026, 7, 1)
+        responses[0].dueDate() == LocalDate.of(2026, 8, 5)
+    }
+
     def "execute computes totalAmount by summing every installment of the group, once per group"() {
         given:
         CreditCardTransaction installment1 = new CreditCardTransaction(1L, 0, creditCard(), null, user(), category(), null,

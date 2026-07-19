@@ -101,7 +101,7 @@ const selectedInvoice = shallowRef<CreditCardInvoiceResponse | null>(null)
 const selectedInvoiceForItems = shallowRef<CreditCardInvoiceResponse | null>(null)
 
 const sortedInvoices = computed(() =>
-  [...invoices.value].sort((a, b) => a.referenceMonth.localeCompare(b.referenceMonth)),
+  [...invoices.value].sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
 )
 
 watch(
@@ -341,9 +341,9 @@ function onClose() {
           >
             <thead style="white-space: nowrap">
               <tr>
-                <th>Mês</th>
-                <th>Fechamento</th>
                 <th>Vencimento</th>
+                <th>Mês Ref.</th>
+                <th>Fechamento</th>
                 <th class="text-right">
                   Total
                 </th>
@@ -359,13 +359,13 @@ function onClose() {
                 :key="invoice.referenceMonth"
               >
                 <td class="font-weight-medium">
+                  {{ formatDate(invoice.dueDate) }}
+                </td>
+                <td class="text-disabled">
                   {{ formatReferenceMonth(invoice.referenceMonth) }}
                 </td>
                 <td class="text-disabled">
                   {{ formatDate(invoice.closingDate) }}
-                </td>
-                <td class="text-disabled">
-                  {{ formatDate(invoice.dueDate) }}
                 </td>
                 <td class="text-right">
                   {{ currencyFormatter.format(invoice.totalAmount) }}
