@@ -33,7 +33,7 @@ interface Emit {
 const props = defineProps<Props>()
 const emit = defineEmits<Emit>()
 
-const { error, setError, clearError } = useApiError()
+const { error, clearError } = useApiError()
 const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
 const children = ref<GroupMenuChildrenResponse[]>([])

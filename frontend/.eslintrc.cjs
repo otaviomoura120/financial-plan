@@ -153,6 +153,10 @@ module.exports = {
     'vue/custom-event-name-casing': ['error', 'camelCase', {
       ignores: [
         '/^(click):[a-z]+((\d)|([A-Z0-9][a-z0-9]+))*([A-Z])?/',
+
+        // Emitted by the Vuexy template's @core/components/Notifications.vue; renaming it would
+        // mean patching template code and every listener for it.
+        'view-all',
       ],
     }],
     'vue/define-macros-order': 'error',
