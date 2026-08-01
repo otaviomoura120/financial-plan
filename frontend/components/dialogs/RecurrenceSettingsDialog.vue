@@ -8,6 +8,8 @@ interface BillResponse {
   subCategoryId: number | null
   defaultAmount: number
   startDate: string
+  endDate: string | null
+  installments: number | null
   active: boolean
   createdDate: string
 }
@@ -138,6 +140,19 @@ function formatDate(isoDate: string) {
   return `${day}/${month}/${year}`
 }
 
+function formatRecurrenceEnd(billRecurring: BillResponse) {
+  if (billRecurring.installments != null)
+    return `${billRecurring.installments} parcelas`
+
+  if (billRecurring.endDate != null) {
+    const [year, month] = billRecurring.endDate.split('-')
+
+    return `Até ${month}/${year}`
+  }
+
+  return 'Sem término'
+}
+
 function onClose() {
   emit('update:isDialogVisible', false)
 }
@@ -206,6 +221,7 @@ function onClose() {
                 <th>Categoria</th>
                 <th>Valor padrão</th>
                 <th>Dia de vencimento</th>
+                <th>Término</th>
                 <th class="text-center">
                   Ações
                 </th>
@@ -227,6 +243,9 @@ function onClose() {
                 </td>
                 <td class="text-disabled">
                   {{ formatDate(billRecurring.startDate) }}
+                </td>
+                <td class="text-disabled">
+                  {{ formatRecurrenceEnd(billRecurring) }}
                 </td>
                 <td
                   class="text-center"
@@ -262,7 +281,7 @@ function onClose() {
 
               <tr v-if="!isLoading && billRecurrings.length === 0">
                 <td
-                  colspan="5"
+                  colspan="6"
                   class="text-center text-disabled py-8"
                 >
                   Nenhuma conta recorrente cadastrada.

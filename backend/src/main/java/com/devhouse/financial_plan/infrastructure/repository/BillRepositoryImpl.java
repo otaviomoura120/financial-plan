@@ -153,7 +153,8 @@ public class BillRepositoryImpl implements BillRepository {
         Category category = entity.getCategory() != null ? buildCategory(entity.getCategory()) : null;
         SubCategory subCategory = entity.getSubCategory() != null ? buildSubCategory(entity.getSubCategory()) : null;
         return new BillRecurring(entity.getId(), entity.getVersion(), space, entity.getName(), category, subCategory,
-                entity.getDefaultAmount(), entity.getStartDate(), entity.isActive(), entity.getCreatedAt(), null);
+                entity.getDefaultAmount(), entity.getStartDate(), entity.getEndDate(), entity.getInstallments(),
+                entity.isActive(), entity.getCreatedAt(), null);
     }
 
     private SubCategory buildSubCategory(SubCategoryEntityJpa entity) {

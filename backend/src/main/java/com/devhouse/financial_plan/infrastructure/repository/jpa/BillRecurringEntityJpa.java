@@ -29,6 +29,9 @@ public class BillRecurringEntityJpa {
     private BigDecimal defaultAmount;
     @Column(name = "start_date")
     private LocalDate startDate;
+    @Column(name = "end_date")
+    private LocalDate endDate;
+    private Integer installments;
     private boolean active;
     @Column(name = "created_at")
     private Instant createdAt;
@@ -48,6 +51,10 @@ public class BillRecurringEntityJpa {
     public void setDefaultAmount(BigDecimal defaultAmount) { this.defaultAmount = defaultAmount; }
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public Integer getInstallments() { return installments; }
+    public void setInstallments(Integer installments) { this.installments = installments; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public Instant getCreatedAt() { return createdAt; }

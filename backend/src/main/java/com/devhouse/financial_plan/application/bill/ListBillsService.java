@@ -1,7 +1,6 @@
 package com.devhouse.financial_plan.application.bill;
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse;
-import com.devhouse.financial_plan.domain.BillRecurring;
 import com.devhouse.financial_plan.domain.repository.BillRecurringRepository;
 import org.springframework.stereotype.Service;
 
@@ -18,15 +17,7 @@ public class ListBillsService {
 
     public List<BillResponse> execute(Long spaceId) {
         return billRecurringRepository.findActiveBySpaceId(spaceId).stream()
-                .map(this::toResponse)
+                .map(BillResponse::from)
                 .toList();
-    }
-
-    private BillResponse toResponse(BillRecurring billRecurring) {
-        return new BillResponse(billRecurring.getId(), billRecurring.getVersion(), billRecurring.getSpace().getId(),
-                billRecurring.getName(), billRecurring.getCategory() != null ? billRecurring.getCategory().getId() : null,
-                billRecurring.getSubCategory() != null ? billRecurring.getSubCategory().getId() : null,
-                billRecurring.getDefaultAmount(), billRecurring.getStartDate(), billRecurring.isActive(),
-                billRecurring.getCreatedDate());
     }
 }

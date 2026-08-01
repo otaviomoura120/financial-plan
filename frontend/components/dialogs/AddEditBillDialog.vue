@@ -10,9 +10,13 @@ interface BillResponse {
   subCategoryId: number | null
   defaultAmount: number
   startDate: string
+  endDate: string | null
+  installments: number | null
   active: boolean
   createdDate: string
 }
+
+type RecurrenceEndMode = 'never' | 'onDate' | 'afterInstallments'
 
 interface SubCategoryOption {
   id: number
@@ -65,9 +69,41 @@ const subCategoryId = shallowRef<number | null>(null)
 const defaultAmount = shallowRef<number | null>(null)
 const startDate = shallowRef<string>('')
 const recurring = shallowRef(false)
+const endMode = shallowRef<RecurrenceEndMode>('never')
+const endDate = shallowRef<string>('')
+const installments = shallowRef<number | null>(null)
 const isLoading = shallowRef(false)
 
 const isEditMode = computed(() => props.bill !== null)
+
+// The recurrence end only makes sense for a recurring bill: a standalone one is a single occurrence.
+const showRecurrenceEnd = computed(() => isEditMode.value || recurring.value)
+
+const endModeItems: { value: RecurrenceEndMode; title: string }[] = [
+  { value: 'never', title: 'Nunca' },
+  { value: 'onDate', title: 'Em uma data' },
+  { value: 'afterInstallments', title: 'Após N parcelas' },
+]
+
+function resolveEndMode(bill: BillResponse | null): RecurrenceEndMode {
+  if (bill?.installments != null)
+    return 'afterInstallments'
+
+  if (bill?.endDate != null)
+    return 'onDate'
+
+  return 'never'
+}
+
+function recurrenceEndPayload() {
+  if (!showRecurrenceEnd.value || endMode.value === 'never')
+    return { endDate: null, installments: null }
+
+  if (endMode.value === 'onDate')
+    return { endDate: endDate.value, installments: null }
+
+  return { endDate: null, installments: installments.value }
+}
 
 function optionLabel<T extends { name: string; active: boolean }>(item: T) {
   return item.active ? item.name : `${item.name} (inativo)`
@@ -87,6 +123,15 @@ const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
 const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
+const endDateRules = [
+  (v: string) => !!v || 'Data de término é obrigatória',
+  (v: string) => !v || !startDate.value || v >= startDate.value || 'Término não pode ser antes do vencimento inicial',
+]
+
+const installmentsRules = [
+  (v: number | null) => (v !== null && v > 0) || 'Informe um número de parcelas maior que zero',
+]
+
 watch(categoryId, () => {
   if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value))
     subCategoryId.value = null
@@ -102,6 +147,9 @@ watch(
       defaultAmount.value = props.bill?.defaultAmount ?? null
       startDate.value = props.bill?.startDate ?? toLocalDateString(new Date())
       recurring.value = false
+      endMode.value = resolveEndMode(props.bill)
+      endDate.value = props.bill?.endDate ?? ''
+      installments.value = props.bill?.installments ?? null
       clearError()
     }
   },
@@ -127,6 +175,7 @@ async function onSubmit() {
           subCategoryId: subCategoryId.value,
           defaultAmount: defaultAmount.value,
           startDate: startDate.value,
+          ...recurrenceEndPayload(),
         },
       })
     }
@@ -140,6 +189,7 @@ async function onSubmit() {
           subCategoryId: subCategoryId.value,
           defaultAmount: defaultAmount.value,
           startDate: startDate.value,
+          ...recurrenceEndPayload(),
         },
       })
     }
@@ -246,6 +296,36 @@ function onClose() {
               label="Conta recorrente (repete todo mês)"
               hide-details
             />
+
+            <template v-if="showRecurrenceEnd">
+              <AppSelect
+                v-model="endMode"
+                label="Término da recorrência"
+                :items="endModeItems"
+                item-title="title"
+                item-value="value"
+                hint="Contas dos próximos 12 meses são geradas automaticamente e já aparecem nos relatórios futuros."
+                persistent-hint
+              />
+
+              <AppTextField
+                v-if="endMode === 'onDate'"
+                v-model="endDate"
+                type="date"
+                label="Repetir até"
+                :rules="endDateRules"
+              />
+
+              <AppTextField
+                v-if="endMode === 'afterInstallments'"
+                v-model.number="installments"
+                type="number"
+                min="1"
+                label="Número de parcelas"
+                placeholder="Ex: 12"
+                :rules="installmentsRules"
+              />
+            </template>
           </div>
 
           <div class="d-flex align-center justify-center gap-4 mt-6">

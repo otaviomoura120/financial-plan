@@ -2,6 +2,7 @@ package com.devhouse.financial_plan.application.bill;
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse;
 import com.devhouse.financial_plan.application.bill.dto.CreateBillRequest;
+import com.devhouse.financial_plan.application.billinstance.EnsureRecurringBillsGeneratedService;
 import com.devhouse.financial_plan.domain.BillRecurring;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.Space;
@@ -24,13 +25,16 @@ public class CreateBillService {
     private final SpaceRepository spaceRepository;
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
+    private final EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService;
 
     public CreateBillService(BillRecurringRepository billRecurringRepository, SpaceRepository spaceRepository,
-                              CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository) {
+                              CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository,
+                              EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService) {
         this.billRecurringRepository = billRecurringRepository;
         this.spaceRepository = spaceRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
+        this.ensureRecurringBillsGeneratedService = ensureRecurringBillsGeneratedService;
     }
 
     @Transactional
@@ -41,10 +45,12 @@ public class CreateBillService {
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
 
         BillRecurring billRecurring = new BillRecurring(null, 0, space, request.name(), category, subCategory,
-                request.defaultAmount(), request.startDate(), true, Instant.now(), null);
+                request.defaultAmount(), request.startDate(), request.endDate(), request.installments(), true,
+                Instant.now(), null);
         billRecurring.validate();
         BillRecurring saved = billRecurringRepository.save(billRecurring);
-        return toResponse(saved);
+        ensureRecurringBillsGeneratedService.executeForRecurring(saved);
+        return BillResponse.from(saved);
     }
 
     private Space resolveSpace(Long spaceId) {
@@ -75,13 +81,5 @@ public class CreateBillService {
             throw new DomainException("Sub category not found");
         }
         return subCategory;
-    }
-
-    private BillResponse toResponse(BillRecurring billRecurring) {
-        return new BillResponse(billRecurring.getId(), billRecurring.getVersion(), billRecurring.getSpace().getId(),
-                billRecurring.getName(), billRecurring.getCategory() != null ? billRecurring.getCategory().getId() : null,
-                billRecurring.getSubCategory() != null ? billRecurring.getSubCategory().getId() : null,
-                billRecurring.getDefaultAmount(), billRecurring.getStartDate(), billRecurring.isActive(),
-                billRecurring.getCreatedDate());
     }
 }

@@ -2,6 +2,7 @@ package com.devhouse.financial_plan.application.bill
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse
 import com.devhouse.financial_plan.application.bill.dto.UpdateBillRecurringRequest
+import com.devhouse.financial_plan.application.billinstance.EnsureRecurringBillsGeneratedService
 import com.devhouse.financial_plan.domain.Bill
 import com.devhouse.financial_plan.domain.BillRecurring
 import com.devhouse.financial_plan.domain.Category
@@ -24,9 +25,10 @@ class UpdateBillRecurringServiceSpec extends Specification {
     BillRepository billRepository = Mock()
     CategoryRepository categoryRepository = Mock()
     SubCategoryRepository subCategoryRepository = Mock()
+    EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService = Mock()
 
     UpdateBillRecurringService service = new UpdateBillRecurringService(billRecurringRepository, billRepository,
-            categoryRepository, subCategoryRepository)
+            categoryRepository, subCategoryRepository, ensureRecurringBillsGeneratedService)
 
     private Space buildSpace() {
         new Space(1L, 0, "My Space", null, Instant.now(), null)
@@ -34,7 +36,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
 
     private BillRecurring buildBillRecurring() {
         new BillRecurring(10L, 0, buildSpace(), "Energy Bill", null, null, new BigDecimal("150.00"),
-                LocalDate.of(2026, 3, 10), true, Instant.now(), null)
+                LocalDate.of(2026, 3, 10), null, null, true, Instant.now(), null)
     }
 
     private Bill buildGeneratedBill(Long id, LocalDate referenceMonth, LocalDate dueDate = referenceMonth, BillInstanceStatus status = BillInstanceStatus.PENDING) {
@@ -50,7 +52,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
         billRecurringRepository.update(_) >> { BillRecurring b -> b }
         billRepository.findByBillRecurringId(10L) >> []
         UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null,
-                new BigDecimal("180.00"), LocalDate.of(2026, 6, 1))
+                new BigDecimal("180.00"), LocalDate.of(2026, 6, 1), null, null)
 
         when:
         BillResponse response = service.execute(10L, request)
@@ -73,7 +75,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
         Bill futureBill = buildGeneratedBill(3L, YearMonth.now().plusMonths(3).atDay(1))
         billRepository.findByBillRecurringId(10L) >> [pastBill, currentMonthBill, futureBill]
         UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null,
-                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10))
+                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10), null, null)
 
         when:
         service.execute(10L, request)
@@ -104,7 +106,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
         Bill futureBill = buildGeneratedBill(3L, futureMonth.atDay(1), futureMonth.atDay(10))
         billRepository.findByBillRecurringId(10L) >> [pastBill, currentMonthBill, futureBill]
         UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Energy Bill", 20L, null,
-                new BigDecimal("150.00"), LocalDate.of(2026, 1, 25))
+                new BigDecimal("150.00"), LocalDate.of(2026, 1, 25), null, null)
 
         when:
         service.execute(10L, request)
@@ -124,7 +126,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
         Bill currentMonthBill = buildGeneratedBill(1L, currentMonth.atDay(1), currentMonth.atDay(10))
         billRepository.findByBillRecurringId(10L) >> [currentMonthBill]
         UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Energy Bill", 20L, null,
-                new BigDecimal("150.00"), LocalDate.of(2026, 1, 31))
+                new BigDecimal("150.00"), LocalDate.of(2026, 1, 31), null, null)
 
         when:
         service.execute(10L, request)
@@ -143,7 +145,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
         Bill paidBill = buildGeneratedBill(1L, currentMonth.atDay(1), currentMonth.atDay(10), BillInstanceStatus.PAID)
         billRepository.findByBillRecurringId(10L) >> [paidBill]
         UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null,
-                new BigDecimal("180.00"), LocalDate.of(2026, 1, 25))
+                new BigDecimal("180.00"), LocalDate.of(2026, 1, 25), null, null)
 
         when:
         service.execute(10L, request)
@@ -154,11 +156,62 @@ class UpdateBillRecurringServiceSpec extends Specification {
         0 * billRepository.update(paidBill)
     }
 
+    def "execute regenerates the horizon so a pushed-forward end materializes the new months"() {
+        given:
+        billRecurringRepository.findById(10L) >> buildBillRecurring()
+        billRecurringRepository.update(_) >> { BillRecurring b -> b }
+        billRepository.findByBillRecurringId(10L) >> []
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Energy Bill", null, null,
+                new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), null, 24)
+
+        when:
+        BillResponse response = service.execute(10L, request)
+
+        then:
+        1 * ensureRecurringBillsGeneratedService.executeForRecurring({ BillRecurring it -> it.installments == 24 })
+        response.installments() == 24
+    }
+
+    def "execute deletes pending bills that fall past a shortened recurrence end"() {
+        given:
+        billRecurringRepository.findById(10L) >> buildBillRecurring()
+        billRecurringRepository.update(_) >> { BillRecurring b -> b }
+        YearMonth endMonth = YearMonth.now().plusMonths(1)
+        Bill keptBill = buildGeneratedBill(1L, endMonth.atDay(1))
+        Bill droppedBill = buildGeneratedBill(2L, endMonth.plusMonths(2).atDay(1))
+        Bill paidBeyondEnd = buildGeneratedBill(3L, endMonth.plusMonths(3).atDay(1), endMonth.plusMonths(3).atDay(10), BillInstanceStatus.PAID)
+        billRepository.findByBillRecurringId(10L) >> [keptBill, droppedBill, paidBeyondEnd]
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Energy Bill", null, null,
+                new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), endMonth.atDay(20), null)
+
+        when:
+        service.execute(10L, request)
+
+        then:
+        1 * billRepository.delete(2L)
+        0 * billRepository.delete(1L)
+        0 * billRepository.delete(3L)
+    }
+
+    def "execute rejects an end date before the start date"() {
+        given:
+        billRecurringRepository.findById(10L) >> buildBillRecurring()
+        UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Energy Bill", null, null,
+                new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), LocalDate.of(2026, 1, 10), null)
+
+        when:
+        service.execute(10L, request)
+
+        then:
+        thrown(DomainException)
+        0 * billRecurringRepository.update(_)
+    }
+
     def "execute throws DomainException when bill recurring does not exist"() {
         given:
         billRecurringRepository.findById(99L) >> null
         UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", null, null,
-                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10))
+                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10), null, null)
 
         when:
         service.execute(99L, request)
@@ -173,7 +226,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
         billRecurringRepository.findById(10L) >> buildBillRecurring()
         categoryRepository.findById(20L) >> null
         UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(0, "Power Bill", 20L, null,
-                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10))
+                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10), null, null)
 
         when:
         service.execute(10L, request)
@@ -187,7 +240,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
         UpdateBillRecurringRequest request = new UpdateBillRecurringRequest(99, "Power Bill", null, null,
-                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10))
+                new BigDecimal("180.00"), LocalDate.of(2026, 3, 10), null, null)
 
         when:
         service.execute(10L, request)

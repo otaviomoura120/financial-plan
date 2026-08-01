@@ -6,6 +6,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.Objects;
 
 public class BillRecurring {
@@ -18,12 +19,15 @@ public class BillRecurring {
     private SubCategory subCategory;
     private BigDecimal defaultAmount;
     private LocalDate startDate;
+    private LocalDate endDate;
+    private Integer installments;
     private boolean active;
     private final Instant createdDate;
     private Instant updatedDate;
 
     public BillRecurring(Long id, Integer version, Space space, String name, Category category, SubCategory subCategory,
-                          BigDecimal defaultAmount, LocalDate startDate, boolean active, Instant createdDate, Instant updatedDate) {
+                          BigDecimal defaultAmount, LocalDate startDate, LocalDate endDate, Integer installments,
+                          boolean active, Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
         this.space = space;
@@ -32,6 +36,8 @@ public class BillRecurring {
         this.subCategory = subCategory;
         this.defaultAmount = defaultAmount;
         this.startDate = startDate;
+        this.endDate = endDate;
+        this.installments = installments;
         this.active = active;
         this.createdDate = createdDate;
         this.updatedDate = updatedDate;
@@ -50,6 +56,37 @@ public class BillRecurring {
         if (startDate == null) {
             throw new DomainException("Bill recurring start date is required");
         }
+        validateEnd();
+    }
+
+    private void validateEnd() {
+        if (endDate != null && installments != null) {
+            throw new DomainException("Bill recurring cannot define both end date and installments");
+        }
+        if (installments != null && installments <= 0) {
+            throw new DomainException("Bill recurring installments must be positive");
+        }
+        if (endDate != null && endDate.isBefore(startDate)) {
+            throw new DomainException("Bill recurring end date cannot be before start date");
+        }
+    }
+
+    /**
+     * Last month that must be generated, or null when the recurrence never ends.
+     */
+    public YearMonth lastReferenceMonth() {
+        if (installments != null) {
+            return YearMonth.from(startDate).plusMonths(installments - 1L);
+        }
+        if (endDate != null) {
+            return YearMonth.from(endDate);
+        }
+        return null;
+    }
+
+    public boolean isFinishedOn(YearMonth month) {
+        YearMonth lastMonth = lastReferenceMonth();
+        return lastMonth != null && month.isAfter(lastMonth);
     }
 
     public void update(String name, Category category, SubCategory subCategory, BigDecimal defaultAmount) {
@@ -60,8 +97,10 @@ public class BillRecurring {
         this.updatedDate = Instant.now();
     }
 
-    public void updateSchedule(LocalDate startDate) {
+    public void updateSchedule(LocalDate startDate, LocalDate endDate, Integer installments) {
         this.startDate = startDate;
+        this.endDate = endDate;
+        this.installments = installments;
         this.updatedDate = Instant.now();
     }
 
@@ -92,6 +131,10 @@ public class BillRecurring {
     public void setDefaultAmount(BigDecimal defaultAmount) { this.defaultAmount = defaultAmount; }
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public Integer getInstallments() { return installments; }
+    public void setInstallments(Integer installments) { this.installments = installments; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public Instant getCreatedDate() { return createdDate; }

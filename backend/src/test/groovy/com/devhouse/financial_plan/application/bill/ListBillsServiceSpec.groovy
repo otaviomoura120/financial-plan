@@ -16,8 +16,8 @@ class ListBillsServiceSpec extends Specification {
 
     private BillRecurring buildBillRecurring(Long id, String name) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        new BillRecurring(id, 0, space, name, null, null, new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), true,
-                Instant.now(), null)
+        new BillRecurring(id, 0, space, name, null, null, new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), null, null,
+                true, Instant.now(), null)
     }
 
     def "execute returns every bill recurring of the space"() {

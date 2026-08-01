@@ -10,5 +10,6 @@ public interface BillRecurringRepository {
     BillRecurring findById(Long id);
     List<BillRecurring> findBySpaceId(Long spaceId);
     List<BillRecurring> findActiveBySpaceId(Long spaceId);
+    List<BillRecurring> findAllActive();
     void delete(Long id);
 }

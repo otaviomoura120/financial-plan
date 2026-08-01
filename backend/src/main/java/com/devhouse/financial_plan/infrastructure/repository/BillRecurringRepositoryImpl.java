@@ -74,6 +74,13 @@ public class BillRecurringRepositoryImpl implements BillRecurringRepository {
     }
 
     @Override
+    public List<BillRecurring> findAllActive() {
+        return jpaBillRecurringRepository.findByActiveTrue().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public void delete(Long id) {
         jpaBillRecurringRepository.deleteById(id);
     }
@@ -85,6 +92,8 @@ public class BillRecurringRepositoryImpl implements BillRecurringRepository {
         entity.setSubCategory(billRecurring.getSubCategory() != null ? jpaSubCategoryRepository.getReferenceById(billRecurring.getSubCategory().getId()) : null);
         entity.setDefaultAmount(billRecurring.getDefaultAmount());
         entity.setStartDate(billRecurring.getStartDate());
+        entity.setEndDate(billRecurring.getEndDate());
+        entity.setInstallments(billRecurring.getInstallments());
         entity.setActive(billRecurring.isActive());
     }
 
@@ -93,7 +102,8 @@ public class BillRecurringRepositoryImpl implements BillRecurringRepository {
         Category category = entity.getCategory() != null ? buildCategory(entity.getCategory()) : null;
         SubCategory subCategory = entity.getSubCategory() != null ? buildSubCategory(entity.getSubCategory()) : null;
         return new BillRecurring(entity.getId(), entity.getVersion(), space, entity.getName(), category, subCategory,
-                entity.getDefaultAmount(), entity.getStartDate(), entity.isActive(), entity.getCreatedAt(), null);
+                entity.getDefaultAmount(), entity.getStartDate(), entity.getEndDate(), entity.getInstallments(),
+                entity.isActive(), entity.getCreatedAt(), null);
     }
 
     private SubCategory buildSubCategory(SubCategoryEntityJpa entity) {

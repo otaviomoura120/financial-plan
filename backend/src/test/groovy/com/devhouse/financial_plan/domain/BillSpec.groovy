@@ -23,7 +23,7 @@ class BillSpec extends Specification {
 
     private BillRecurring buildBillRecurring() {
         new BillRecurring(10L, 0, buildSpace(), "Energy Bill", buildCategory(), buildSubCategory(), new BigDecimal("150.00"),
-                LocalDate.of(2026, 3, 10), true, Instant.now(), null)
+                LocalDate.of(2026, 3, 10), null, null, true, Instant.now(), null)
     }
 
     private Bill buildInstance(BillInstanceStatus status, BillRecurring billRecurring = buildBillRecurring()) {

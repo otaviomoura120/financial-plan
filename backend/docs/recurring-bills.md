@@ -17,14 +17,31 @@ The roles were inverted: the occurrence entity (now called `Bill`) is the primar
 
 This means `BillRepositoryImpl.findBySpaceAndPeriod` filters directly on `Bill.space.id` — no join, so a standalone bill can never be silently dropped from a space-scoped query (which an indirect join would have risked once `bill` became optional).
 
+## When a recurrence ends — `endDate` / `installments`
+
+`BillRecurring` carries two mutually exclusive, both-nullable end fields: `endDate` (repeat until that month) and `installments` (a fixed number of monthly occurrences counted from `startDate`). With neither set, the recurrence never ends — the original behaviour. `BillRecurring.validate()` rejects setting both at once, a non-positive `installments`, and an `endDate` before `startDate` (all `DomainException` → `422`).
+
+`BillRecurring.lastReferenceMonth()` collapses the two into the single value the generator cares about: `YearMonth.from(startDate).plusMonths(installments - 1)`, the month of `endDate`, or `null` for "never ends". `isFinishedOn(month)` answers whether a given month falls past that end.
+
 ## Generating occurrences — `EnsureRecurringBillsGeneratedService`
 
-Called internally by `ListBillInstancesService` and by Reports' `GenerateReportService` — never exposed as its own endpoint. Only ever touches `BillRecurring`-backed bills; standalone bills are created directly and never go through this service.
+Called internally by `ListBillInstancesService`, by Reports' `GenerateReportService`, by `CreateBillService`/`UpdateBillRecurringService` (via `executeForRecurring`), and by the scheduled top-up job below — never exposed as its own endpoint. Only ever touches `BillRecurring`-backed bills; standalone bills are created directly and never go through this service.
 
 1. For every `BillRecurring` in the space that is `active` (recurring is implicit — a `BillRecurring` row only exists for recurring bills), find the last month a `Bill` already exists for (`findByBillRecurringId`, max `referenceMonth`), or fall back to the month before `BillRecurring.startDate` if none exist yet.
-2. Walk forward one month at a time from there, creating a `PENDING` `Bill` for each missing month, until reaching `capMonth = min(month of upToDate, current month + 1)` — the `+1` cap exists so a bill due next month is already visible today, without ever generating years of occurrences in one call.
-3. Each generated `Bill` snapshots `name`/`category`/`subCategory`/`amount` from `BillRecurring` **at generation time** — editing the `BillRecurring` later (via `UpdateBillRecurringService`) only affects occurrences generated afterward, never ones that already exist. `dueDate` anchors to `BillRecurring.startDate`'s day-of-month, clamped to the target month's length (same clamping idea as `CreditCardInvoiceCycle`).
+2. Walk forward one month at a time from there, creating a `PENDING` `Bill` for each missing month, until reaching `capMonth`:
+   - **At least** `current month + bills.recurring.horizon-months` (default 12) is always materialized, so a recurring bill is already visible in reports up to a year out. Prior to this the cap was a hard `current month + 1`, which made every future-period report silently under-report pending bills.
+   - A period filter reaching **further** than the horizon is honoured up to `bills.recurring.max-horizon-months` (default 60), a safety ceiling so an extreme `to` cannot create thousands of rows in one call.
+   - Then clamped by `BillRecurring.lastReferenceMonth()` when the recurrence has an end.
+3. Each generated `Bill` snapshots `name`/`category`/`subCategory`/`amount` from `BillRecurring` **at generation time** — editing the `BillRecurring` later (via `UpdateBillRecurringService`) only affects occurrences generated afterward, plus the pending ones from the current month onward that it rewrites explicitly. `dueDate` anchors to `BillRecurring.startDate`'s day-of-month, clamped to the target month's length (same clamping idea as `CreditCardInvoiceCycle`).
 4. Idempotent by construction: before creating a month's `Bill`, it checks `BillRepository.findByBillRecurringIdAndReferenceMonth` and skips if one already exists — safe to call on every list/report request. This check finds soft-deleted rows too (see below), so a deleted occurrence is never silently regenerated.
+
+## Keeping the horizon full — `GenerateRecurringBillsBatchService` + scheduler
+
+Lazy generation alone only fires when someone opens `/bills` or a report, so the 12-month horizon would drift backwards on an idle space. `RecurringBillsGenerationScheduler` (`infrastructure/scheduler/`, enabled by `@EnableScheduling` on `FinancialPlanApplication`) runs `bills.recurring.generation-cron` (default daily at 03:00) and delegates to `GenerateRecurringBillsBatchService`, which walks `BillRecurringRepository.findAllActive()` across every space and calls `executeForRecurring` per recurrence.
+
+The per-recurrence call is a separate bean invocation, so each one gets its own transaction and a failing recurrence is logged and skipped instead of aborting the batch. The job is daily rather than monthly on purpose: it is idempotent, and a monthly job would miss its window entirely if the app happened to be down on that day.
+
+`CreateBillService` also calls `executeForRecurring` right after saving, so a new recurrence materializes its whole first year immediately instead of waiting for the next listing. `UpdateBillRecurringService` calls it too, after deleting the pending bills that fall past a shortened end — so moving the end forward or backward both take effect at once.
 
 ## Listing bill occurrences — `ListBillInstancesService`
 

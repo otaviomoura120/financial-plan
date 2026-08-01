@@ -30,7 +30,7 @@ class ListBillInstancesServiceSpec extends Specification {
     def "execute ensures instances are generated up to 'to' and returns the period's bills"() {
         given:
         BillRecurring billRecurring = new BillRecurring(10L, 0, buildSpace(), "Energy Bill", null, null,
-                new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), true, Instant.now(), null)
+                new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), null, null, true, Instant.now(), null)
         billRepository.findBySpaceAndPeriod(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31)) >> [buildInstance(billRecurring)]
 
         when:

@@ -2,6 +2,7 @@ package com.devhouse.financial_plan.application.bill;
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse;
 import com.devhouse.financial_plan.application.bill.dto.UpdateBillRecurringRequest;
+import com.devhouse.financial_plan.application.billinstance.EnsureRecurringBillsGeneratedService;
 import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.BillRecurring;
 import com.devhouse.financial_plan.domain.Category;
@@ -25,13 +26,16 @@ public class UpdateBillRecurringService {
     private final BillRepository billRepository;
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
+    private final EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService;
 
     public UpdateBillRecurringService(BillRecurringRepository billRecurringRepository, BillRepository billRepository,
-                                       CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository) {
+                                       CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository,
+                                       EnsureRecurringBillsGeneratedService ensureRecurringBillsGeneratedService) {
         this.billRecurringRepository = billRecurringRepository;
         this.billRepository = billRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
+        this.ensureRecurringBillsGeneratedService = ensureRecurringBillsGeneratedService;
     }
 
     @Transactional
@@ -45,11 +49,13 @@ public class UpdateBillRecurringService {
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
         billRecurring.update(request.name(), category, subCategory, request.defaultAmount());
-        billRecurring.updateSchedule(request.startDate());
+        billRecurring.updateSchedule(request.startDate(), request.endDate(), request.installments());
         billRecurring.validate();
         BillRecurring updated = billRecurringRepository.update(billRecurring);
         updateCurrentAndFutureBills(updated);
-        return toResponse(updated);
+        removeBillsAfterRecurrenceEnd(updated);
+        ensureRecurringBillsGeneratedService.executeForRecurring(updated);
+        return BillResponse.from(updated);
     }
 
     private void updateCurrentAndFutureBills(BillRecurring billRecurring) {
@@ -60,6 +66,20 @@ public class UpdateBillRecurringService {
                 bill.updateDetails(billRecurring.getName(), billRecurring.getCategory(), billRecurring.getSubCategory(),
                         billRecurring.getDefaultAmount(), newDueDate);
                 billRepository.update(bill);
+            }
+        }
+    }
+
+    /**
+     * Shortening the recurrence must drop the pending bills that fall past the new end.
+     */
+    private void removeBillsAfterRecurrenceEnd(BillRecurring billRecurring) {
+        if (billRecurring.lastReferenceMonth() == null) {
+            return;
+        }
+        for (Bill bill : billRepository.findByBillRecurringId(billRecurring.getId())) {
+            if (billRecurring.isFinishedOn(YearMonth.from(bill.getReferenceMonth())) && bill.isPending()) {
+                billRepository.delete(bill.getId());
             }
         }
     }
@@ -94,13 +114,5 @@ public class UpdateBillRecurringService {
             throw new DomainException("Sub category not found");
         }
         return subCategory;
-    }
-
-    private BillResponse toResponse(BillRecurring billRecurring) {
-        return new BillResponse(billRecurring.getId(), billRecurring.getVersion(), billRecurring.getSpace().getId(),
-                billRecurring.getName(), billRecurring.getCategory() != null ? billRecurring.getCategory().getId() : null,
-                billRecurring.getSubCategory() != null ? billRecurring.getSubCategory().getId() : null,
-                billRecurring.getDefaultAmount(), billRecurring.getStartDate(), billRecurring.isActive(),
-                billRecurring.getCreatedDate());
     }
 }

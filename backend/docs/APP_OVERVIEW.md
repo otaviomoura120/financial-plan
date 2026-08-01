@@ -117,8 +117,9 @@ CRUD is exposed via `CreditCardTransactionController` (`/credit-card-transaction
 ### BillRecurring
 A recurrence config (electricity, internet, rent) — the thing that produces monthly occurrences, not an occurrence itself (see `Bill` below). Only exists for bills the user marked recurring; a one-off bill never creates one. Tenancy is direct, same pattern as `CreditCard`/`BankAccount`:
 - `name`, `category`/`subCategory` (optional, used as the defaults copied into each generated occurrence), `defaultAmount` (positive `BigDecimal`, copied into each generated occurrence), `startDate` (`LocalDate` — anchors the first due date and the day-of-month of every future due date), `active`
-- `validate()` requires `name`, `space`, a positive `defaultAmount`, and a non-null `startDate`; `category`/`subCategory` are optional
-- `update(name, category, subCategory, defaultAmount)` — basic fields — and `updateSchedule(startDate)` are two **separate** methods on purpose: changing the schedule never touches name/category/subCategory/amount and vice-versa, and since occurrence generation always reads the `BillRecurring`'s current state on demand (see `Bill` below), a schedule change only ever affects occurrences not yet generated — anything already materialized (pending or paid) keeps its original `dueDate`
+- `endDate` / `installments` (both nullable, mutually exclusive) define when the recurrence stops; with neither set it never ends. `lastReferenceMonth()` collapses them into the last month to generate and `isFinishedOn(month)` tests a month against it — see `recurring-bills.md`
+- `validate()` requires `name`, `space`, a positive `defaultAmount`, and a non-null `startDate`; `category`/`subCategory` are optional; it also rejects `endDate` + `installments` together, a non-positive `installments`, and an `endDate` before `startDate`
+- `update(name, category, subCategory, defaultAmount)` — basic fields — and `updateSchedule(startDate, endDate, installments)` are two **separate** methods on purpose: changing the schedule never touches name/category/subCategory/amount and vice-versa
 - `deactivate()` (soft delete, same as `CreditCard`) and optimistic locking via `setVersion`
 
 A category/subCategory is stored as a real `Category`/`SubCategory` object with a physical FK, matching the project's current convention (see REF1-4 in `IMPLEMENTATION_PLAN.md`) rather than a raw `Long`.
@@ -331,11 +332,10 @@ Full cycle explained in `backend/docs/recurring-bills.md`. `/bills` itself is `B
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/?spaceId=` | List `BillRecurring` configs of a space |
-| POST | `/` | Create a `BillRecurring` (`name`, `categoryId?`, `subCategoryId?`, `defaultAmount`, `startDate`) — occurrences are generated lazily, none is created here |
-| PUT | `/{id}` | Update `name`/`categoryId`/`subCategoryId`/`defaultAmount` |
-| PUT | `/{id}/schedule` | Update `startDate` (dedicated — only affects occurrences not yet generated) |
-| DELETE | `/{id}` | Deactivate the `BillRecurring` (soft delete — `active=false`, no hard delete/reactivate yet) |
-| GET | `/instances?spaceId=&from=&to=` | List `Bill` occurrences due within `[from, to]` (both optional); lazily generates any missing recurring-bill occurrences up to the requested period before returning |
+| POST | `/` | Create a `BillRecurring` (`name`, `categoryId?`, `subCategoryId?`, `defaultAmount`, `startDate`, `endDate?`, `installments?`) — the next 12 months of occurrences are generated right away |
+| PUT | `/{id}` | Update `name`/`categoryId`/`subCategoryId`/`defaultAmount`/`startDate`/`endDate`/`installments`; rewrites the pending occurrences from the current month onward, drops the ones past a shortened end, and regenerates the horizon |
+| DELETE | `/{id}` | Delete the `BillRecurring`: pending occurrences from the current month onward are removed, past/paid ones are detached (`bill_recurring_id = null`) and kept |
+| GET | `/instances?spaceId=&from=&to=` | List `Bill` occurrences due within `[from, to]` (both optional); materializes missing recurring-bill occurrences up to at least 12 months ahead (further if `to` asks for it) before returning |
 | POST | `/instances` | Create a standalone `Bill` directly (`spaceId`, `name`, `categoryId?`, `subCategoryId?`, `amount`, `dueDate`) — no `BillRecurring` involved |
 | PUT | `/instances/{id}` | Update a pending `Bill`'s `name`/`categoryId`/`subCategoryId`/`amount`/`dueDate` (rejects with 422 if already paid); never touches a parent `BillRecurring` |
 | DELETE | `/instances/{id}` | Soft-delete a pending `Bill` (rejects with 422 if already paid) |
