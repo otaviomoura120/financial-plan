@@ -51,8 +51,9 @@ watch(
 )
 
 async function loadRoles() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoadingRoles.value = true
 
@@ -70,8 +71,9 @@ async function loadRoles() {
 }
 
 async function searchUser() {
-  if (!email.value.trim())
+  if (!email.value.trim()) {
     return
+  }
 
   isSearching.value = true
   clearError()
@@ -99,8 +101,9 @@ async function searchUser() {
 }
 
 async function sendInvite() {
-  if (!selectedRoleId.value || !spaceStore.activeSpace)
+  if (!selectedRoleId.value || !spaceStore.activeSpace) {
     return
+  }
 
   isSubmitting.value = true
   clearError()

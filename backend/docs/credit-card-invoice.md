@@ -8,6 +8,44 @@ This means:
 - Adding, editing, deleting, or anticipating installments never needs to touch a separate invoice record — they just change which `(creditCardId, referenceMonth)` bucket a `CreditCardTransaction` falls into.
 - `CreditCardInvoiceCycle` (pure calculator, no repository) is only consulted for **display metadata** — `closingDate`/`dueDate` — derived from a group's `referenceMonth`; it is never re-run to decide which group a transaction belongs to after creation (that happens once, at creation time — see CC4/CC5 in `APP_OVERVIEW.md`).
 
+## Choosing the invoice at creation time
+
+Around the closing day a bank may put a purchase in the current invoice or in the next one with no
+observable rule, so the computed `referenceMonth` is a good default but not always the truth. Both
+`CreateCreditCardTransactionRequest` and `UpdateCreditCardTransactionRequest` therefore carry an
+optional `referenceMonth`, and `CreditCardInvoiceCycle` gained a three-argument overload:
+
+```java
+resolveReferenceMonth(LocalDate purchaseDate, int closingDay, LocalDate chosenReferenceMonth)
+```
+
+`null` keeps the existing behaviour. A non-null value is normalized to the first day of its month and
+accepted **only** if it equals the computed invoice or the one right after it — anything else raises
+`DomainException("Reference month must be the current or the next invoice")`. Restricting it to those
+two keeps the stored `referenceMonth` inside the cycle the purchase could plausibly belong to, instead
+of turning the field into a free-form month.
+
+Nothing else in the invoice model changes: because an invoice is just a `(creditCardId, referenceMonth)`
+grouping, choosing the invoice *is* choosing that stored value. Installments still anchor on the first
+one and walk forward with `plusMonths(i-1)`, so a chosen invoice shifts the whole group. The existing
+`rejectIfAnyMonthAlreadyPaid` guard covers a choice that lands on an already-paid invoice for free.
+
+**On update.** `UpdateCreditCardTransactionService` used to always recompute `referenceMonth` from
+`purchaseDate`, which would silently discard a manual choice on the first edit. It now returns the
+transaction's current `referenceMonth` untouched when the request sends that same value back (the
+frontend always does), and only validates through the overload when the value actually changes. As a
+side effect this also stops a later installment from being dragged back to its group's first invoice on
+edit — the old recompute ignored `installmentNumber`. Anticipated rows keep their earlier short-circuit
+and are never re-derived here; moving those is the anticipation flow's job.
+
+No new endpoint — `POST`/`PUT /credit-card-transactions` just carry an extra optional field — so
+`seed.sql`'s `endpoint_permissions` need no change.
+
+**Frontend:** `AddEditCreditCardTransactionDialog` shows a "Fatura" select with the two candidate
+months (computed client-side from the card's `closingDay`, mirroring `resolveReferenceMonth`), defaulted
+to the computed one. It is hidden for recurring subscriptions and, in edit mode, for installments and
+anticipated rows — those still send their current `referenceMonth` back so the backend preserves it.
+
 ## Credit transactions (cashback / bank benefit)
 
 A `CreditCardTransaction` can be a **credit** instead of a purchase — a value that *reduces* the invoice balance (cashback, a bank benefit/refund). It shows up negative on the invoice.

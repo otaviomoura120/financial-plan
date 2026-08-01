@@ -51,8 +51,9 @@ watch(() => spaceStore.dbUser,
 )
 
 async function fetchSpaces() {
-  if (!spaceStore.dbUser)
+  if (!spaceStore.dbUser) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -90,8 +91,9 @@ function setActive(space: SpaceResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedSpace.value)
+  if (!confirmed || !selectedSpace.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -103,8 +105,9 @@ async function onDeleteConfirm(confirmed: boolean) {
     spaces.value = spaces.value.filter(s => s.id !== deletedId)
     spaceStore.setAvailableSpaces(spaces.value.map(s => ({ id: s.id, name: s.name, description: s.description })))
 
-    if (spaceStore.activeSpace?.id === deletedId && spaces.value.length > 0)
+    if (spaceStore.activeSpace?.id === deletedId && spaces.value.length > 0) {
       spaceStore.setActiveSpace(spaces.value[0])
+    }
 
     showSuccess('Espaço excluído com sucesso.')
   }
@@ -120,24 +123,29 @@ async function onDeleteConfirm(confirmed: boolean) {
 function onSpaceSaved(saved: SpaceResponse) {
   const idx = spaces.value.findIndex(s => s.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     spaces.value[idx] = saved
-  else
+  }
+  else {
     spaces.value = [saved, ...spaces.value]
+  }
 
-  if (selectedSpace.value?.id === saved.id)
+  if (selectedSpace.value?.id === saved.id) {
     selectedSpace.value = saved
+  }
 
   spaceStore.setAvailableSpaces(spaces.value.map(s => ({ id: s.id, name: s.name, description: s.description })))
 
-  if (spaceStore.activeSpace?.id === saved.id)
+  if (spaceStore.activeSpace?.id === saved.id) {
     spaceStore.setActiveSpace({ id: saved.id, name: saved.name, description: saved.description })
+  }
 }
 
 function toggleSearch() {
   searchVisible.value = !searchVisible.value
-  if (!searchVisible.value)
+  if (!searchVisible.value) {
     search.value = ''
+  }
 }
 
 function formatDate(iso: string) {

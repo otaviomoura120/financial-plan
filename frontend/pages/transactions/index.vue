@@ -91,8 +91,9 @@ const subCategoriesById = computed(() => {
   const map = new Map<number, SubCategoryResponse>()
 
   for (const category of categories.value) {
-    for (const subCategory of category.subCategories)
+    for (const subCategory of category.subCategories) {
       map.set(subCategory.id, subCategory)
+    }
   }
 
   return map
@@ -140,8 +141,9 @@ async function fetchAll() {
 }
 
 async function fetchDropdownData() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   const spaceId = spaceStore.activeSpace.id
 
@@ -155,8 +157,9 @@ async function fetchDropdownData() {
 }
 
 async function fetchTransactions() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -195,8 +198,9 @@ function openDelete(transaction: TransactionResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedTransaction.value)
+  if (!confirmed || !selectedTransaction.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -218,29 +222,34 @@ async function onDeleteConfirm(confirmed: boolean) {
 function onTransactionSaved(saved: TransactionResponse) {
   const idx = transactions.value.findIndex(t => t.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     transactions.value[idx] = saved
-  else if (saved.transactionDate >= from.value && saved.transactionDate <= to.value)
+  }
+  else if (saved.transactionDate >= from.value && saved.transactionDate <= to.value) {
     transactions.value = [saved, ...transactions.value]
+  }
 }
 
 function bankAccountName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return bankAccountsById.value.get(id)?.name ?? '—'
 }
 
 function categoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return categoriesById.value.get(id)?.name ?? '—'
 }
 
 function subCategoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return null
+  }
 
   return subCategoriesById.value.get(id)?.name ?? null
 }
@@ -248,11 +257,13 @@ function subCategoryName(id: number | null) {
 function formatAmount(transaction: TransactionResponse) {
   const formatted = formatCurrency(transaction.amount)
 
-  if (transaction.type === 'INCOME')
+  if (transaction.type === 'INCOME') {
     return `+ ${formatted}`
+  }
 
-  if (transaction.type === 'EXPENSE')
+  if (transaction.type === 'EXPENSE') {
     return `- ${formatted}`
+  }
 
   return formatted
 }

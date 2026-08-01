@@ -6,8 +6,9 @@ const interval = ref<ReturnType<typeof setInterval>>()
 const showProgress = ref(false)
 
 watch([progressValue, isFallbackState], () => {
-  if (progressValue.value > 80 && isFallbackState.value)
+  if (progressValue.value > 80 && isFallbackState.value) {
     progressValue.value = 82
+  }
 
   startBuffer()
 })

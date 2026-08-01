@@ -1,6 +1,7 @@
 export default defineNuxtRouteMiddleware(to => {
   const user = useUser()
 
-  if (!user.value)
+  if (!user.value) {
     return navigateTo(`/auth/login?returnTo=${encodeURIComponent(to.fullPath)}`, { external: true })
+  }
 })

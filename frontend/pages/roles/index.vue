@@ -44,11 +44,13 @@ const paginatedRoles = computed(() => {
 watch(
   () => spaceStore.activeSpace,
   async space => {
-    if (space)
+    if (space) {
       await fetchRoles()
+    }
 
-    else
+    else {
       roles.value = []
+    }
   },
   { immediate: true },
 )
@@ -58,8 +60,9 @@ watch(search, () => {
 })
 
 async function fetchRoles() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -99,8 +102,9 @@ function openDelete(role: RoleResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedRole.value)
+  if (!confirmed || !selectedRole.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -122,19 +126,23 @@ async function onDeleteConfirm(confirmed: boolean) {
 function onRoleSaved(saved: RoleResponse) {
   const idx = roles.value.findIndex(r => r.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     roles.value[idx] = saved
-  else
+  }
+  else {
     roles.value = [saved, ...roles.value]
+  }
 
-  if (selectedRole.value?.id === saved.id)
+  if (selectedRole.value?.id === saved.id) {
     selectedRole.value = saved
+  }
 }
 
 function toggleSearch() {
   searchVisible.value = !searchVisible.value
-  if (!searchVisible.value)
+  if (!searchVisible.value) {
     search.value = ''
+  }
 }
 
 function formatDate(iso: string) {

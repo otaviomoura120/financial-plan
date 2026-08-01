@@ -9,8 +9,9 @@ export const useApi: typeof useFetch = <T>(url: MaybeRefOrGetter<string>, option
     async onRequest({ options: reqOptions }) {
       const { accessToken } = await $fetch<{ accessToken: string }>('/api/_auth/token')
 
-      if (accessToken)
+      if (accessToken) {
         (reqOptions.headers as Record<string, string>).Authorization = `Bearer ${accessToken}`
+      }
     },
   }
 

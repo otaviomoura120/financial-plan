@@ -31,19 +31,23 @@ export default defineEventHandler(async (event): Promise<OnboardingCheckResult> 
   catch (e: unknown) {
     const err = e as { response?: { status?: number } }
 
-    if (err.response?.status !== 404)
+    if (err.response?.status !== 404) {
       throw e
+    }
   }
 
-  if (!user)
+  if (!user) {
     return { status: 'new_user' }
+  }
 
   const spaces = await $fetch<SpaceResponse[]>(`/spaces/user/${user.id}`, { baseURL, headers })
-  if (spaces.length === 0)
+  if (spaces.length === 0) {
     return { status: 'no_spaces', user }
+  }
 
-  if (spaces.length === 1)
+  if (spaces.length === 1) {
     return { status: 'one_space', user, spaces }
+  }
 
   return { status: 'multiple_spaces', user, spaces }
 })

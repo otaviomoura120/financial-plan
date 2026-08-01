@@ -82,8 +82,9 @@ function openDelete(item: EndpointPermissionResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedItem.value)
+  if (!confirmed || !selectedItem.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -105,19 +106,23 @@ async function onDeleteConfirm(confirmed: boolean) {
 function onItemSaved(saved: EndpointPermissionResponse) {
   const idx = items.value.findIndex(i => i.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     items.value[idx] = saved
-  else
+  }
+  else {
     items.value = [saved, ...items.value]
+  }
 
-  if (selectedItem.value?.id === saved.id)
+  if (selectedItem.value?.id === saved.id) {
     selectedItem.value = saved
+  }
 }
 
 function toggleSearch() {
   searchVisible.value = !searchVisible.value
-  if (!searchVisible.value)
+  if (!searchVisible.value) {
     search.value = ''
+  }
 }
 </script>
 

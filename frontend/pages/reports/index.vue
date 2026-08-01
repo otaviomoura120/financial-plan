@@ -144,8 +144,9 @@ const subCategoriesById = computed(() => {
   const map = new Map<number, SubCategoryResponse>()
 
   for (const category of categories.value) {
-    for (const subCategory of category.subCategories)
+    for (const subCategory of category.subCategories) {
       map.set(subCategory.id, subCategory)
+    }
   }
 
   return map
@@ -166,11 +167,13 @@ function isInvoicePaymentRow(transaction: TransactionResponse) {
 }
 
 async function fetchInvoiceItems(transaction: TransactionResponse) {
-  if (!spaceStore.activeSpace || !transaction.sourceId || !transaction.creditCardInvoiceReferenceMonth)
+  if (!spaceStore.activeSpace || !transaction.sourceId || !transaction.creditCardInvoiceReferenceMonth) {
     return
+  }
 
-  if (invoiceItemsCache.value.has(transaction.id))
+  if (invoiceItemsCache.value.has(transaction.id)) {
     return
+  }
 
   loadingInvoiceItems.value.add(transaction.id)
 
@@ -191,8 +194,9 @@ async function fetchInvoiceItems(transaction: TransactionResponse) {
 }
 
 function toggleExpand(transaction: TransactionResponse) {
-  if (!isInvoicePaymentRow(transaction))
+  if (!isInvoicePaymentRow(transaction)) {
     return
+  }
 
   if (expandedIds.value.has(transaction.id)) {
     expandedIds.value.delete(transaction.id)
@@ -216,8 +220,9 @@ const typeColor: Record<TransactionType, string> = {
 }
 
 watch(categoryId, () => {
-  if (!subCategoryItems.value.some(sc => sc.value === subCategoryId.value))
+  if (!subCategoryItems.value.some(sc => sc.value === subCategoryId.value)) {
     subCategoryId.value = null
+  }
 })
 
 watch(
@@ -237,8 +242,9 @@ watch(
 )
 
 async function fetchFilterData() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoadingFilters.value = true
 
@@ -259,14 +265,16 @@ async function fetchFilterData() {
 }
 
 async function generateReport() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   if (filterFormRef.value) {
     const { valid } = await filterFormRef.value.validate()
 
-    if (!valid)
+    if (!valid) {
       return
+    }
   }
 
   isLoading.value = true
@@ -298,22 +306,25 @@ async function generateReport() {
 }
 
 function bankAccountName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return bankAccountsById.value.get(id)?.name ?? '—'
 }
 
 function categoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return categoriesById.value.get(id)?.name ?? '—'
 }
 
 function subCategoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return null
+  }
 
   return subCategoriesById.value.get(id)?.name ?? null
 }
@@ -321,11 +332,13 @@ function subCategoryName(id: number | null) {
 function formatAmount(transaction: TransactionResponse) {
   const formatted = formatCurrency(transaction.amount)
 
-  if (transaction.type === 'INCOME')
+  if (transaction.type === 'INCOME') {
     return `+ ${formatted}`
+  }
 
-  if (transaction.type === 'EXPENSE')
+  if (transaction.type === 'EXPENSE') {
     return `- ${formatted}`
+  }
 
   return formatted
 }

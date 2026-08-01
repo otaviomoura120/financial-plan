@@ -85,11 +85,23 @@ Navigation items for the sidebar/topbar are defined in `navigation/vertical/inde
 - New line required before `return` statements (`newline-before-return`).
 
 ### Rules for development
- - Create ID structure like this:
+ - Always use braces, with the body on its own line:
+   ```ts
    if (membership == null) {
-    return false;
+     return false
    }
-NEVER like this, without "{}":
-   if (membership == null) 
-    return false;
-   
+   ```
+   NEVER without `{}`, and never collapsed onto one line:
+   ```ts
+   if (membership == null)
+     return false
+
+   if (membership == null) { return false }
+   ```
+   This is enforced by ESLint (`curly: all` + `brace-style: stroustrup, allowSingleLine: false`) via an
+   `overrides` block in `.eslintrc.cjs`, and `pnpm lint` fixes it automatically.
+
+   **Exception:** `@core/` and `@layouts/` are excluded from that override and keep the Vuexy template's
+   brace-less style (`multi-or-nest`, inherited from `@antfu/eslint-config-vue`), so upstream template
+   updates stay easy to diff. Match the surrounding style when editing inside those two folders.
+

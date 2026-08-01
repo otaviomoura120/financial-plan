@@ -136,8 +136,9 @@ const dialogVisibleUpdate = (val: boolean) => {
 }
 
 watch(() => props, () => {
-  if (!props.isDialogVisible)
+  if (!props.isDialogVisible) {
     currentStep.value = 0
+  }
 })
 
 const onSubmit = () => {

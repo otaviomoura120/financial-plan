@@ -70,8 +70,9 @@ watch(
 )
 
 async function fetchBillRecurrings() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -105,8 +106,9 @@ function onEdited() {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedBillRecurring.value)
+  if (!confirmed || !selectedBillRecurring.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -128,8 +130,9 @@ async function onDeleteConfirm(confirmed: boolean) {
 }
 
 function categoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return categoriesById.value.get(id)?.name ?? '—'
 }
@@ -141,8 +144,9 @@ function formatDate(isoDate: string) {
 }
 
 function formatRecurrenceEnd(billRecurring: BillResponse) {
-  if (billRecurring.installments != null)
+  if (billRecurring.installments != null) {
     return `${billRecurring.installments} parcelas`
+  }
 
   if (billRecurring.endDate != null) {
     const [year, month] = billRecurring.endDate.split('-')

@@ -75,8 +75,9 @@ const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve 
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
 watch(categoryId, () => {
-  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value))
+  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value)) {
     subCategoryId.value = null
+  }
 })
 
 watch(
@@ -96,8 +97,9 @@ watch(
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid || !props.recurring)
+  if (!valid || !props.recurring) {
     return
+  }
 
   isLoading.value = true
   clearError()

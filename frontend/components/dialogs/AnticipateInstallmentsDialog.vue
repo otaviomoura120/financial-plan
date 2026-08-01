@@ -52,15 +52,17 @@ const eligibleInstallments = computed(() =>
 const installmentsRules = [(v: string) => {
   const parsed = Number(v)
 
-  if (v === '' || !Number.isInteger(parsed) || parsed < 1)
+  if (v === '' || !Number.isInteger(parsed) || parsed < 1) {
     return 'Informe uma quantidade válida de parcelas'
+  }
 
   return parsed <= eligibleInstallments.value.length || `Só há ${eligibleInstallments.value.length} parcela(s) elegível(is) para antecipar`
 }]
 
 async function loadGroup() {
-  if (!props.installmentGroupId)
+  if (!props.installmentGroupId) {
     return
+  }
 
   isLoadingGroup.value = true
   clearError()
@@ -92,8 +94,9 @@ watch(
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid || !props.installmentGroupId || !props.targetReferenceMonth)
+  if (!valid || !props.installmentGroupId || !props.targetReferenceMonth) {
     return
+  }
 
   isSubmitting.value = true
   clearError()

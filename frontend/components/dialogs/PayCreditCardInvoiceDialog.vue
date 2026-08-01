@@ -72,8 +72,9 @@ watch(
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid || props.creditCardId === null || props.referenceMonth === null)
+  if (!valid || props.creditCardId === null || props.referenceMonth === null) {
     return
+  }
 
   isLoading.value = true
   clearError()

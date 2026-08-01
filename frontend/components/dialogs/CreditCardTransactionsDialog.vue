@@ -117,8 +117,9 @@ const subCategoriesById = computed(() => {
   const map = new Map<number, SubCategoryResponse>()
 
   for (const category of categories.value) {
-    for (const subCategory of category.subCategories)
+    for (const subCategory of category.subCategories) {
       map.set(subCategory.id, subCategory)
+    }
   }
 
   return map
@@ -152,14 +153,16 @@ watch(
 watch(
   () => spaceStore.activeSpace,
   async space => {
-    if (props.isDialogVisible && space)
+    if (props.isDialogVisible && space) {
       await fetchAll()
+    }
   },
 )
 
 watch(selectedMonth, () => {
-  if (props.isDialogVisible)
+  if (props.isDialogVisible) {
     fetchTransactions()
+  }
 })
 
 async function fetchAll() {
@@ -167,8 +170,9 @@ async function fetchAll() {
 }
 
 async function fetchCreditCard() {
-  if (!spaceStore.activeSpace || !props.creditCardId)
+  if (!spaceStore.activeSpace || !props.creditCardId) {
     return
+  }
 
   const cards = await $fetch<CreditCardResponse[]>('/api/credit-cards', {
     query: { spaceId: spaceStore.activeSpace.id },
@@ -178,8 +182,9 @@ async function fetchCreditCard() {
 }
 
 async function fetchCategories() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   categories.value = await $fetch<CategoryResponse[]>('/api/categories', {
     query: { spaceId: spaceStore.activeSpace.id },
@@ -187,8 +192,9 @@ async function fetchCategories() {
 }
 
 async function fetchTransactions() {
-  if (!spaceStore.activeSpace || !props.creditCardId)
+  if (!spaceStore.activeSpace || !props.creditCardId) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -224,10 +230,12 @@ function openEdit(transaction: CreditCardTransactionResponse) {
 function openDelete(transaction: CreditCardTransactionResponse) {
   selectedTransaction.value = transaction
 
-  if (transaction.totalInstallments > 1)
+  if (transaction.totalInstallments > 1) {
     isDeleteInstallmentDialogVisible.value = true
-  else
+  }
+  else {
     isDeleteDialogVisible.value = true
+  }
 }
 
 function openAnticipate(transaction: CreditCardTransactionResponse) {
@@ -236,22 +244,25 @@ function openAnticipate(transaction: CreditCardTransactionResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedTransaction.value)
+  if (!confirmed || !selectedTransaction.value) {
     return
+  }
 
   await deleteSelectedTransaction(false)
 }
 
 async function onDeleteInstallmentConfirm(result: 'single' | 'future' | null) {
-  if (!result || !selectedTransaction.value)
+  if (!result || !selectedTransaction.value) {
     return
+  }
 
   await deleteSelectedTransaction(result === 'future')
 }
 
 async function deleteSelectedTransaction(includeFuture: boolean) {
-  if (!selectedTransaction.value)
+  if (!selectedTransaction.value) {
     return
+  }
 
   const transaction = selectedTransaction.value
 
@@ -287,10 +298,12 @@ async function deleteSelectedTransaction(includeFuture: boolean) {
 function onTransactionSaved(saved: CreditCardTransactionResponse) {
   const idx = transactions.value.findIndex(t => t.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     transactions.value[idx] = saved
-  else if (saved.competenceMonth === selectedMonth.value)
+  }
+  else if (saved.competenceMonth === selectedMonth.value) {
     transactions.value = [saved, ...transactions.value]
+  }
 }
 
 async function onRecurringSubscriptionSaved() {
@@ -302,23 +315,26 @@ function onAnticipated(updated: CreditCardTransactionResponse[]) {
   for (const updatedTransaction of updated) {
     const idx = transactions.value.findIndex(t => t.id === updatedTransaction.id)
 
-    if (idx >= 0)
+    if (idx >= 0) {
       transactions.value[idx] = updatedTransaction
+    }
   }
 
   showSuccess('Parcelas antecipadas com sucesso.')
 }
 
 function categoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return categoriesById.value.get(id)?.name ?? '—'
 }
 
 function subCategoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return null
+  }
 
   return subCategoriesById.value.get(id)?.name ?? null
 }
@@ -593,6 +609,7 @@ function onClose() {
     <AddEditCreditCardTransactionDialog
       v-model:is-dialog-visible="isAddEditDialogVisible"
       :credit-card-id="props.creditCardId"
+      :closing-day="creditCard?.closingDay ?? null"
       :transaction="selectedTransaction"
       :categories="categories"
       @saved="onTransactionSaved"

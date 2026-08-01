@@ -63,8 +63,9 @@ const entries = computed<OpenInvoiceEntry[]>(() => {
     sortedByCard.set(invoice.creditCardId, list)
   }
 
-  for (const list of sortedByCard.values())
+  for (const list of sortedByCard.values()) {
     list.sort((a, b) => b.dueDate.localeCompare(a.dueDate))
+  }
 
   const index = showPrevious.value ? 1 : 0
 
@@ -80,8 +81,9 @@ watch(total, value => emit('update:total', value), { immediate: true })
 watch(showPrevious, value => emit('update:period-label', value ? 'Fatura Anterior' : 'Fatura Atual'), { immediate: true })
 
 function usagePercentage(entry: OpenInvoiceEntry) {
-  if (entry.card.limit <= 0)
+  if (entry.card.limit <= 0) {
     return 0
+  }
 
   return Math.min(100, ((entry.invoice?.totalAmount ?? 0) / entry.card.limit) * 100)
 }
@@ -89,18 +91,21 @@ function usagePercentage(entry: OpenInvoiceEntry) {
 function usageColor(entry: OpenInvoiceEntry) {
   const pct = usagePercentage(entry)
 
-  if (pct > 80)
+  if (pct > 80) {
     return 'error'
+  }
 
-  if (pct >= 50)
+  if (pct >= 50) {
     return 'warning'
+  }
 
   return 'success'
 }
 
 function formatDate(isoDate: string | undefined) {
-  if (!isoDate)
+  if (!isoDate) {
     return '—'
+  }
 
   const [year, month, day] = isoDate.split('-')
 

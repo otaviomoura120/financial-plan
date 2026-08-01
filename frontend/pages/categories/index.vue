@@ -56,11 +56,13 @@ const paginatedCategories = computed(() => {
 watch(
   () => spaceStore.activeSpace,
   async space => {
-    if (space)
+    if (space) {
       await fetchCategories()
+    }
 
-    else
+    else {
       categories.value = []
+    }
   },
   { immediate: true },
 )
@@ -70,8 +72,9 @@ watch(search, () => {
 })
 
 async function fetchCategories() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -110,8 +113,9 @@ function openSubCategories(category: CategoryResponse) {
 function onSubCategoriesUpdated(subCategories: SubCategoryResponse[]) {
   const idx = categories.value.findIndex(c => c.id === subCategoriesTargetId.value)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     categories.value[idx] = { ...categories.value[idx], subCategories }
+  }
 }
 
 function openDelete(category: CategoryResponse) {
@@ -120,8 +124,9 @@ function openDelete(category: CategoryResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedCategory.value)
+  if (!confirmed || !selectedCategory.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -148,8 +153,9 @@ function openToggleStatus(category: CategoryResponse) {
 }
 
 async function onToggleStatusConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedCategory.value)
+  if (!confirmed || !selectedCategory.value) {
     return
+  }
 
   const target = selectedCategory.value
   const nextActive = !target.active
@@ -168,8 +174,9 @@ async function onToggleStatusConfirm(confirmed: boolean) {
 
     const idx = categories.value.findIndex(c => c.id === target.id)
 
-    if (idx >= 0)
+    if (idx >= 0) {
       categories.value[idx] = { ...updated, subCategories: categories.value[idx].subCategories }
+    }
 
     showSuccess(nextActive ? 'Categoria ativada com sucesso.' : 'Categoria inativada com sucesso.')
   }
@@ -185,19 +192,23 @@ async function onToggleStatusConfirm(confirmed: boolean) {
 function onCategorySaved(saved: CategoryResponse) {
   const idx = categories.value.findIndex(c => c.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     categories.value[idx] = saved
-  else
+  }
+  else {
     categories.value = [{ ...saved, subCategories: saved.subCategories ?? [] }, ...categories.value]
+  }
 
-  if (selectedCategory.value?.id === saved.id)
+  if (selectedCategory.value?.id === saved.id) {
     selectedCategory.value = saved
+  }
 }
 
 function toggleSearch() {
   searchVisible.value = !searchVisible.value
-  if (!searchVisible.value)
+  if (!searchVisible.value) {
     search.value = ''
+  }
 }
 
 function activeSubCategoriesCount(category: CategoryResponse) {

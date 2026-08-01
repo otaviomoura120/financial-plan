@@ -71,8 +71,9 @@ const bankAccountItems = computed(() =>
 )
 
 async function fetchBankAccounts() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoadingBankAccounts.value = true
 
@@ -104,8 +105,9 @@ watch(
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid)
+  if (!valid) {
     return
+  }
 
   isLoading.value = true
   clearError()

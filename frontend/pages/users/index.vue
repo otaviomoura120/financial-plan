@@ -91,8 +91,9 @@ watch(search, () => {
 })
 
 async function fetchMembers() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -125,8 +126,9 @@ function isCurrentUser(member: SpaceMemberResponse) {
 }
 
 async function onRemoveConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedMember.value || !spaceStore.activeSpace)
+  if (!confirmed || !selectedMember.value || !spaceStore.activeSpace) {
     return
+  }
 
   isRemoving.value = true
   clearError()
@@ -151,11 +153,13 @@ async function onRemoveConfirm(confirmed: boolean) {
 function onMemberSaved(updated: SpaceMemberResponse) {
   const idx = members.value.findIndex(m => m.memberId === updated.memberId)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     members.value[idx] = updated
+  }
 
-  if (selectedMember.value?.memberId === updated.memberId)
+  if (selectedMember.value?.memberId === updated.memberId) {
     selectedMember.value = updated
+  }
 }
 
 function onProfileSaved(profile: OwnProfileResponse) {
@@ -171,13 +175,15 @@ function onProfileSaved(profile: OwnProfileResponse) {
 
   const idx = members.value.findIndex(m => m.userId === profile.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     members.value[idx] = { ...members.value[idx], userName: profile.name }
+  }
 }
 
 async function fetchInvites() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoadingInvites.value = true
   clearInviteError()
@@ -196,8 +202,9 @@ async function fetchInvites() {
 }
 
 async function cancelInvite(invite: SpaceInviteResponse) {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isCancellingInvite.value = invite.inviteId
   clearInviteError()
@@ -223,8 +230,9 @@ async function onInviteSent() {
 
 function toggleSearch() {
   searchVisible.value = !searchVisible.value
-  if (!searchVisible.value)
+  if (!searchVisible.value) {
     search.value = ''
+  }
 }
 
 function formatDate(iso: string) {

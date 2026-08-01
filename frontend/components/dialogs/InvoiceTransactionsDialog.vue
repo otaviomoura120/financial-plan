@@ -64,8 +64,9 @@ const subCategoriesById = computed(() => {
   const map = new Map<number, SubCategoryResponse>()
 
   for (const category of props.categories) {
-    for (const subCategory of category.subCategories)
+    for (const subCategory of category.subCategories) {
       map.set(subCategory.id, subCategory)
+    }
   }
 
   return map
@@ -89,8 +90,9 @@ watch(
 )
 
 async function fetchItems() {
-  if (!spaceStore.activeSpace || !props.creditCardId || !props.referenceMonth)
+  if (!spaceStore.activeSpace || !props.creditCardId || !props.referenceMonth) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -113,15 +115,17 @@ async function fetchItems() {
 }
 
 function categoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return categoriesById.value.get(id)?.name ?? '—'
 }
 
 function subCategoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return null
+  }
 
   return subCategoriesById.value.get(id)?.name ?? null
 }

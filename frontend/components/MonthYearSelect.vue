@@ -35,11 +35,13 @@ const yearOptions = computed(() => {
   const currentYear = new Date().getFullYear()
   const years = []
 
-  for (let year = currentYear - 5; year <= currentYear + 10; year++)
+  for (let year = currentYear - 5; year <= currentYear + 10; year++) {
     years.push(year)
+  }
 
-  if (!years.includes(selectedYear.value))
+  if (!years.includes(selectedYear.value)) {
     years.unshift(selectedYear.value)
+  }
 
   return years
 })

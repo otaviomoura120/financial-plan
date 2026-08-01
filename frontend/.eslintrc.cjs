@@ -229,6 +229,22 @@ module.exports = {
       '\.eslintrc\.cjs',
     ],
   },
+  overrides: [
+    {
+      // Our own code always uses braces, even for single-statement bodies. The Vuexy template
+      // (@core, @layouts) is left on the preset's brace-less `multi-or-nest` so that upstream
+      // template updates keep producing clean diffs.
+      files: ['**/*.{ts,js,cjs,vue,tsx,jsx}'],
+      excludedFiles: ['@core/**', '@layouts/**'],
+      rules: {
+        'curly': ['error', 'all'],
+
+        // `curly` only inserts the braces; this is what keeps the body on its own line
+        // instead of collapsing to `if (x) { return }`.
+        'brace-style': ['error', 'stroustrup', { allowSingleLine: false }],
+      },
+    },
+  ],
   settings: {
     'import/resolver': {
       node: true,

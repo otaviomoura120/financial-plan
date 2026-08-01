@@ -62,8 +62,9 @@ function emitUpdated() {
 }
 
 async function createSubCategory() {
-  if (!newName.value.trim() || props.categoryId === null)
+  if (!newName.value.trim() || props.categoryId === null) {
     return
+  }
 
   isCreating.value = true
   clearError()
@@ -100,8 +101,9 @@ function cancelEdit() {
 }
 
 async function saveEdit(subCategory: SubCategoryResponse) {
-  if (!editingName.value.trim())
+  if (!editingName.value.trim()) {
     return
+  }
 
   isSavingEdit.value = true
   clearError()
@@ -117,8 +119,9 @@ async function saveEdit(subCategory: SubCategoryResponse) {
 
     const idx = localSubCategories.value.findIndex(sc => sc.id === subCategory.id)
 
-    if (idx >= 0)
+    if (idx >= 0) {
       localSubCategories.value[idx] = updated
+    }
 
     editingId.value = null
     emitUpdated()
@@ -137,8 +140,9 @@ function openDelete(subCategory: SubCategoryResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedSubCategory.value)
+  if (!confirmed || !selectedSubCategory.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -165,8 +169,9 @@ function openToggleStatus(subCategory: SubCategoryResponse) {
 }
 
 async function onToggleStatusConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedSubCategory.value)
+  if (!confirmed || !selectedSubCategory.value) {
     return
+  }
 
   const target = selectedSubCategory.value
   const nextActive = !target.active
@@ -182,8 +187,9 @@ async function onToggleStatusConfirm(confirmed: boolean) {
 
     const idx = localSubCategories.value.findIndex(sc => sc.id === target.id)
 
-    if (idx >= 0)
+    if (idx >= 0) {
       localSubCategories.value[idx] = updated
+    }
 
     emitUpdated()
   }

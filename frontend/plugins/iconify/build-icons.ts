@@ -173,8 +173,9 @@ const target = join(__dirname, 'icons.css')
 
       for (const key in content) {
         if (key === 'prefix' && content.prefix === 'tabler') {
-          for (const k in content.icons)
+          for (const k in content.icons) {
             content.icons[k].body = content.icons[k].body.replace(/stroke-width="2"/g, 'stroke-width="1.5"')
+          }
         }
       }
 
@@ -182,8 +183,9 @@ const target = join(__dirname, 'icons.css')
       if (typeof item !== 'string' && item.icons?.length) {
         const filteredContent = getIcons(content, item.icons)
 
-        if (!filteredContent)
+        if (!filteredContent) {
           throw new Error(`Cannot find required icons in ${filename}`)
+        }
 
         // Collect filtered icons
         allIcons.push(filteredContent)
@@ -209,8 +211,9 @@ const target = join(__dirname, 'icons.css')
 
       // Validate, clean up, fix palette, etc.
       await iconSet.forEach(async (name, type) => {
-        if (type !== 'icon')
+        if (type !== 'icon') {
           return
+        }
 
         // Get SVG instance for parsing
         const svg = iconSet.toSVG(name)
@@ -287,16 +290,18 @@ function organizeIconsList(icons: string[]): Record<string, string[]> {
   icons.forEach(icon => {
     const item = stringToIcon(icon)
 
-    if (!item)
+    if (!item) {
       return
+    }
 
     const prefix = item.prefix
     const prefixList = sorted[prefix] ? sorted[prefix] : (sorted[prefix] = [])
 
     const name = item.name
 
-    if (!prefixList.includes(name))
+    if (!prefixList.includes(name)) {
       prefixList.push(name)
+    }
   })
 
   return sorted

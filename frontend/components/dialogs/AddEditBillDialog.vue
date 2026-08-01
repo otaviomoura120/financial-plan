@@ -86,21 +86,25 @@ const endModeItems: { value: RecurrenceEndMode; title: string }[] = [
 ]
 
 function resolveEndMode(bill: BillResponse | null): RecurrenceEndMode {
-  if (bill?.installments != null)
+  if (bill?.installments != null) {
     return 'afterInstallments'
+  }
 
-  if (bill?.endDate != null)
+  if (bill?.endDate != null) {
     return 'onDate'
+  }
 
   return 'never'
 }
 
 function recurrenceEndPayload() {
-  if (!showRecurrenceEnd.value || endMode.value === 'never')
+  if (!showRecurrenceEnd.value || endMode.value === 'never') {
     return { endDate: null, installments: null }
+  }
 
-  if (endMode.value === 'onDate')
+  if (endMode.value === 'onDate') {
     return { endDate: endDate.value, installments: null }
+  }
 
   return { endDate: null, installments: installments.value }
 }
@@ -133,8 +137,9 @@ const installmentsRules = [
 ]
 
 watch(categoryId, () => {
-  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value))
+  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value)) {
     subCategoryId.value = null
+  }
 })
 
 watch(
@@ -158,8 +163,9 @@ watch(
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid)
+  if (!valid) {
     return
+  }
 
   isLoading.value = true
   clearError()

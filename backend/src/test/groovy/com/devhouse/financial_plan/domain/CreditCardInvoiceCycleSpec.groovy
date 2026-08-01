@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.domain
 
+import com.devhouse.financial_plan.domain.exception.DomainException
 import spock.lang.Specification
 
 import java.time.LocalDate
@@ -42,6 +43,38 @@ class CreditCardInvoiceCycleSpec extends Specification {
         expect:
         CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 2, 28), 31) == LocalDate.of(2026, 3, 1)
         CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 3, 1), 31) == LocalDate.of(2026, 3, 1)
+    }
+
+    def "resolveReferenceMonth falls back to the computed month when no invoice is chosen"() {
+        expect:
+        CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 3, 9), 10, null) == LocalDate.of(2026, 3, 1)
+    }
+
+    def "resolveReferenceMonth accepts the computed invoice as an explicit choice"() {
+        expect:
+        CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 3, 10), 10, LocalDate.of(2026, 4, 1)) == LocalDate.of(2026, 4, 1)
+    }
+
+    def "resolveReferenceMonth accepts pushing the purchase to the next invoice"() {
+        expect:
+        CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 3, 10), 10, LocalDate.of(2026, 5, 1)) == LocalDate.of(2026, 5, 1)
+    }
+
+    def "resolveReferenceMonth normalizes a chosen invoice that is not the first day of the month"() {
+        expect:
+        CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 3, 9), 10, LocalDate.of(2026, 3, 22)) == LocalDate.of(2026, 3, 1)
+    }
+
+    def "resolveReferenceMonth rejects an invoice that is neither the current nor the next one"() {
+        when:
+        CreditCardInvoiceCycle.resolveReferenceMonth(LocalDate.of(2026, 3, 9), 10, chosenReferenceMonth)
+
+        then:
+        DomainException exception = thrown(DomainException)
+        exception.message == "Reference month must be the current or the next invoice"
+
+        where:
+        chosenReferenceMonth << [LocalDate.of(2026, 2, 1), LocalDate.of(2026, 5, 1), LocalDate.of(2027, 3, 1)]
     }
 
     def "resolveDueDate falls in the month after the reference month when dueDay <= closingDay"() {

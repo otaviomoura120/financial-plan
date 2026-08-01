@@ -138,15 +138,17 @@ const expandedCategories = ref(new Set<string>())
 const expandedSubGroups = ref(new Set<string>())
 
 const flatItems = computed<FlatReportItem[]>(() => {
-  if (!report.value)
+  if (!report.value) {
     return []
+  }
 
   const items: FlatReportItem[] = []
 
   for (const group of report.value.groups) {
     for (const subGroup of group.subGroups) {
-      for (const item of subGroup.items)
+      for (const item of subGroup.items) {
         items.push({ ...item, categoryName: group.categoryName, subCategoryName: subGroup.subCategoryName })
+      }
     }
   }
 
@@ -164,24 +166,29 @@ function subGroupKey(group: CategoryReportGroupResponse, subGroup: CategoryRepor
 function toggleCategory(group: CategoryReportGroupResponse) {
   const key = categoryKey(group)
 
-  if (expandedCategories.value.has(key))
+  if (expandedCategories.value.has(key)) {
     expandedCategories.value.delete(key)
-  else
+  }
+  else {
     expandedCategories.value.add(key)
+  }
 }
 
 function toggleSubGroup(group: CategoryReportGroupResponse, subGroup: CategoryReportSubGroupResponse) {
   const key = subGroupKey(group, subGroup)
 
-  if (expandedSubGroups.value.has(key))
+  if (expandedSubGroups.value.has(key)) {
     expandedSubGroups.value.delete(key)
-  else
+  }
+  else {
     expandedSubGroups.value.add(key)
+  }
 }
 
 watch(categoryId, () => {
-  if (!subCategoryItems.value.some(sc => sc.value === subCategoryId.value))
+  if (!subCategoryItems.value.some(sc => sc.value === subCategoryId.value)) {
     subCategoryId.value = null
+  }
 })
 
 watch(
@@ -202,8 +209,9 @@ watch(
 )
 
 async function fetchFilterData() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoadingFilters.value = true
 
@@ -226,14 +234,16 @@ async function fetchFilterData() {
 }
 
 async function generateReport() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   if (filterFormRef.value) {
     const { valid } = await filterFormRef.value.validate()
 
-    if (!valid)
+    if (!valid) {
       return
+    }
   }
 
   isLoading.value = true
@@ -265,8 +275,9 @@ async function generateReport() {
 }
 
 function bankAccountName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return bankAccountsById.value.get(id)?.name ?? '—'
 }
@@ -274,8 +285,9 @@ function bankAccountName(id: number | null) {
 function formatSignedAmount(itemType: TransactionType, amount: number) {
   const formatted = formatCurrency(amount)
 
-  if (itemType === 'INCOME')
+  if (itemType === 'INCOME') {
     return `+ ${formatted}`
+  }
 
   return `- ${formatted}`
 }
@@ -285,11 +297,13 @@ function formatPercentage(value: number) {
 }
 
 function groupPercentage(group: CategoryReportGroupResponse) {
-  if (group.totalExpense > 0)
+  if (group.totalExpense > 0) {
     return { label: `${formatPercentage(group.expensePercentage)} das despesas`, color: 'error' }
+  }
 
-  if (group.totalIncome > 0)
+  if (group.totalIncome > 0) {
     return { label: `${formatPercentage(group.incomePercentage)} das receitas`, color: 'success' }
+  }
 
   return null
 }

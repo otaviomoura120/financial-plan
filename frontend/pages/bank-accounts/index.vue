@@ -45,11 +45,13 @@ const paginatedBankAccounts = computed(() => {
 watch(
   () => spaceStore.activeSpace,
   async space => {
-    if (space)
+    if (space) {
       await fetchBankAccounts()
+    }
 
-    else
+    else {
       bankAccounts.value = []
+    }
   },
   { immediate: true },
 )
@@ -59,8 +61,9 @@ watch(search, () => {
 })
 
 async function fetchBankAccounts() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -94,8 +97,9 @@ function openDelete(bankAccount: BankAccountResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedBankAccount.value)
+  if (!confirmed || !selectedBankAccount.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -122,8 +126,9 @@ function openToggleStatus(bankAccount: BankAccountResponse) {
 }
 
 async function onToggleStatusConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedBankAccount.value)
+  if (!confirmed || !selectedBankAccount.value) {
     return
+  }
 
   const target = selectedBankAccount.value
   const nextActive = !target.active
@@ -139,8 +144,9 @@ async function onToggleStatusConfirm(confirmed: boolean) {
 
     const idx = bankAccounts.value.findIndex(ba => ba.id === target.id)
 
-    if (idx >= 0)
+    if (idx >= 0) {
       bankAccounts.value[idx] = updated
+    }
 
     showSuccess(nextActive ? 'Conta bancária ativada com sucesso.' : 'Conta bancária inativada com sucesso.')
   }
@@ -156,19 +162,23 @@ async function onToggleStatusConfirm(confirmed: boolean) {
 function onBankAccountSaved(saved: BankAccountResponse) {
   const idx = bankAccounts.value.findIndex(ba => ba.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     bankAccounts.value[idx] = saved
-  else
+  }
+  else {
     bankAccounts.value = [saved, ...bankAccounts.value]
+  }
 
-  if (selectedBankAccount.value?.id === saved.id)
+  if (selectedBankAccount.value?.id === saved.id) {
     selectedBankAccount.value = saved
+  }
 }
 
 function toggleSearch() {
   searchVisible.value = !searchVisible.value
-  if (!searchVisible.value)
+  if (!searchVisible.value) {
     search.value = ''
+  }
 }
 
 function formatBalance(balance: number) {

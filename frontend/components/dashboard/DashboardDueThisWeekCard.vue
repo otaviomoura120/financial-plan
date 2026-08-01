@@ -113,11 +113,13 @@ function daysUntil(dueDate: string) {
 function urgencyColor(dueDate: string) {
   const days = daysUntil(dueDate)
 
-  if (days <= 0)
+  if (days <= 0) {
     return 'error'
+  }
 
-  if (days <= 3)
+  if (days <= 3) {
     return 'warning'
+  }
 
   return 'primary'
 }
@@ -125,11 +127,13 @@ function urgencyColor(dueDate: string) {
 function urgencyLabel(dueDate: string) {
   const days = daysUntil(dueDate)
 
-  if (days < 0)
+  if (days < 0) {
     return 'Atrasada'
+  }
 
-  if (days === 0)
+  if (days === 0) {
     return 'Vence hoje'
+  }
 
   return `Vence em ${days} dia${days > 1 ? 's' : ''}`
 }

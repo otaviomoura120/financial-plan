@@ -14,8 +14,9 @@ const form = ref({
 })
 
 async function submit() {
-  if (!form.value.name)
+  if (!form.value.name) {
     return
+  }
 
   isSubmitting.value = true
   clearError()

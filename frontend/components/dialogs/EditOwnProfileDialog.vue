@@ -71,8 +71,9 @@ const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
 watch(
   () => props.isDialogVisible,
   async visible => {
-    if (visible)
+    if (visible) {
       await loadProfile()
+    }
   },
 )
 
@@ -104,8 +105,9 @@ async function loadProfile() {
 }
 
 async function onSave() {
-  if (!form.value.name || !profileId.value)
+  if (!form.value.name || !profileId.value) {
     return
+  }
 
   isSaving.value = true
   clearError()

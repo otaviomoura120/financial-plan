@@ -60,7 +60,8 @@ public class CreateCreditCardTransactionService {
         boolean credit = Boolean.TRUE.equals(request.credit());
         int totalInstallments = credit || request.totalInstallments() == null || request.totalInstallments() <= 1
                 ? 1 : request.totalInstallments();
-        LocalDate firstReferenceMonth = CreditCardInvoiceCycle.resolveReferenceMonth(request.purchaseDate(), creditCard.getClosingDay());
+        LocalDate firstReferenceMonth = CreditCardInvoiceCycle.resolveReferenceMonth(request.purchaseDate(),
+                creditCard.getClosingDay(), request.referenceMonth());
         List<LocalDate> referenceMonths = new ArrayList<>();
         for (int i = 0; i < totalInstallments; i++) {
             referenceMonths.add(firstReferenceMonth.plusMonths(i));

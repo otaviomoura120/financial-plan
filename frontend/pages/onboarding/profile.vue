@@ -23,8 +23,9 @@ const genreOptions = ['Masculino', 'Feminino']
 const maritalStatusOptions = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União estável']
 
 async function submit() {
-  if (!form.value.name || !form.value.email)
+  if (!form.value.name || !form.value.email) {
     return
+  }
 
   isSubmitting.value = true
   clearError()

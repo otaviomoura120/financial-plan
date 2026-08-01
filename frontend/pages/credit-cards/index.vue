@@ -47,11 +47,13 @@ const paginatedCreditCards = computed(() => {
 watch(
   () => spaceStore.activeSpace,
   async space => {
-    if (space)
+    if (space) {
       await fetchCreditCards()
+    }
 
-    else
+    else {
       creditCards.value = []
+    }
   },
   { immediate: true },
 )
@@ -61,8 +63,9 @@ watch(search, () => {
 })
 
 async function fetchCreditCards() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -96,8 +99,9 @@ function openDelete(creditCard: CreditCardResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedCreditCard.value)
+  if (!confirmed || !selectedCreditCard.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -124,8 +128,9 @@ function openToggleStatus(creditCard: CreditCardResponse) {
 }
 
 async function onToggleStatusConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedCreditCard.value)
+  if (!confirmed || !selectedCreditCard.value) {
     return
+  }
 
   const target = selectedCreditCard.value
   const nextActive = !target.active
@@ -141,8 +146,9 @@ async function onToggleStatusConfirm(confirmed: boolean) {
 
     const idx = creditCards.value.findIndex(cc => cc.id === target.id)
 
-    if (idx >= 0)
+    if (idx >= 0) {
       creditCards.value[idx] = updated
+    }
 
     showSuccess(nextActive ? 'Cartão de crédito ativado com sucesso.' : 'Cartão de crédito inativado com sucesso.')
   }
@@ -158,16 +164,19 @@ async function onToggleStatusConfirm(confirmed: boolean) {
 function onCreditCardSaved(saved: CreditCardResponse) {
   const idx = creditCards.value.findIndex(cc => cc.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     creditCards.value[idx] = saved
-  else
+  }
+  else {
     creditCards.value = [saved, ...creditCards.value]
+  }
 }
 
 function toggleSearch() {
   searchVisible.value = !searchVisible.value
-  if (!searchVisible.value)
+  if (!searchVisible.value) {
     search.value = ''
+  }
 }
 
 function formatLimit(limit: number) {

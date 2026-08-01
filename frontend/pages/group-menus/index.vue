@@ -91,8 +91,9 @@ function openDelete(groupMenu: GroupMenuResponse) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedGroupMenu.value)
+  if (!confirmed || !selectedGroupMenu.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -114,29 +115,34 @@ async function onDeleteConfirm(confirmed: boolean) {
 function onGroupMenuSaved(saved: GroupMenuResponse) {
   const idx = groupMenus.value.findIndex(g => g.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     groupMenus.value[idx] = { ...saved, children: groupMenus.value[idx].children ?? [] }
+  }
 
-  else
+  else {
     groupMenus.value = [{ ...saved, children: [] }, ...groupMenus.value]
+  }
 
-  if (selectedGroupMenu.value?.id === saved.id)
+  if (selectedGroupMenu.value?.id === saved.id) {
     selectedGroupMenu.value = { ...saved, children: selectedGroupMenu.value.children ?? [] }
+  }
 }
 
 function onChildrenUpdated(updated: GroupMenuResponse) {
   const idx = groupMenus.value.findIndex(g => g.id === updated.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     groupMenus.value[idx] = updated
+  }
 
   selectedGroupMenu.value = updated
 }
 
 function toggleSearch() {
   searchVisible.value = !searchVisible.value
-  if (!searchVisible.value)
+  if (!searchVisible.value) {
     search.value = ''
+  }
 }
 
 function formatDate(iso: string) {

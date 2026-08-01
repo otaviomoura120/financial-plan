@@ -3,15 +3,17 @@ import { shallowRef } from 'vue'
 const FALLBACK = 'Ocorreu um erro inesperado. Por favor, tente novamente.'
 
 function extractMessage(e: unknown): string {
-  if (typeof e === 'string')
+  if (typeof e === 'string') {
     return e || FALLBACK
+  }
 
   if (e instanceof Error) {
     const fetchErr = e as { data?: unknown; statusMessage?: string }
     const data = fetchErr.data
 
-    if (typeof data === 'string' && data)
+    if (typeof data === 'string' && data) {
       return data
+    }
 
     const dataMessage = (data as { message?: string } | undefined)?.message
 

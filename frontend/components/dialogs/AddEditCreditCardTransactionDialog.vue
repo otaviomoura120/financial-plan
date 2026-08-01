@@ -42,6 +42,7 @@ interface CategoryOption {
 interface Props {
   isDialogVisible: boolean
   creditCardId: number | null
+  closingDay: number | null
   transaction?: CreditCardTransactionResponse | null
   categories: CategoryOption[]
 }
@@ -69,6 +70,39 @@ function toLocalDateString(date: Date) {
   return `${year}-${month}-${day}`
 }
 
+function parseLocalDateString(value: string) {
+  const parts = value.split('-')
+
+  return { year: Number(parts[0]), month: Number(parts[1]), day: Number(parts[2]) }
+}
+
+// Mirrors CreditCardInvoiceCycle.resolveReferenceMonth on the backend: a purchase made on or after
+// the closing day already belongs to the next invoice.
+function defaultReferenceMonth(purchase: string, closingDay: number) {
+  const { year, month, day } = parseLocalDateString(purchase)
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const clampedClosingDay = Math.min(closingDay, daysInMonth)
+
+  const referenceDate = day < clampedClosingDay
+    ? new Date(year, month - 1, 1)
+    : new Date(year, month, 1)
+
+  return toLocalDateString(referenceDate)
+}
+
+function nextReferenceMonth(referenceMonthValue: string) {
+  const { year, month } = parseLocalDateString(referenceMonthValue)
+
+  return toLocalDateString(new Date(year, month, 1))
+}
+
+function formatReferenceMonth(referenceMonthValue: string) {
+  const { year, month } = parseLocalDateString(referenceMonthValue)
+  const label = new Date(year, month - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
+
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 
 const categoryId = shallowRef<number | null>(null)
@@ -77,11 +111,40 @@ const amount = shallowRef<number | null>(null)
 const purchaseDate = shallowRef<string>('')
 const description = shallowRef('')
 const totalInstallments = shallowRef<string>('')
+const referenceMonth = shallowRef<string>('')
 const isRecurringSubscription = shallowRef(false)
 const isCredit = shallowRef(false)
 const isLoading = shallowRef(false)
 
 const isEditMode = computed(() => props.transaction !== null)
+
+// An installment or an anticipated row already carries a reference month that this dialog must not
+// recompute — the anticipation flow owns those. Its current value is still sent back untouched.
+const canChooseReferenceMonth = computed(() => {
+  if (isRecurringSubscription.value || props.closingDay === null) {
+    return false
+  }
+
+  if (!isEditMode.value) {
+    return true
+  }
+
+  return props.transaction!.totalInstallments <= 1 && !props.transaction!.anticipated
+})
+
+const referenceMonthItems = computed(() => {
+  if (props.closingDay === null || purchaseDate.value === '') {
+    return []
+  }
+
+  const current = defaultReferenceMonth(purchaseDate.value, props.closingDay)
+  const next = nextReferenceMonth(current)
+
+  return [
+    { value: current, label: `${formatReferenceMonth(current)} — fatura atual` },
+    { value: next, label: `${formatReferenceMonth(next)} — próxima fatura` },
+  ]
+})
 
 function optionLabel<T extends { name: string; active: boolean }>(item: T) {
   return item.active ? item.name : `${item.name} (inativo)`
@@ -104,8 +167,9 @@ const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve 
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
 const installmentsRules = [(v: string) => {
-  if (v === '')
+  if (v === '') {
     return true
+  }
 
   const parsed = Number(v)
 
@@ -113,8 +177,9 @@ const installmentsRules = [(v: string) => {
 }]
 
 watch(categoryId, () => {
-  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value))
+  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value)) {
     subCategoryId.value = null
+  }
 })
 
 watch(
@@ -129,12 +194,28 @@ watch(
       purchaseDate.value = t?.purchaseDate ?? toLocalDateString(new Date())
       description.value = t?.description ?? ''
       totalInstallments.value = ''
+      referenceMonth.value = t?.referenceMonth
+        ?? (props.closingDay !== null ? defaultReferenceMonth(purchaseDate.value, props.closingDay) : '')
       isRecurringSubscription.value = false
       isCredit.value = false
       clearError()
     }
   },
 )
+
+// Keep an explicit choice as long as it still matches the new purchase date's cycle; otherwise fall
+// back to the invoice the backend would pick on its own.
+watch(purchaseDate, () => {
+  if (!canChooseReferenceMonth.value) {
+    return
+  }
+
+  const items = referenceMonthItems.value
+
+  if (!items.some(item => item.value === referenceMonth.value)) {
+    referenceMonth.value = items[0]?.value ?? ''
+  }
+})
 
 watch(isRecurringSubscription, recurring => {
   if (recurring) {
@@ -153,8 +234,9 @@ watch(isCredit, credit => {
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid || (!isEditMode.value && props.creditCardId === null))
+  if (!valid || (!isEditMode.value && props.creditCardId === null)) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -192,6 +274,7 @@ async function onSubmit() {
           amount: amount.value,
           purchaseDate: purchaseDate.value,
           description: description.value || undefined,
+          referenceMonth: referenceMonth.value || undefined,
         },
       })
     }
@@ -208,6 +291,7 @@ async function onSubmit() {
           purchaseDate: purchaseDate.value,
           description: description.value || undefined,
           totalInstallments: totalInstallments.value !== '' ? Number(totalInstallments.value) : undefined,
+          referenceMonth: referenceMonth.value || undefined,
         },
       })
     }
@@ -324,8 +408,24 @@ function onClose() {
             </VCol>
 
             <VCol
+              v-if="canChooseReferenceMonth"
               cols="12"
-              :md="isEditMode ? 12 : 6"
+              md="6"
+            >
+              <AppSelect
+                v-model="referenceMonth"
+                label="Fatura"
+                :items="referenceMonthItems"
+                item-title="label"
+                item-value="value"
+                hint="No dia do fechamento o banco pode jogar a compra para a fatura seguinte"
+                persistent-hint
+              />
+            </VCol>
+
+            <VCol
+              cols="12"
+              :md="isEditMode && !canChooseReferenceMonth ? 12 : 6"
             >
               <AppTextField
                 v-model="description"

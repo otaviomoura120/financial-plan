@@ -30,16 +30,18 @@ const onConfirmation = () => {
   emit('confirm', true)
   updateModelValue(false)
 
-  if (props.autoResult !== false)
+  if (props.autoResult !== false) {
     unsubscribed.value = true
+  }
 }
 
 const onCancel = () => {
   emit('confirm', false)
   emit('update:isDialogVisible', false)
 
-  if (props.autoResult !== false)
+  if (props.autoResult !== false) {
     cancelled.value = true
+  }
 }
 </script>
 

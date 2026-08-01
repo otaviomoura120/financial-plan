@@ -74,8 +74,9 @@ watch(
 )
 
 async function fetchRecurrings() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -106,15 +107,17 @@ function openDelete(recurring: CreditCardTransactionRecurringResponse) {
 function onEdited(saved: CreditCardTransactionRecurringResponse) {
   const idx = recurrings.value.findIndex(r => r.id === saved.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     recurrings.value[idx] = saved
+  }
 
   showSuccess('Assinatura atualizada com sucesso.')
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedRecurring.value)
+  if (!confirmed || !selectedRecurring.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -136,8 +139,9 @@ async function onDeleteConfirm(confirmed: boolean) {
 }
 
 function categoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return categoriesById.value.get(id)?.name ?? '—'
 }

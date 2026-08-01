@@ -125,8 +125,9 @@ watch(
 watch(
   () => spaceStore.activeSpace,
   async space => {
-    if (props.isDialogVisible && space)
+    if (props.isDialogVisible && space) {
       await fetchAll()
+    }
   },
 )
 
@@ -135,8 +136,9 @@ async function fetchAll() {
 }
 
 async function fetchCreditCard() {
-  if (!spaceStore.activeSpace || !props.creditCardId)
+  if (!spaceStore.activeSpace || !props.creditCardId) {
     return
+  }
 
   const cards = await $fetch<CreditCardResponse[]>('/api/credit-cards', {
     query: { spaceId: spaceStore.activeSpace.id },
@@ -146,8 +148,9 @@ async function fetchCreditCard() {
 }
 
 async function fetchDropdownData() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   const spaceId = spaceStore.activeSpace.id
 
@@ -161,8 +164,9 @@ async function fetchDropdownData() {
 }
 
 async function fetchInvoices() {
-  if (!spaceStore.activeSpace || !props.creditCardId)
+  if (!spaceStore.activeSpace || !props.creditCardId) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -206,8 +210,9 @@ function onPaid() {
 }
 
 async function onUndoConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedInvoice.value || !props.creditCardId)
+  if (!confirmed || !selectedInvoice.value || !props.creditCardId) {
     return
+  }
 
   isUndoing.value = true
   clearError()

@@ -79,8 +79,9 @@ watch(
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid || !props.billInstance)
+  if (!valid || !props.billInstance) {
     return
+  }
 
   isLoading.value = true
   clearError()

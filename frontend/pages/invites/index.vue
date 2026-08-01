@@ -9,16 +9,19 @@ const actioningToken = shallowRef<string | null>(null)
 const errorMessage = shallowRef<string | null>(null)
 
 function extractErrorCode(e: unknown): string {
-  if (typeof e === 'string')
+  if (typeof e === 'string') {
     return e
+  }
 
   const err = e as { data?: unknown; statusMessage?: string; message?: string }
 
-  if (typeof err?.data === 'string')
+  if (typeof err?.data === 'string') {
     return err.data
+  }
 
-  if (err?.data && typeof err.data === 'object' && 'message' in (err.data as object))
+  if (err?.data && typeof err.data === 'object' && 'message' in (err.data as object)) {
     return String((err.data as { message?: string }).message)
+  }
 
   return err?.statusMessage ?? err?.message ?? 'unknown'
 }
@@ -53,8 +56,9 @@ async function acceptInvite(token: string) {
 
     inviteStore.removeInvite(token)
 
-    if (!spaceStore.activeSpace)
+    if (!spaceStore.activeSpace) {
       spaceStore.setActiveSpace({ id: response.spaceId, name: response.spaceName })
+    }
   }
   catch (e) {
     errorMessage.value = errorMessageMap[extractErrorCode(e)] ?? 'Não foi possível aceitar o convite. Tente novamente mais tarde.'

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 
 @Service
 public class UpdateCreditCardTransactionService {
@@ -47,7 +48,7 @@ public class UpdateCreditCardTransactionService {
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
-        LocalDate referenceMonth = resolveReferenceMonth(transaction, request.purchaseDate());
+        LocalDate referenceMonth = resolveReferenceMonth(transaction, request);
         rejectIfMonthAlreadyPaid(transaction.getCreditCard().getId(), referenceMonth);
 
         transaction.update(category, subCategory, request.amount(), request.purchaseDate(), request.description(), referenceMonth);
@@ -56,11 +57,22 @@ public class UpdateCreditCardTransactionService {
         return toResponse(updated, resolveTotalAmount(updated));
     }
 
-    private LocalDate resolveReferenceMonth(CreditCardTransaction transaction, LocalDate purchaseDate) {
+    private LocalDate resolveReferenceMonth(CreditCardTransaction transaction, UpdateCreditCardTransactionRequest request) {
         if (transaction.isAnticipated()) {
             return transaction.getReferenceMonth();
         }
-        return CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, transaction.getCreditCard().getClosingDay());
+        if (keepsCurrentReferenceMonth(transaction, request.referenceMonth())) {
+            return transaction.getReferenceMonth();
+        }
+        return CreditCardInvoiceCycle.resolveReferenceMonth(request.purchaseDate(),
+                transaction.getCreditCard().getClosingDay(), request.referenceMonth());
+    }
+
+    private boolean keepsCurrentReferenceMonth(CreditCardTransaction transaction, LocalDate requestedReferenceMonth) {
+        if (requestedReferenceMonth == null) {
+            return false;
+        }
+        return YearMonth.from(requestedReferenceMonth).atDay(1).equals(transaction.getReferenceMonth());
     }
 
     private BigDecimal resolveTotalAmount(CreditCardTransaction transaction) {

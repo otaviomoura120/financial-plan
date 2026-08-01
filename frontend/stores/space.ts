@@ -28,8 +28,9 @@ export const useSpaceStore = defineStore('space', () => {
   }
 
   function updateDbUser(patch: Partial<DbUser>) {
-    if (dbUser.value)
+    if (dbUser.value) {
       dbUser.value = { ...dbUser.value, ...patch }
+    }
   }
 
   function setActiveSpace(s: Space) {

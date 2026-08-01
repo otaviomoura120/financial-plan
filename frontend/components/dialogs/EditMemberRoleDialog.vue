@@ -53,8 +53,9 @@ watch(
 )
 
 async function loadRoles() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoadingRoles.value = true
 
@@ -72,8 +73,9 @@ async function loadRoles() {
 }
 
 async function onSave() {
-  if (!selectedRoleId.value || !props.member || !spaceStore.activeSpace)
+  if (!selectedRoleId.value || !props.member || !spaceStore.activeSpace) {
     return
+  }
 
   isSaving.value = true
   clearError()

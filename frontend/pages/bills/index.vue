@@ -71,8 +71,9 @@ const subCategoriesById = computed(() => {
   const map = new Map<number, SubCategoryOption>()
 
   for (const category of categories.value) {
-    for (const subCategory of category.subCategories)
+    for (const subCategory of category.subCategories) {
       map.set(subCategory.id, subCategory)
+    }
   }
 
   return map
@@ -108,8 +109,9 @@ async function fetchAll() {
 }
 
 async function fetchDropdownData() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   const spaceId = spaceStore.activeSpace.id
 
@@ -123,8 +125,9 @@ async function fetchDropdownData() {
 }
 
 async function fetchBills() {
-  if (!spaceStore.activeSpace)
+  if (!spaceStore.activeSpace) {
     return
+  }
 
   isLoading.value = true
   clearError()
@@ -183,8 +186,9 @@ function onAdded() {
 function onEdited(updated: BillInstanceResponse) {
   const idx = bills.value.findIndex(b => b.id === updated.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     bills.value[idx] = updated
+  }
 
   showSuccess('Conta atualizada com sucesso.')
 }
@@ -192,15 +196,17 @@ function onEdited(updated: BillInstanceResponse) {
 function onPaid(paid: BillInstanceResponse) {
   const idx = bills.value.findIndex(b => b.id === paid.id)
 
-  if (idx >= 0)
+  if (idx >= 0) {
     bills.value[idx] = paid
+  }
 
   showSuccess('Conta paga com sucesso.')
 }
 
 async function onUndoConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedBill.value)
+  if (!confirmed || !selectedBill.value) {
     return
+  }
 
   isUndoing.value = true
   clearError()
@@ -222,8 +228,9 @@ async function onUndoConfirm(confirmed: boolean) {
 }
 
 async function onDeleteConfirm(confirmed: boolean) {
-  if (!confirmed || !selectedBill.value)
+  if (!confirmed || !selectedBill.value) {
     return
+  }
 
   isDeleting.value = true
   clearError()
@@ -245,15 +252,17 @@ async function onDeleteConfirm(confirmed: boolean) {
 }
 
 function categoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return categoriesById.value.get(id)?.name ?? '—'
 }
 
 function subCategoryName(id: number | null) {
-  if (id === null)
+  if (id === null) {
     return '—'
+  }
 
   return subCategoriesById.value.get(id)?.name ?? '—'
 }

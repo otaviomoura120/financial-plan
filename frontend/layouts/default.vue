@@ -26,8 +26,9 @@ watch(
   user,
   async u => {
     if (u) {
-      if (!spaceStore.activeSpace)
+      if (!spaceStore.activeSpace) {
         await checkAndRedirect()
+      }
 
       await inviteStore.fetchPendingInvites()
     }
@@ -38,10 +39,12 @@ watch(
 watch(
   () => spaceStore.activeSpace,
   space => {
-    if (space)
+    if (space) {
       menuStore.fetchMenuStructure(space.id)
-    else
+    }
+    else {
       menuStore.reset()
+    }
   },
   { immediate: true },
 )

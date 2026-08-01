@@ -137,8 +137,9 @@ watch(type, () => {
 })
 
 watch(categoryId, () => {
-  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value))
+  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value)) {
     subCategoryId.value = null
+  }
 })
 
 watch(
@@ -163,8 +164,9 @@ watch(
 async function onSubmit() {
   const { valid } = await formRef.value!.validate()
 
-  if (!valid)
+  if (!valid) {
     return
+  }
 
   isLoading.value = true
   clearError()
