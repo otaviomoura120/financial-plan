@@ -255,38 +255,51 @@ function onClose() {
 <template>
   <VDialog
     :model-value="props.isDialogVisible"
-    :width="$vuetify.display.smAndDown ? '100%' : '95%'"
+    :fullscreen="$vuetify.display.smAndDown"
+    width="95%"
     max-width="1600"
     scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
     <VCard
       class="d-flex flex-column"
       style="block-size: 100%"
     >
       <VCardText
-        class="d-flex align-center flex-wrap gap-4"
+        class="d-flex flex-column gap-4"
         style="overflow: visible; flex-shrink: 0;"
       >
-        <h5
-          class="text-h5 text-truncate"
-          style="min-inline-size: 0"
-        >
-          Fatura {{ creditCard ? `— ${creditCard.name}` : '' }}
-        </h5>
+        <div class="d-flex align-center gap-2">
+          <h5
+            class="text-h5 text-truncate"
+            style="min-inline-size: 0"
+          >
+            Fatura {{ creditCard ? `— ${creditCard.name}` : '' }}
+          </h5>
 
-        <div
-          class="d-flex flex-wrap align-center gap-2"
-          style="flex-grow: 1; justify-content: flex-end;"
-        >
+          <VSpacer />
+
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </div>
+
+        <div class="d-flex flex-wrap align-center justify-md-end gap-2">
           <VTextField
             v-model="from"
             type="date"
             label="De"
             density="compact"
             hide-details
+            class="flex-grow-1 flex-md-grow-0"
             style="max-inline-size: 170px"
           />
 
@@ -296,8 +309,10 @@ function onClose() {
             label="Até"
             density="compact"
             hide-details
+            class="flex-grow-1 flex-md-grow-0"
             style="max-inline-size: 170px"
           />
+
           <VBtn
             variant="tonal"
             @click="fetchInvoices"
@@ -365,17 +380,17 @@ function onClose() {
                 v-for="invoice in sortedInvoices"
                 :key="invoice.referenceMonth"
               >
-                <td class="font-weight-medium">
+                <td class="font-weight-medium text-no-wrap tabular-nums">
                   {{ formatDate(invoice.dueDate) }}
                 </td>
-                <td class="text-disabled">
+                <td class="text-disabled text-no-wrap tabular-nums">
                   {{ formatReferenceMonth(invoice.referenceMonth) }}
                 </td>
-                <td class="text-disabled">
+                <td class="text-disabled text-no-wrap tabular-nums">
                   {{ formatDate(invoice.closingDate) }}
                 </td>
                 <td
-                  class="text-right"
+                  class="text-right text-no-wrap tabular-nums font-weight-medium"
                   :class="{ 'text-success': invoice.totalAmount < 0 }"
                 >
                   {{ currencyFormatter.format(invoice.totalAmount) }}
@@ -389,10 +404,7 @@ function onClose() {
                     {{ invoice.paid ? 'Paga' : 'Aberta' }}
                   </VChip>
                 </td>
-                <td
-                  class="text-center"
-                  style="white-space: nowrap"
-                >
+                <td class="text-center text-no-wrap">
                   <VBtn
                     icon
                     variant="text"
@@ -472,8 +484,11 @@ function onClose() {
 </template>
 
 <style scoped>
+/* The wrapper below delegates scrolling to the parent, so the table needs a floor width —
+   otherwise narrow viewports squeeze the columns instead of scrolling horizontally. */
 .credit-card-invoices-table :deep(table) {
   border-collapse: collapse;
+  min-inline-size: 820px;
 }
 
 .credit-card-invoices-table :deep(.v-table__wrapper) {

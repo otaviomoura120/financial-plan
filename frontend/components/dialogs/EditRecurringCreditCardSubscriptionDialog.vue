@@ -135,19 +135,36 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 600"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="600"
+    scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
-    <VCard class="pa-sm-10 pa-4">
-      <VCardText>
-        <h4 class="text-h4 text-center mb-2">
-          Editar Assinatura
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Alterações aqui afetam as cobranças pendentes do mês atual em diante (já geradas ou não); as de meses anteriores ou já pagas não são alteradas.
+    <VCard class="pa-4 pa-sm-8">
+      <VCardText class="pa-0">
+        <div class="d-flex align-start gap-2 mb-1">
+          <h5 class="text-h5">
+            Editar Assinatura
+          </h5>
+
+          <VSpacer />
+
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </div>
+
+        <p class="text-body-2 text-disabled mb-6">
+          Afeta as cobranças pendentes do mês atual em diante; as de meses anteriores ou já pagas não são alteradas.
         </p>
 
         <ApiErrorAlert
@@ -194,15 +211,16 @@ function onClose() {
               v-model="startDate"
               type="date"
               label="Dia de cobrança"
-              hint="Alterar recalcula a data das cobranças pendentes do mês atual em diante."
+              hint="Recalcula a data das cobranças pendentes."
               persistent-hint
               :rules="dateRules"
             />
           </div>
 
-          <div class="d-flex align-center justify-center gap-4 mt-6">
+          <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 mt-6">
             <VBtn
               :loading="isLoading"
+              :block="$vuetify.display.xs"
               @click="onSubmit"
             >
               Salvar
@@ -212,6 +230,7 @@ function onClose() {
               color="secondary"
               variant="tonal"
               :disabled="isLoading"
+              :block="$vuetify.display.xs"
               @click="onClose"
             >
               Cancelar

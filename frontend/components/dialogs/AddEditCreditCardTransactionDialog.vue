@@ -105,6 +105,11 @@ function formatReferenceMonth(referenceMonthValue: string) {
 
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 
+// The three kinds are mutually exclusive: an installment plan only makes sense for a purchase, and a
+// credit can be neither installed nor recurring. Modelling them as one value makes the rule visible
+// in the UI instead of hiding it behind checkboxes that silently reset each other.
+type TransactionType = 'purchase' | 'recurring' | 'credit'
+
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
 const amount = shallowRef<number | null>(null)
@@ -112,11 +117,28 @@ const purchaseDate = shallowRef<string>('')
 const description = shallowRef('')
 const totalInstallments = shallowRef<string>('')
 const referenceMonth = shallowRef<string>('')
-const isRecurringSubscription = shallowRef(false)
-const isCredit = shallowRef(false)
+const transactionType = shallowRef<TransactionType>('purchase')
 const isLoading = shallowRef(false)
 
 const isEditMode = computed(() => props.transaction !== null)
+const isRecurringSubscription = computed(() => transactionType.value === 'recurring')
+const isCredit = computed(() => transactionType.value === 'credit')
+
+const transactionTypeHint = computed(() => {
+  if (transactionType.value === 'recurring') {
+    return 'Cobrança que se repete todo mês neste cartão.'
+  }
+
+  if (transactionType.value === 'credit') {
+    return 'Estorno ou pagamento que abate o valor da fatura.'
+  }
+
+  return 'Compra à vista ou parcelada.'
+})
+
+const purchaseDateLabel = computed(() =>
+  isRecurringSubscription.value ? 'Data de início' : 'Data da compra',
+)
 
 // An installment or an anticipated row already carries a reference month that this dialog must not
 // recompute — the anticipation flow owns those. Its current value is still sent back untouched.
@@ -141,8 +163,8 @@ const referenceMonthItems = computed(() => {
   const next = nextReferenceMonth(current)
 
   return [
-    { value: current, label: `${formatReferenceMonth(current)} — fatura atual` },
-    { value: next, label: `${formatReferenceMonth(next)} — próxima fatura` },
+    { value: current, label: `${formatReferenceMonth(current)} (atual)` },
+    { value: next, label: `${formatReferenceMonth(next)} (próxima)` },
   ]
 })
 
@@ -196,8 +218,7 @@ watch(
       totalInstallments.value = ''
       referenceMonth.value = t?.referenceMonth
         ?? (props.closingDay !== null ? defaultReferenceMonth(purchaseDate.value, props.closingDay) : '')
-      isRecurringSubscription.value = false
-      isCredit.value = false
+      transactionType.value = 'purchase'
       clearError()
     }
   },
@@ -217,17 +238,9 @@ watch(purchaseDate, () => {
   }
 })
 
-watch(isRecurringSubscription, recurring => {
-  if (recurring) {
+watch(transactionType, type => {
+  if (type !== 'purchase') {
     totalInstallments.value = ''
-    isCredit.value = false
-  }
-})
-
-watch(isCredit, credit => {
-  if (credit) {
-    totalInstallments.value = ''
-    isRecurringSubscription.value = false
   }
 })
 
@@ -314,43 +327,100 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 700"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="700"
+    scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
-    <VCard class="pa-sm-10 pa-4">
-      <VCardText>
-        <h4 class="text-h4 text-center mb-2">
+    <VCard class="d-flex flex-column">
+      <VCardItem class="px-5 px-sm-8 pt-5 pt-sm-8">
+        <VCardTitle class="text-h5 text-wrap">
           {{ isEditMode ? 'Editar Lançamento' : 'Adicionar Lançamento' }}
-        </h4>
-        <p class="text-body-1 text-center mb-2">
+        </VCardTitle>
+        <VCardSubtitle class="text-wrap">
           {{ isEditMode ? 'Atualize os dados do lançamento.' : 'Preencha os dados da nova compra no cartão.' }}
-        </p>
+        </VCardSubtitle>
 
-        <div
-          v-if="isEditMode && props.transaction?.credit"
-          class="d-flex justify-center mb-6"
-        >
-          <VChip
-            size="small"
-            variant="tonal"
-            color="success"
+        <template #append>
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
           >
-            Crédito (abate da fatura)
-          </VChip>
-        </div>
-        <div
-          v-else
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </template>
+      </VCardItem>
+
+      <VCardText class="px-5 px-sm-8">
+        <VChip
+          v-if="isEditMode && props.transaction?.credit"
+          size="small"
+          variant="tonal"
+          color="success"
           class="mb-6"
-        />
+        >
+          Crédito (abate da fatura)
+        </VChip>
 
         <ApiErrorAlert
           v-if="error"
           :error="error"
-          class="mb-4"
+          class="mb-6"
         />
+
+        <div
+          v-if="!isEditMode"
+          class="mb-6"
+        >
+          <VLabel
+            class="mb-1 text-body-2"
+            text="Tipo de lançamento"
+          />
+
+          <VBtnToggle
+            v-model="transactionType"
+            mandatory
+            divided
+            variant="outlined"
+            color="primary"
+            density="comfortable"
+            class="w-100"
+          >
+            <VBtn
+              value="purchase"
+              :prepend-icon="$vuetify.display.xs ? undefined : 'tabler-shopping-cart'"
+              class="flex-grow-1"
+            >
+              Compra
+            </VBtn>
+
+            <VBtn
+              value="recurring"
+              :prepend-icon="$vuetify.display.xs ? undefined : 'tabler-repeat'"
+              class="flex-grow-1"
+            >
+              Assinatura
+            </VBtn>
+
+            <VBtn
+              value="credit"
+              :prepend-icon="$vuetify.display.xs ? undefined : 'tabler-arrow-back-up'"
+              class="flex-grow-1"
+            >
+              Crédito
+            </VBtn>
+          </VBtnToggle>
+
+          <div class="text-body-2 text-disabled mt-2">
+            {{ transactionTypeHint }}
+          </div>
+        </div>
 
         <VForm ref="formRef">
           <VRow>
@@ -402,7 +472,7 @@ function onClose() {
               <AppTextField
                 v-model="purchaseDate"
                 type="date"
-                label="Data da compra"
+                :label="purchaseDateLabel"
                 :rules="dateRules"
               />
             </VCol>
@@ -418,24 +488,13 @@ function onClose() {
                 :items="referenceMonthItems"
                 item-title="label"
                 item-value="value"
-                hint="No dia do fechamento o banco pode jogar a compra para a fatura seguinte"
+                hint="Compras no dia do fechamento podem cair na fatura seguinte."
                 persistent-hint
               />
             </VCol>
 
             <VCol
-              cols="12"
-              :md="isEditMode && !canChooseReferenceMonth ? 12 : 6"
-            >
-              <AppTextField
-                v-model="description"
-                label="Descrição"
-                placeholder="Opcional"
-              />
-            </VCol>
-
-            <VCol
-              v-if="!isEditMode && !isRecurringSubscription && !isCredit"
+              v-if="!isEditMode && transactionType === 'purchase'"
               cols="12"
               md="6"
             >
@@ -446,58 +505,46 @@ function onClose() {
                 max="60"
                 label="Parcelas"
                 placeholder="Ex: 6"
-                hint="Deixe em branco ou 1 para compra à vista"
+                hint="Em branco ou 1 = à vista."
                 persistent-hint
                 :rules="installmentsRules"
               />
             </VCol>
 
-            <VCol
-              v-if="!isEditMode && !isCredit"
-              cols="12"
-              :md="isRecurringSubscription ? 12 : 6"
-              class="d-flex align-center"
-            >
-              <VCheckbox
-                v-model="isRecurringSubscription"
-                label="Assinatura recorrente (cobra todo mês)"
-                hide-details
-              />
-            </VCol>
-
-            <VCol
-              v-if="!isEditMode && !isRecurringSubscription"
-              cols="12"
-              :md="isCredit ? 12 : 6"
-              class="d-flex align-center"
-            >
-              <VCheckbox
-                v-model="isCredit"
-                label="Lançar como crédito (abate da fatura)"
-                hide-details
+            <VCol cols="12">
+              <AppTextField
+                v-model="description"
+                label="Descrição"
+                placeholder="Opcional"
               />
             </VCol>
           </VRow>
-
-          <div class="d-flex align-center justify-center gap-4 mt-6">
-            <VBtn
-              :loading="isLoading"
-              @click="onSubmit"
-            >
-              {{ isEditMode ? 'Salvar' : 'Criar' }}
-            </VBtn>
-
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              :disabled="isLoading"
-              @click="onClose"
-            >
-              Cancelar
-            </VBtn>
-          </div>
         </VForm>
       </VCardText>
+
+      <VDivider />
+
+      <VCardActions class="px-5 px-sm-8 py-4">
+        <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 w-100">
+          <VBtn
+            :loading="isLoading"
+            :block="$vuetify.display.xs"
+            @click="onSubmit"
+          >
+            {{ isEditMode ? 'Salvar' : 'Criar' }}
+          </VBtn>
+
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            :disabled="isLoading"
+            :block="$vuetify.display.xs"
+            @click="onClose"
+          >
+            Cancelar
+          </VBtn>
+        </div>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>

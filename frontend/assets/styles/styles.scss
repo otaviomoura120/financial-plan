@@ -8,3 +8,18 @@
   width: 28px;
   height: 28px;
 }
+
+// Vuetify clips the messages row (overflow: hidden) and sets line-height: 12px on a 12px font,
+// so a persistent hint that wraps to a second line loses its descenders.
+.v-input__details {
+  overflow: visible;
+}
+
+.v-messages__message {
+  line-height: 1.34;
+}
+
+// Keeps currency columns aligned on the decimal separator.
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

@@ -29,7 +29,7 @@ function choose(result: DeleteInstallmentResult) {
     :model-value="props.isDialogVisible"
     @update:model-value="updateModelValue"
   >
-    <VCard class="text-center px-10 py-6">
+    <VCard class="text-center px-4 px-sm-10 py-6">
       <VCardText>
         <VBtn
           icon

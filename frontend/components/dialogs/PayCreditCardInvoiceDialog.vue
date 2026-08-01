@@ -115,13 +115,13 @@ function onClose() {
   >
     <DialogCloseBtn @click="onClose" />
 
-    <VCard class="pa-sm-10 pa-4">
-      <VCardText>
-        <h4 class="text-h4 text-center mb-2">
+    <VCard class="pa-4 pa-sm-8">
+      <VCardText class="pa-0">
+        <h5 class="text-h5 mb-1">
           Pagar Fatura
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Informe os dados do pagamento da fatura. A categoria é preenchida automaticamente pelo sistema.
+        </h5>
+        <p class="text-body-2 text-disabled mb-6">
+          Informe os dados do pagamento. A categoria é preenchida automaticamente pelo sistema.
         </p>
 
         <ApiErrorAlert
@@ -149,9 +149,10 @@ function onClose() {
             />
           </div>
 
-          <div class="d-flex align-center justify-center gap-4 mt-6">
+          <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 mt-6">
             <VBtn
               :loading="isLoading"
+              :block="$vuetify.display.xs"
               @click="onSubmit"
             >
               Pagar
@@ -161,6 +162,7 @@ function onClose() {
               color="secondary"
               variant="tonal"
               :disabled="isLoading"
+              :block="$vuetify.display.xs"
               @click="onClose"
             >
               Cancelar

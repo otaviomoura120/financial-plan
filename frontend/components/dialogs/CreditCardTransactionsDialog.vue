@@ -359,54 +359,76 @@ function onClose() {
 <template>
   <VDialog
     :model-value="props.isDialogVisible"
-    :width="$vuetify.display.smAndDown ? '100%' : '95%'"
+    :fullscreen="$vuetify.display.smAndDown"
+    width="95%"
     max-width="1600"
     scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
     <VCard
       class="d-flex flex-column"
       style="block-size: 100%"
     >
       <VCardText
-        class="d-flex align-center flex-wrap gap-4"
+        class="d-flex flex-column gap-4"
         style="overflow: visible; flex-shrink: 0;"
       >
-        <h5
-          class="text-h5 text-truncate"
-          style="min-inline-size: 0"
-        >
-          Lançamentos {{ creditCard ? `— ${creditCard.name}` : '' }}
-        </h5>
+        <div class="d-flex align-center gap-2">
+          <h5
+            class="text-h5 text-truncate"
+            style="min-inline-size: 0"
+          >
+            Lançamentos {{ creditCard ? `— ${creditCard.name}` : '' }}
+          </h5>
 
-        <VSpacer />
+          <VSpacer />
 
-        <div
-          class="d-flex flex-wrap align-center gap-2"
-          style="flex-grow: 1; justify-content: flex-end;"
-        >
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </div>
+
+        <div class="d-flex flex-wrap align-end justify-md-end gap-2">
           <MonthYearSelect
             v-model="selectedMonth"
             label="Mês de Referência"
+            class="flex-grow-1 flex-md-grow-0"
           />
 
           <VBtn
+            v-if="$vuetify.display.xs"
+            icon
             variant="tonal"
-            prepend-icon="tabler-refresh"
-            style="align-self: flex-end"
             @click="isSubscriptionsDialogVisible = true"
           >
-            <span class="d-sm-inline">Assinaturas Recorrentes</span>
+            <VIcon icon="tabler-repeat" />
+            <VTooltip activator="parent">
+              Assinaturas Recorrentes
+            </VTooltip>
+          </VBtn>
+
+          <VBtn
+            v-else
+            variant="tonal"
+            prepend-icon="tabler-repeat"
+            @click="isSubscriptionsDialogVisible = true"
+          >
+            Assinaturas Recorrentes
           </VBtn>
 
           <VBtn
             prepend-icon="tabler-plus"
-            style="align-self: flex-end"
             @click="openCreate"
           >
-            <span class="d-sm-inline">Adicionar</span>
+            Adicionar
           </VBtn>
         </div>
       </VCardText>
@@ -453,11 +475,11 @@ function onClose() {
             <thead style="white-space: nowrap">
               <tr>
                 <th>Data da Compra</th>
-                <th style="min-width: 200px">
+                <th style="min-inline-size: 200px">
                   Categoria
                 </th>
                 <th>Descrição</th>
-                <th>Mês de Referência</th>
+                <th>Competência</th>
                 <th>Parcela</th>
                 <th class="text-right">
                   Valor
@@ -472,7 +494,9 @@ function onClose() {
                 v-for="transaction in paginatedTransactions"
                 :key="transaction.id"
               >
-                <td>{{ formatDate(transaction.purchaseDate) }}</td>
+                <td class="text-no-wrap tabular-nums">
+                  {{ formatDate(transaction.purchaseDate) }}
+                </td>
                 <td>
                   {{ categoryName(transaction.categoryId) }}
                   <span
@@ -483,15 +507,21 @@ function onClose() {
                   </span>
                 </td>
                 <td class="text-disabled">
-                  {{ transaction.description || '—' }}
-                </td>
-                <td>
-                  {{ formatReferenceMonth(transaction.competenceMonth) }}
-                  <div class="text-caption text-disabled">
-                    Fatura: {{ formatReferenceMonth(transaction.dueDate) }}
+                  <div
+                    class="text-truncate"
+                    style="max-inline-size: 260px"
+                    :title="transaction.description || undefined"
+                  >
+                    {{ transaction.description || '—' }}
                   </div>
                 </td>
-                <td>
+                <td class="text-no-wrap tabular-nums">
+                  {{ formatReferenceMonth(transaction.competenceMonth) }}
+                  <div class="text-caption text-disabled">
+                    Fatura {{ formatReferenceMonth(transaction.dueDate) }}
+                  </div>
+                </td>
+                <td class="text-no-wrap">
                   <VChip
                     v-if="transaction.credit"
                     size="small"
@@ -526,21 +556,18 @@ function onClose() {
                   </VChip>
                 </td>
                 <td
-                  class="text-right"
+                  class="text-right text-no-wrap tabular-nums font-weight-medium"
                   :class="{ 'text-success': transaction.credit }"
                 >
                   {{ currencyFormatter.format(transaction.credit ? -transaction.amount : transaction.amount) }}
                   <div
                     v-if="transaction.totalInstallments > 1"
-                    class="text-caption text-disabled"
+                    class="text-caption text-disabled font-weight-regular"
                   >
                     Total: {{ currencyFormatter.format(transaction.totalAmount) }}
                   </div>
                 </td>
-                <td
-                  class="text-center"
-                  style="white-space: nowrap"
-                >
+                <td class="text-center text-no-wrap">
                   <VBtn
                     v-if="transaction.totalInstallments > 1 && transaction.installmentNumber < transaction.totalInstallments"
                     icon
@@ -647,8 +674,11 @@ function onClose() {
 </template>
 
 <style scoped>
+/* The wrapper below delegates scrolling to the parent, so the table needs a floor width —
+   otherwise narrow viewports squeeze the columns instead of scrolling horizontally. */
 .credit-card-transactions-table :deep(table) {
   border-collapse: collapse;
+  min-inline-size: 900px;
 }
 
 .credit-card-transactions-table :deep(.v-table__wrapper) {

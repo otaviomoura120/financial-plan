@@ -149,24 +149,41 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 800"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="800"
     scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
     <VCard
       class="d-flex flex-column"
       style="block-size: 100%"
     >
       <VCardText style="overflow: visible; flex-shrink: 0;">
-        <h4 class="text-h4 text-center mb-2">
-          Itens da Fatura {{ dueDate ? `— ${formatReferenceMonth(dueDate)}` : '' }}
-        </h4>
-        <p class="text-body-1 text-center mb-0">
-          Lançamentos que compõem esta fatura, ordenados por data.
-        </p>
+        <div class="d-flex align-start gap-2">
+          <div>
+            <h5 class="text-h5">
+              Itens da Fatura {{ dueDate ? `— ${formatReferenceMonth(dueDate)}` : '' }}
+            </h5>
+            <p class="text-body-2 text-disabled mb-0">
+              Lançamentos que compõem esta fatura, ordenados por data.
+            </p>
+          </div>
+
+          <VSpacer />
+
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </div>
       </VCardText>
 
       <VDivider />
@@ -200,7 +217,7 @@ function onClose() {
             <thead style="white-space: nowrap">
               <tr>
                 <th>Data da Compra</th>
-                <th style="min-width: 200px">
+                <th style="min-inline-size: 200px">
                   Categoria
                 </th>
                 <th>Descrição</th>
@@ -215,7 +232,9 @@ function onClose() {
                 v-for="item in sortedItems"
                 :key="item.id"
               >
-                <td>{{ formatDate(item.purchaseDate) }}</td>
+                <td class="text-no-wrap tabular-nums">
+                  {{ formatDate(item.purchaseDate) }}
+                </td>
                 <td>
                   {{ categoryName(item.categoryId) }}
                   <span
@@ -226,9 +245,15 @@ function onClose() {
                   </span>
                 </td>
                 <td class="text-disabled">
-                  {{ item.description || '—' }}
+                  <div
+                    class="text-truncate"
+                    style="max-inline-size: 220px"
+                    :title="item.description || undefined"
+                  >
+                    {{ item.description || '—' }}
+                  </div>
                 </td>
-                <td>
+                <td class="text-no-wrap">
                   <VChip
                     v-if="item.credit"
                     size="small"
@@ -263,7 +288,7 @@ function onClose() {
                   </VChip>
                 </td>
                 <td
-                  class="text-right"
+                  class="text-right text-no-wrap tabular-nums font-weight-medium"
                   :class="{ 'text-success': item.credit }"
                 >
                   {{ currencyFormatter.format(item.credit ? -item.amount : item.amount) }}
@@ -286,12 +311,13 @@ function onClose() {
       <VDivider />
 
       <VCardText
-        class="d-flex justify-center"
+        class="d-flex justify-end"
         style="overflow: visible; flex-shrink: 0;"
       >
         <VBtn
           color="secondary"
           variant="tonal"
+          :block="$vuetify.display.xs"
           @click="onClose"
         >
           Fechar
@@ -302,8 +328,11 @@ function onClose() {
 </template>
 
 <style scoped>
+/* The wrapper below delegates scrolling to the parent, so the table needs a floor width —
+   otherwise narrow viewports squeeze the columns instead of scrolling horizontally. */
 .invoice-transactions-table :deep(table) {
   border-collapse: collapse;
+  min-inline-size: 760px;
 }
 
 .invoice-transactions-table :deep(.v-table__wrapper) {
