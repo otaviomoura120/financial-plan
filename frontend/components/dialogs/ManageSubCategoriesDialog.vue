@@ -5,12 +5,14 @@ interface SubCategoryResponse {
   categoryId: number
   name: string
   active: boolean
+  system: boolean
 }
 
 interface Props {
   isDialogVisible: boolean
   categoryId: number | null
   categoryName: string
+  categorySystem: boolean
   subCategories: SubCategoryResponse[]
 }
 
@@ -227,7 +229,20 @@ function onClose() {
           class="mb-4"
         />
 
-        <div class="d-flex align-center gap-2 mb-4">
+        <VAlert
+          v-if="props.categorySystem"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          Esta é uma categoria interna do sistema. Suas subcategorias não podem ser alteradas.
+        </VAlert>
+
+        <div
+          v-else
+          class="d-flex align-center gap-2 mb-4"
+        >
           <AppTextField
             v-model="newName"
             placeholder="Nome da nova subcategoria"
@@ -308,6 +323,7 @@ function onClose() {
                 variant="text"
                 size="small"
                 color="default"
+                :disabled="subCategory.system"
                 @click="startEdit(subCategory)"
               >
                 <VIcon icon="tabler-pencil" />
@@ -321,6 +337,7 @@ function onClose() {
                 variant="text"
                 size="small"
                 :color="subCategory.active ? 'secondary' : 'success'"
+                :disabled="subCategory.system"
                 @click="openToggleStatus(subCategory)"
               >
                 <VIcon :icon="subCategory.active ? 'tabler-toggle-right' : 'tabler-toggle-left'" />
@@ -334,6 +351,7 @@ function onClose() {
                 variant="text"
                 size="small"
                 color="error"
+                :disabled="subCategory.system"
                 @click="openDelete(subCategory)"
               >
                 <VIcon icon="tabler-trash" />

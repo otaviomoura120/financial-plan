@@ -49,7 +49,9 @@ Every user in a space has a **Role** (e.g., `OWNER`, `VIEWER`). The `OWNER` role
 Represents a real financial account (bank, digital wallet, etc.). Tracks a running `balance`. Supports `credit(amount)` and `debit(amount)` operations. Scoped to a Space.
 
 ### Category + SubCategory
-Two-level classification hierarchy for transactions. Example: Category = "Food", SubCategory = "Groceries". Both are scoped to a Space and can be deactivated (soft delete).
+Two-level classification hierarchy for transactions. Example: Category = "Food", SubCategory = "Groceries". Both are scoped to a Space and can be deactivated (soft delete). Names are unique — per space for categories, per category for subcategories (`trim()` + case-insensitive, enforced in `CategoryNameValidator`).
+
+Each space also carries two **system categories**, provisioned automatically and locked against editing/deactivating/deleting: `Pagamento de Fatura` (with subcategory `Fatura de Cartão`) and `Transferência`. They label the transactions the application generates by itself and cannot be selected by hand on a user entry. `CategoryResponse`/`SubCategoryResponse` expose a derived `boolean system`. See [`system-categories.md`](system-categories.md).
 
 ### Transaction
 The **central entity** of the system. Represents a single financial event:
@@ -60,7 +62,7 @@ The **central entity** of the system. Represents a single financial event:
 - `description`: optional notes
 - `sourceType` / `sourceId`: optional traceability of an external origin (`TransactionSourceType`: `CREDIT_CARD_INVOICE_PAYMENT`, `BILL_INSTANCE_PAYMENT`). Both are `null` for a transaction created directly through `POST /transactions`; they are only populated when a transaction is generated automatically by paying a credit card invoice or a bill instance (credit card/bills modules)
 
-For `INCOME`/`EXPENSE`, `categoryId` is required and `destinationBankAccountId` must be null. For `TRANSFER`, `destinationBankAccountId` is required and must differ from `bankAccountId`; `categoryId` is not required. `TRANSFER` moves money between two bank accounts within the same space and is excluded from `totalIncome`/`totalExpense`/`balance` in Reports (see below), though it still appears in the transaction list.
+For `INCOME`/`EXPENSE`, `categoryId` is required and `destinationBankAccountId` must be null. For `TRANSFER`, `destinationBankAccountId` is required and must differ from `bankAccountId`; the domain does not require a `categoryId`, but `CreateTransactionService`/`UpdateTransactionService` now stamp the reserved `Transferência` system category on every transfer, so new transfers are never uncategorised (older rows still have a null category). `TRANSFER` moves money between two bank accounts within the same space and is excluded from `totalIncome`/`totalExpense`/`balance` in Reports (see below), though it still appears in the transaction list.
 
 > There used to be a `PaymentMethod` entity (`/payment-methods`) recording how a transaction was paid. It was removed entirely — the concept no longer exists anywhere in the app (Transaction, Bill payment, Credit Card Invoice payment, Reports).
 

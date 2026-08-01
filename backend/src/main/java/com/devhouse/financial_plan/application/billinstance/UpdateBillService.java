@@ -5,6 +5,7 @@ import com.devhouse.financial_plan.application.billinstance.dto.UpdateBillInstan
 import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BillRepository;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
@@ -33,6 +34,7 @@ public class UpdateBillService {
         bill.setVersion(request.version());
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
         bill.updateDetails(request.name(), category, subCategory, request.amount(), request.dueDate());
         bill.validate();
         Bill updated = billRepository.update(bill);

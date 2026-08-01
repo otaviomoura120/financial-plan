@@ -17,12 +17,14 @@ interface SubCategoryOption {
   categoryId: number
   name: string
   active: boolean
+  system: boolean
 }
 
 interface CategoryOption {
   id: number
   name: string
   active: boolean
+  system: boolean
   subCategories: SubCategoryOption[]
 }
 

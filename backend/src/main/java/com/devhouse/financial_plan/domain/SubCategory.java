@@ -51,6 +51,17 @@ public class SubCategory {
         this.active = true;
     }
 
+    public boolean isSystem() {
+        return category != null && category.isSystem();
+    }
+
+    public boolean hasSameName(String otherName) {
+        if (name == null || otherName == null) {
+            return false;
+        }
+        return name.trim().equalsIgnoreCase(otherName.trim());
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

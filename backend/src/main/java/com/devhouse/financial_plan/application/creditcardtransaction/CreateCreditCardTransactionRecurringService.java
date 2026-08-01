@@ -6,6 +6,7 @@ import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.CreditCard;
 import com.devhouse.financial_plan.domain.CreditCardTransactionRecurring;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
@@ -43,6 +44,7 @@ public class CreateCreditCardTransactionRecurringService {
         User user = resolveUser(request.userId());
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
 
         CreditCardTransactionRecurring recurring = new CreditCardTransactionRecurring(null, 0, creditCard, user, category,
                 subCategory, request.description(), request.defaultAmount(), request.startDate(), true, Instant.now(), null);

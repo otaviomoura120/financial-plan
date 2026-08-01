@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.space;
 
+import com.devhouse.financial_plan.application.category.EnsureSystemCategoriesService;
 import com.devhouse.financial_plan.application.space.dto.CreateSpaceRequest;
 import com.devhouse.financial_plan.application.space.dto.SpaceResponse;
 import com.devhouse.financial_plan.domain.EndpointPermission;
@@ -29,17 +30,20 @@ public class CreateSpaceService {
     private final UserRepository userRepository;
     private final EndpointPermissionRepository endpointPermissionRepository;
     private final RoleEndpointPermissionRepository roleEndpointPermissionRepository;
+    private final EnsureSystemCategoriesService ensureSystemCategoriesService;
 
     public CreateSpaceService(SpaceRepository spaceRepository, RoleRepository roleRepository,
                               SpaceMemberRepository spaceMemberRepository, UserRepository userRepository,
                               EndpointPermissionRepository endpointPermissionRepository,
-                              RoleEndpointPermissionRepository roleEndpointPermissionRepository) {
+                              RoleEndpointPermissionRepository roleEndpointPermissionRepository,
+                              EnsureSystemCategoriesService ensureSystemCategoriesService) {
         this.spaceRepository = spaceRepository;
         this.roleRepository = roleRepository;
         this.spaceMemberRepository = spaceMemberRepository;
         this.userRepository = userRepository;
         this.endpointPermissionRepository = endpointPermissionRepository;
         this.roleEndpointPermissionRepository = roleEndpointPermissionRepository;
+        this.ensureSystemCategoriesService = ensureSystemCategoriesService;
     }
 
     public SpaceResponse execute(CreateSpaceRequest request) {
@@ -48,6 +52,7 @@ public class CreateSpaceService {
         space.validate();
         Space saved = spaceRepository.save(space);
         createOwnerMembership(creator, saved);
+        ensureSystemCategoriesService.execute(saved.getId());
         return new SpaceResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.getDescription(), saved.getCreatedDate(), null);
     }
 

@@ -7,6 +7,7 @@ import com.devhouse.financial_plan.domain.CreditCard;
 import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
@@ -54,6 +55,7 @@ public class CreateCreditCardTransactionService {
         User user = resolveUser(request.userId());
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
 
         boolean credit = Boolean.TRUE.equals(request.credit());
         int totalInstallments = credit || request.totalInstallments() == null || request.totalInstallments() <= 1

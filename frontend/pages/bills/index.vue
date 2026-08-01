@@ -23,12 +23,14 @@ interface SubCategoryOption {
   categoryId: number
   name: string
   active: boolean
+  system: boolean
 }
 
 interface CategoryOption {
   id: number
   name: string
   active: boolean
+  system: boolean
   subCategories: SubCategoryOption[]
 }
 
@@ -287,8 +289,8 @@ function formatDate(isoDate: string) {
 
           <VBtn
             variant="tonal"
-            @click="fetchBills"
             style="align-self: flex-end;"
+            @click="fetchBills"
           >
             Filtrar
           </VBtn>
@@ -296,16 +298,16 @@ function formatDate(isoDate: string) {
           <VBtn
             variant="tonal"
             prepend-icon="tabler-calendar-cog"
-            @click="openRecurrenceSettings"
             style="align-self: flex-end;"
+            @click="openRecurrenceSettings"
           >
             <span class="d-sm-inline">Recorrências</span>
           </VBtn>
 
           <VBtn
             prepend-icon="tabler-plus"
-            @click="openAdd"
             style="align-self: flex-end;"
+            @click="openAdd"
           >
             <span class="d-sm-inline">Adicionar</span>
           </VBtn>

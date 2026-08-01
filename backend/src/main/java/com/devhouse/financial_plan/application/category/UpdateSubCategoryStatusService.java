@@ -2,6 +2,7 @@ package com.devhouse.financial_plan.application.category;
 
 import com.devhouse.financial_plan.application.category.dto.SubCategoryResponse;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,12 @@ public class UpdateSubCategoryStatusService {
 
     public SubCategoryResponse execute(Long id, boolean active) {
         SubCategory subCategory = subCategoryRepository.findById(id);
+        if (subCategory == null) {
+            throw new DomainException("Sub category not found");
+        }
+        if (subCategory.isSystem()) {
+            throw new DomainException("System subcategories cannot be modified");
+        }
         if (active) {
             subCategory.activate();
         } else {
@@ -23,6 +30,6 @@ public class UpdateSubCategoryStatusService {
         }
         SubCategory updated = subCategoryRepository.update(subCategory);
         return new SubCategoryResponse(updated.getId(), updated.getVersion(), updated.getCategory().getId(),
-                updated.getName(), updated.isActive());
+                updated.getName(), updated.isActive(), updated.isSystem());
     }
 }

@@ -7,6 +7,7 @@ import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.CategoryRepository
 import com.devhouse.financial_plan.domain.repository.SpaceRepository
+import com.devhouse.financial_plan.domain.repository.SubCategoryRepository
 import spock.lang.Specification
 
 import java.time.Instant
@@ -15,7 +16,9 @@ class CreateCategoryServiceSpec extends Specification {
 
     CategoryRepository categoryRepository = Mock()
     SpaceRepository spaceRepository = Mock()
-    CreateCategoryService service = new CreateCategoryService(categoryRepository, spaceRepository)
+    SubCategoryRepository subCategoryRepository = Mock()
+    CategoryNameValidator categoryNameValidator = new CategoryNameValidator(categoryRepository, subCategoryRepository)
+    CreateCategoryService service = new CreateCategoryService(categoryRepository, spaceRepository, categoryNameValidator)
 
     def "execute creates category linked to space"() {
         given:
@@ -24,6 +27,7 @@ class CreateCategoryServiceSpec extends Specification {
         Category savedCategory = new Category(5L, null, space, "Food", true, Instant.now(), null)
 
         spaceRepository.findById(1L) >> space
+        categoryRepository.findBySpaceId(1L) >> []
         categoryRepository.save(_) >> savedCategory
 
         when:
@@ -53,6 +57,38 @@ class CreateCategoryServiceSpec extends Specification {
         CreateCategoryRequest request = new CreateCategoryRequest(1L, "")
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
         spaceRepository.findById(1L) >> space
+        categoryRepository.findBySpaceId(1L) >> []
+
+        when:
+        service.execute(request)
+
+        then:
+        thrown(DomainException)
+        0 * categoryRepository.save(_)
+    }
+
+
+    def "execute throws DomainException when another category in the space already uses the name"() {
+        given:
+        CreateCategoryRequest request = new CreateCategoryRequest(1L, "  food ")
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        spaceRepository.findById(1L) >> space
+        categoryRepository.findBySpaceId(1L) >> [new Category(7L, 0, space, "Food", true, Instant.now(), null)]
+
+        when:
+        service.execute(request)
+
+        then:
+        thrown(DomainException)
+        0 * categoryRepository.save(_)
+    }
+
+    def "execute throws DomainException when the name is reserved by the system"() {
+        given:
+        CreateCategoryRequest request = new CreateCategoryRequest(1L, "Pagamento de Fatura")
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        spaceRepository.findById(1L) >> space
+        categoryRepository.findBySpaceId(1L) >> []
 
         when:
         service.execute(request)

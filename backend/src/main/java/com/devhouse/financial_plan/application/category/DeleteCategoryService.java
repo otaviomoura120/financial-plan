@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.category;
 
+import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
@@ -21,6 +22,13 @@ public class DeleteCategoryService {
     }
 
     public void execute(Long id) {
+        Category category = categoryRepository.findById(id);
+        if (category == null) {
+            throw new DomainException("Category not found");
+        }
+        if (category.isSystem()) {
+            throw new DomainException("System categories cannot be deleted");
+        }
         if (subCategoryRepository.existsByCategoryId(id)) {
             throw new DomainException("Cannot delete category: there are subcategories linked to it.");
         }

@@ -5,6 +5,7 @@ interface SubCategoryResponse {
   categoryId: number
   name: string
   active: boolean
+  system: boolean
 }
 
 interface CategoryResponse {
@@ -12,6 +13,7 @@ interface CategoryResponse {
   version: number
   name: string
   active: boolean
+  system: boolean
   subCategories: SubCategoryResponse[]
 }
 
@@ -36,6 +38,7 @@ const isTogglingStatus = shallowRef(false)
 const selectedCategory = shallowRef<CategoryResponse | null>(null)
 const subCategoriesTargetId = shallowRef<number | null>(null)
 const subCategoriesTargetName = shallowRef('')
+const subCategoriesTargetSystem = shallowRef(false)
 const subCategoriesTargetList = shallowRef<SubCategoryResponse[]>([])
 
 const filteredCategories = computed(() =>
@@ -99,6 +102,7 @@ function openEdit(category: CategoryResponse) {
 function openSubCategories(category: CategoryResponse) {
   subCategoriesTargetId.value = category.id
   subCategoriesTargetName.value = category.name
+  subCategoriesTargetSystem.value = category.system
   subCategoriesTargetList.value = category.subCategories
   isSubCategoriesDialogVisible.value = true
 }
@@ -314,6 +318,19 @@ function activeSubCategoriesCount(category: CategoryResponse) {
                 >
                   {{ category.active ? 'Ativo' : 'Inativo' }}
                 </VChip>
+
+                <VChip
+                  v-if="category.system"
+                  color="info"
+                  size="small"
+                  variant="tonal"
+                  class="ms-2"
+                >
+                  Sistema
+                  <VTooltip activator="parent">
+                    Categoria interna do sistema, usada nos pagamentos de fatura e transferências
+                  </VTooltip>
+                </VChip>
               </td>
               <td
                 class="text-center"
@@ -337,6 +354,7 @@ function activeSubCategoriesCount(category: CategoryResponse) {
                   variant="text"
                   size="small"
                   color="default"
+                  :disabled="category.system"
                   @click="openEdit(category)"
                 >
                   <VIcon icon="tabler-pencil" />
@@ -350,6 +368,7 @@ function activeSubCategoriesCount(category: CategoryResponse) {
                   variant="text"
                   size="small"
                   :color="category.active ? 'secondary' : 'success'"
+                  :disabled="category.system"
                   @click="openToggleStatus(category)"
                 >
                   <VIcon :icon="category.active ? 'tabler-toggle-right' : 'tabler-toggle-left'" />
@@ -363,6 +382,7 @@ function activeSubCategoriesCount(category: CategoryResponse) {
                   variant="text"
                   size="small"
                   color="error"
+                  :disabled="category.system"
                   @click="openDelete(category)"
                 >
                   <VIcon icon="tabler-trash" />
@@ -404,6 +424,7 @@ function activeSubCategoriesCount(category: CategoryResponse) {
       v-model:is-dialog-visible="isSubCategoriesDialogVisible"
       :category-id="subCategoriesTargetId"
       :category-name="subCategoriesTargetName"
+      :category-system="subCategoriesTargetSystem"
       :sub-categories="subCategoriesTargetList"
       @updated="onSubCategoriesUpdated"
     />

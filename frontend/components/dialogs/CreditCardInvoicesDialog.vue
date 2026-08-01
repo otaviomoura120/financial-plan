@@ -29,12 +29,14 @@ interface SubCategoryResponse {
   categoryId: number
   name: string
   active: boolean
+  system: boolean
 }
 
 interface CategoryResponse {
   id: number
   name: string
   active: boolean
+  system: boolean
   subCategories: SubCategoryResponse[]
 }
 
@@ -439,7 +441,6 @@ function onClose() {
       :credit-card-id="props.creditCardId"
       :reference-month="selectedInvoice?.referenceMonth ?? null"
       :bank-accounts="bankAccounts"
-      :categories="categories"
       @paid="onPaid"
     />
 

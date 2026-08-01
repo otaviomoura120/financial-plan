@@ -61,12 +61,14 @@ interface SubCategoryResponse {
   categoryId: number
   name: string
   active: boolean
+  system: boolean
 }
 
 interface CategoryResponse {
   id: number
   name: string
   active: boolean
+  system: boolean
   subCategories: SubCategoryResponse[]
 }
 
@@ -115,7 +117,7 @@ const bankAccountItems = computed(() =>
 )
 
 const categoryItems = computed(() =>
-  categories.value.map(c => ({ title: c.active ? c.name : `${c.name} (inativo)`, value: c.id })),
+  categories.value.filter(c => !c.system).map(c => ({ title: c.active ? c.name : `${c.name} (inativo)`, value: c.id })),
 )
 
 const selectedCategory = computed(() =>

@@ -1,5 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardinvoice
 
+import com.devhouse.financial_plan.application.category.ResolveSystemCategoryService
+import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair
 import com.devhouse.financial_plan.application.creditcardinvoice.dto.CreditCardInvoicePaymentResponse
 import com.devhouse.financial_plan.application.creditcardinvoice.dto.PayCreditCardInvoiceRequest
 import com.devhouse.financial_plan.application.transaction.CreateTransactionService
@@ -11,6 +13,7 @@ import com.devhouse.financial_plan.domain.CreditCardInvoicePayment
 import com.devhouse.financial_plan.domain.CreditCardTransaction
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.User
+import com.devhouse.financial_plan.domain.enums.SystemCategory
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
@@ -30,9 +33,15 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
     CreditCardInvoicePaymentRepository creditCardInvoicePaymentRepository = Mock()
     UserRepository userRepository = Mock()
     CreateTransactionService createTransactionService = Mock()
+    ResolveSystemCategoryService resolveSystemCategoryService = Mock()
 
     PayCreditCardInvoiceService service = new PayCreditCardInvoiceService(creditCardRepository,
-            creditCardTransactionRepository, creditCardInvoicePaymentRepository, userRepository, createTransactionService)
+            creditCardTransactionRepository, creditCardInvoicePaymentRepository, userRepository, createTransactionService,
+            resolveSystemCategoryService)
+
+    def setup() {
+        resolveSystemCategoryService.execute(1L, SystemCategory.CREDIT_CARD_INVOICE_PAYMENT) >> new SystemCategoryPair(70L, 71L)
+    }
 
     private CreditCard buildCreditCard() {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
@@ -70,7 +79,7 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
             transactionResponse
         }
         creditCardInvoicePaymentRepository.save(_) >> { CreditCardInvoicePayment p -> p }
-        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, 30L, 31L, LocalDate.of(2026, 4, 5))
+        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, LocalDate.of(2026, 4, 5))
 
         when:
         CreditCardInvoicePaymentResponse response = service.execute(10L, LocalDate.of(2026, 3, 1), request, "auth0|1")
@@ -79,8 +88,8 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
         capturedRequest.type() == TransactionType.EXPENSE
         capturedRequest.userId() == 1L
         capturedRequest.bankAccountId() == 2L
-        capturedRequest.categoryId() == 30L
-        capturedRequest.subCategoryId() == 31L
+        capturedRequest.categoryId() == 70L
+        capturedRequest.subCategoryId() == 71L
         capturedRequest.amount() == new BigDecimal("150.00")
         response.creditCardId() == 10L
         response.referenceMonth() == LocalDate.of(2026, 3, 1)
@@ -106,7 +115,7 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
             transactionResponse
         }
         creditCardInvoicePaymentRepository.save(_) >> { CreditCardInvoicePayment p -> p }
-        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, 30L, 31L, LocalDate.of(2026, 4, 5))
+        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, LocalDate.of(2026, 4, 5))
 
         when:
         CreditCardInvoicePaymentResponse response = service.execute(10L, LocalDate.of(2026, 3, 1), request, "auth0|1")
@@ -121,7 +130,7 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
         creditCardRepository.findById(10L) >> buildCreditCard()
         userRepository.findByAuth0Sub("auth0|1") >> buildUser()
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> Mock(CreditCardInvoicePayment)
-        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, 30L, 31L, LocalDate.of(2026, 4, 5))
+        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, LocalDate.of(2026, 4, 5))
 
         when:
         service.execute(10L, LocalDate.of(2026, 3, 1), request, "auth0|1")
@@ -138,7 +147,7 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
         userRepository.findByAuth0Sub("auth0|1") >> buildUser()
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> null
         creditCardTransactionRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> []
-        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, 30L, 31L, LocalDate.of(2026, 4, 5))
+        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, LocalDate.of(2026, 4, 5))
 
         when:
         service.execute(10L, LocalDate.of(2026, 3, 1), request, "auth0|1")
@@ -152,7 +161,7 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
     def "execute throws DomainException when credit card does not exist"() {
         given:
         creditCardRepository.findById(99L) >> null
-        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, 30L, 31L, LocalDate.of(2026, 4, 5))
+        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, LocalDate.of(2026, 4, 5))
 
         when:
         service.execute(99L, LocalDate.of(2026, 3, 1), request, "auth0|1")
@@ -166,7 +175,7 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
         given:
         creditCardRepository.findById(10L) >> buildCreditCard()
         userRepository.findByAuth0Sub("auth0|unknown") >> null
-        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, 30L, 31L, LocalDate.of(2026, 4, 5))
+        PayCreditCardInvoiceRequest request = new PayCreditCardInvoiceRequest(2L, LocalDate.of(2026, 4, 5))
 
         when:
         service.execute(10L, LocalDate.of(2026, 3, 1), request, "auth0|unknown")

@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.space
 
+import com.devhouse.financial_plan.application.category.EnsureSystemCategoriesService
 import com.devhouse.financial_plan.application.space.dto.CreateSpaceRequest
 import com.devhouse.financial_plan.application.space.dto.SpaceResponse
 import com.devhouse.financial_plan.domain.EndpointPermission
@@ -28,8 +29,10 @@ class CreateSpaceServiceSpec extends Specification {
     UserRepository userRepository = Mock()
     EndpointPermissionRepository endpointPermissionRepository = Mock()
     RoleEndpointPermissionRepository roleEndpointPermissionRepository = Mock()
+    EnsureSystemCategoriesService ensureSystemCategoriesService = Mock()
     CreateSpaceService service = new CreateSpaceService(spaceRepository, roleRepository, spaceMemberRepository,
-            userRepository, endpointPermissionRepository, roleEndpointPermissionRepository)
+            userRepository, endpointPermissionRepository, roleEndpointPermissionRepository,
+            ensureSystemCategoriesService)
 
     def "execute creates space, owner role, assigns all non-internal permissions as ALLOW, and saves membership"() {
         given:

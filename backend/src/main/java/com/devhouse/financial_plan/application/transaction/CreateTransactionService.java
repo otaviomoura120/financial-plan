@@ -1,12 +1,16 @@
 package com.devhouse.financial_plan.application.transaction;
 
+import com.devhouse.financial_plan.application.category.ResolveSystemCategoryService;
+import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair;
 import com.devhouse.financial_plan.application.transaction.dto.CreateTransactionRequest;
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse;
 import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.User;
+import com.devhouse.financial_plan.domain.enums.SystemCategory;
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
@@ -29,17 +33,20 @@ public class CreateTransactionService {
     private final SubCategoryRepository subCategoryRepository;
     private final UserRepository userRepository;
     private final TransactionBalanceEffectService balanceEffectService;
+    private final ResolveSystemCategoryService resolveSystemCategoryService;
 
     public CreateTransactionService(TransactionRepository transactionRepository, BankAccountRepository bankAccountRepository,
                                      CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository,
                                      UserRepository userRepository,
-                                     TransactionBalanceEffectService balanceEffectService) {
+                                     TransactionBalanceEffectService balanceEffectService,
+                                     ResolveSystemCategoryService resolveSystemCategoryService) {
         this.transactionRepository = transactionRepository;
         this.bankAccountRepository = bankAccountRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
         this.userRepository = userRepository;
         this.balanceEffectService = balanceEffectService;
+        this.resolveSystemCategoryService = resolveSystemCategoryService;
     }
 
     @Transactional
@@ -52,22 +59,38 @@ public class CreateTransactionService {
         User user = resolveUser(request.userId());
         BankAccount bankAccount = resolveBankAccount(request.bankAccountId(), "Bank account not found");
         BankAccount destinationBankAccount = null;
-        Category category = null;
         if (TransactionType.TRANSFER.equals(request.type())) {
             destinationBankAccount = resolveBankAccount(request.destinationBankAccountId(), "Destination bank account not found");
-        } else {
-            category = resolveCategory(request.categoryId());
         }
-        SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        CategorySelection selection = resolveCategorySelection(request, bankAccount, sourceType);
 
         Transaction transaction = new Transaction(null, 0, request.type(), user, bankAccount, destinationBankAccount,
-                category, subCategory, request.amount(), request.transactionDate(),
+                selection.category(), selection.subCategory(), request.amount(), request.transactionDate(),
                 request.description(), Instant.now(), null, sourceType, sourceId);
         transaction.validate();
         balanceEffectService.apply(transaction);
         Transaction saved = transactionRepository.save(transaction);
         return toResponse(saved);
     }
+
+    private CategorySelection resolveCategorySelection(CreateTransactionRequest request, BankAccount bankAccount,
+                                                        TransactionSourceType sourceType) {
+        if (TransactionType.TRANSFER.equals(request.type())) {
+            return resolveTransferCategorySelection(bankAccount);
+        }
+        Category category = resolveCategory(request.categoryId());
+        SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        SystemCategoryPolicy.rejectManualSelection(category, subCategory, sourceType);
+        return new CategorySelection(category, subCategory);
+    }
+
+    private CategorySelection resolveTransferCategorySelection(BankAccount bankAccount) {
+        SystemCategoryPair pair = resolveSystemCategoryService.execute(bankAccount.getSpace().getId(),
+                SystemCategory.TRANSFER);
+        return new CategorySelection(resolveCategory(pair.categoryId()), resolveSubCategory(pair.subCategoryId()));
+    }
+
+    private record CategorySelection(Category category, SubCategory subCategory) {}
 
     private User resolveUser(Long userId) {
         User user = userRepository.findById(userId);

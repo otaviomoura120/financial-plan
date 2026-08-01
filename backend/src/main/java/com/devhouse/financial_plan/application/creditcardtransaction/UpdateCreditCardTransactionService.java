@@ -6,6 +6,7 @@ import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
@@ -45,6 +46,7 @@ public class UpdateCreditCardTransactionService {
 
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
         LocalDate referenceMonth = resolveReferenceMonth(transaction, request.purchaseDate());
         rejectIfMonthAlreadyPaid(transaction.getCreditCard().getId(), referenceMonth);
 

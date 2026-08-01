@@ -17,10 +17,13 @@ public class CreateCategoryService {
 
     private final CategoryRepository categoryRepository;
     private final SpaceRepository spaceRepository;
+    private final CategoryNameValidator categoryNameValidator;
 
-    public CreateCategoryService(CategoryRepository categoryRepository, SpaceRepository spaceRepository) {
+    public CreateCategoryService(CategoryRepository categoryRepository, SpaceRepository spaceRepository,
+                                  CategoryNameValidator categoryNameValidator) {
         this.categoryRepository = categoryRepository;
         this.spaceRepository = spaceRepository;
+        this.categoryNameValidator = categoryNameValidator;
     }
 
     public CategoryResponse execute(CreateCategoryRequest request) {
@@ -30,7 +33,10 @@ public class CreateCategoryService {
         }
         Category category = new Category(null, 0, space, request.name(), true, Instant.now(), null);
         category.validate();
+        categoryNameValidator.rejectReservedName(request.name());
+        categoryNameValidator.rejectDuplicatedCategoryName(request.spaceId(), request.name(), null);
         Category saved = categoryRepository.save(category);
-        return new CategoryResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.isActive(), List.of());
+        return new CategoryResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.isActive(),
+                saved.isSystem(), List.of());
     }
 }

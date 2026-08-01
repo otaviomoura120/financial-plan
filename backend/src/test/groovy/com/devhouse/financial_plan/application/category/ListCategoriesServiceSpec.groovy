@@ -14,7 +14,9 @@ class ListCategoriesServiceSpec extends Specification {
 
     CategoryRepository categoryRepository = Mock()
     SubCategoryRepository subCategoryRepository = Mock()
-    ListCategoriesService service = new ListCategoriesService(categoryRepository, subCategoryRepository)
+    EnsureSystemCategoriesService ensureSystemCategoriesService = Mock()
+    ListCategoriesService service = new ListCategoriesService(categoryRepository, subCategoryRepository,
+            ensureSystemCategoriesService)
 
     def "execute returns categories of the space with their subcategories populated"() {
         given:

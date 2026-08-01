@@ -66,4 +66,16 @@ class SubCategorySpec extends Specification {
         then:
         subCategory.isActive()
     }
+
+
+    def "isSystem follows the parent category"() {
+        given:
+        Category systemCategory = new Category(1L, 0, null, "Pagamento de Fatura", true, Instant.now(), null)
+        Category normalCategory = new Category(2L, 0, null, "Alimentação", true, Instant.now(), null)
+
+        expect:
+        new SubCategory(10L, 0, systemCategory, "Fatura de Cartão", true, Instant.now(), null).isSystem()
+        !new SubCategory(11L, 0, normalCategory, "Restaurantes", true, Instant.now(), null).isSystem()
+        !new SubCategory(12L, 0, null, "Órfã", true, Instant.now(), null).isSystem()
+    }
 }

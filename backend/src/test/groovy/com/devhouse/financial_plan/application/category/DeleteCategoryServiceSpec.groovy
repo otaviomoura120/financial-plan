@@ -1,10 +1,14 @@
 package com.devhouse.financial_plan.application.category
 
+import com.devhouse.financial_plan.domain.Category
+import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.CategoryRepository
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository
 import com.devhouse.financial_plan.domain.repository.TransactionRepository
 import spock.lang.Specification
+
+import java.time.Instant
 
 class DeleteCategoryServiceSpec extends Specification {
 
@@ -12,6 +16,11 @@ class DeleteCategoryServiceSpec extends Specification {
     SubCategoryRepository subCategoryRepository = Mock()
     TransactionRepository transactionRepository = Mock()
     DeleteCategoryService service = new DeleteCategoryService(categoryRepository, subCategoryRepository, transactionRepository)
+
+    def setup() {
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        categoryRepository.findById(10L) >> new Category(10L, 0, space, "Food", true, Instant.now(), null)
+    }
 
     def "execute hard-deletes the category when there are no subcategories or transactions linked to it"() {
         given:
@@ -49,5 +58,20 @@ class DeleteCategoryServiceSpec extends Specification {
         then:
         thrown(DomainException)
         0 * categoryRepository.delete(_)
+    }
+
+
+    def "execute throws DomainException and does not delete a system category"() {
+        given:
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        categoryRepository.findById(20L) >> new Category(20L, 0, space, "Transferência", true, Instant.now(), null)
+
+        when:
+        service.execute(20L)
+
+        then:
+        thrown(DomainException)
+        0 * categoryRepository.delete(_)
+        0 * subCategoryRepository.existsByCategoryId(_)
     }
 }

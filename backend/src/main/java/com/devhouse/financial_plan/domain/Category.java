@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.domain;
 
+import com.devhouse.financial_plan.domain.enums.SystemCategory;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
@@ -49,6 +50,17 @@ public class Category {
 
     public void activate() {
         this.active = true;
+    }
+
+    public boolean isSystem() {
+        return SystemCategory.fromCategoryName(name) != null;
+    }
+
+    public boolean hasSameName(String otherName) {
+        if (name == null || otherName == null) {
+            return false;
+        }
+        return name.trim().equalsIgnoreCase(otherName.trim());
     }
 
     public Long getId() { return id; }

@@ -7,6 +7,7 @@ import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.CreditCardTransactionRecurring;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
@@ -48,6 +49,7 @@ public class UpdateCreditCardTransactionRecurringService {
         recurring.setVersion(request.version());
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
         recurring.update(category, subCategory, request.defaultAmount(), request.description());
         recurring.updateSchedule(request.startDate());
         recurring.validate();

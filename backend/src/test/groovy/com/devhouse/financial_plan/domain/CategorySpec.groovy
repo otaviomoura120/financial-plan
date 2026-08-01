@@ -44,4 +44,30 @@ class CategorySpec extends Specification {
         then:
         category.isActive()
     }
+
+
+    def "isSystem is true only for reserved category names, ignoring case and surrounding blanks"() {
+        expect:
+        new Category(1L, 0, null, name, true, Instant.now(), null).isSystem() == expected
+
+        where:
+        name                    | expected
+        "Pagamento de Fatura"   | true
+        "  pagamento de fatura" | true
+        "Transferência"         | true
+        "TRANSFERÊNCIA"         | true
+        "Transferencia"         | false
+        "Alimentação"           | false
+        null                    | false
+    }
+
+    def "hasSameName compares names ignoring case and surrounding blanks"() {
+        given:
+        Category category = new Category(1L, 0, null, "Alimentação", true, Instant.now(), null)
+
+        expect:
+        category.hasSameName("  alimentação ")
+        !category.hasSameName("Alimentacao")
+        !category.hasSameName(null)
+    }
 }

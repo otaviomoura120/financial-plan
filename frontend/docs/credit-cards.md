@@ -32,7 +32,7 @@ All already implemented with `@PreAuthorize`.
 | PUT | `/credit-card-transactions/{id}` | `{ version, categoryId, subCategoryId, amount, purchaseDate, description }` | `CreditCardTransactionResponse` |
 | DELETE | `/credit-card-transactions/{id}` | `includeFuture?` (query, default `false`) | `204` (rejected with `422` if the reference month is already paid; when `includeFuture=true` on a grouped purchase, also deletes every later installment of the group, rejecting the whole batch if any of them is already paid) |
 | GET | `/credit-cards/invoices` | `spaceId, creditCardId?, from?, to?` (query) | `CreditCardInvoiceResponse[]` |
-| POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | `{ bankAccountId, categoryId, subCategoryId, paidDate }` | `CreditCardInvoicePaymentResponse` |
+| POST | `/credit-cards/{id}/invoices/{referenceMonth}/pay` | `{ bankAccountId, paidDate }` | `CreditCardInvoicePaymentResponse` |
 | POST | `/credit-cards/{id}/invoices/{referenceMonth}/undo-payment` | — | `204` |
 
 `CreditCardResponse`: `{ id, version, spaceId, name, limit, closingDay, dueDay, active, createdDate, bankAccountId, bankAccountName }`.
@@ -49,8 +49,12 @@ response so the list/report don't need an extra lookup.
 
 `CreditCardInvoiceResponse`: `{ creditCardId, creditCardName, referenceMonth, closingDate, dueDate, totalAmount, paid, paidDate, paidAmount, paymentTransactionId }` — an invoice is never materialized until paid; open invoices are computed on the fly by grouping `CreditCardTransaction` rows by the stored `referenceMonth`.
 
-Note: `categoryId` is **required** in `PayCreditCardInvoiceRequest` (no fallback to a default
-category — unlike `PayBillInstanceRequest`, see `bills.md`).
+Note: `PayCreditCardInvoiceRequest` carries **no category at all**. The payment transaction is
+stamped with the space's reserved "Pagamento de Fatura" / "Fatura de Cartão" system category,
+resolved server-side by `ResolveSystemCategoryService`. Categorising the consolidated invoice was
+meaningless — the purchases inside it are what carry real categories — and the by-category report
+excludes invoice-payment transactions anyway (see `reports-by-category.md`). System categories are
+filtered out of every entry dialog's category dropdown and cannot be picked by hand.
 
 `referenceMonth` on `GET /credit-card-transactions` is an exact-match filter (not a range) added
 so the frontend can fetch exactly the transactions belonging to one invoice — this is the same
@@ -74,7 +78,7 @@ purchase's month.
 | `components/dialogs/AddEditCreditCardDialog.vue` | Create/edit dialog for `CreditCard` |
 | `components/dialogs/AddEditCreditCardTransactionDialog.vue` | Create/edit dialog for `CreditCardTransaction`, with an installments field only shown when creating |
 | `components/dialogs/AnticipateInstallmentsDialog.vue` | Anticipates the last N installments of a group into the current open invoice |
-| `components/dialogs/PayCreditCardInvoiceDialog.vue` | Pay-invoice dialog (`bankAccountId`, `categoryId`, `subCategoryId`, `paidDate`) |
+| `components/dialogs/PayCreditCardInvoiceDialog.vue` | Pay-invoice dialog (`bankAccountId`, `paidDate`) |
 | `components/dialogs/ConfirmDialog.vue` | Reused for delete and undo-payment confirmations (binary yes/no) |
 | `components/dialogs/DeleteInstallmentDialog.vue` | 3-option delete confirmation ("somente esta parcela" / "esta e as futuras" / cancelar) shown instead of `ConfirmDialog` when deleting a row with `totalInstallments > 1` |
 | `components/MonthYearSelect.vue` | Shared month+year picker (also used by `/reports` and `/reports/by-category`) — `v-model` is a `YYYY-MM-01` string |

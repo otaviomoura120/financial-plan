@@ -24,12 +24,14 @@ interface SubCategoryResponse {
   categoryId: number
   name: string
   active: boolean
+  system: boolean
 }
 
 interface CategoryResponse {
   id: number
   name: string
   active: boolean
+  system: boolean
   subCategories: SubCategoryResponse[]
 }
 

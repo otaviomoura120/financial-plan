@@ -7,6 +7,7 @@ interface SubCategoryResponse {
   categoryId: number
   name: string
   active: boolean
+  system: boolean
 }
 
 interface CategoryResponse {
@@ -14,6 +15,7 @@ interface CategoryResponse {
   version: number
   name: string
   active: boolean
+  system: boolean
   subCategories: SubCategoryResponse[]
 }
 

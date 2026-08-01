@@ -6,6 +6,7 @@ import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.enums.BillInstanceStatus;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BillRepository;
@@ -39,6 +40,7 @@ public class CreateBillInstanceService {
         Space space = resolveSpace(request.spaceId());
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
         YearMonth referenceMonth = YearMonth.from(request.dueDate());
 
         Bill bill = new Bill(null, 0, space, null, request.name(), category, subCategory, referenceMonth.atDay(1),

@@ -1,5 +1,7 @@
 package com.devhouse.financial_plan.application.transaction
 
+import com.devhouse.financial_plan.application.category.ResolveSystemCategoryService
+import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse
 import com.devhouse.financial_plan.application.transaction.dto.UpdateTransactionRequest
 import com.devhouse.financial_plan.domain.BankAccount
@@ -7,6 +9,7 @@ import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
 import com.devhouse.financial_plan.domain.User
+import com.devhouse.financial_plan.domain.enums.SystemCategory
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
@@ -27,8 +30,15 @@ class UpdateTransactionServiceSpec extends Specification {
     SubCategoryRepository subCategoryRepository = Mock()
     TransactionBalanceEffectService balanceEffectService = new TransactionBalanceEffectService(bankAccountRepository)
 
+    ResolveSystemCategoryService resolveSystemCategoryService = Mock()
+
     UpdateTransactionService service = new UpdateTransactionService(transactionRepository, bankAccountRepository,
-            categoryRepository, subCategoryRepository, balanceEffectService)
+            categoryRepository, subCategoryRepository, balanceEffectService, resolveSystemCategoryService)
+
+    def setup() {
+        resolveSystemCategoryService.execute(_, SystemCategory.TRANSFER) >> new SystemCategoryPair(90L, null)
+        categoryRepository.findById(90L) >> new Category(90L, 0, null, "Transferência", true, Instant.now(), null)
+    }
 
     private BankAccount buildAccount(Long id, BigDecimal balance) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
@@ -170,6 +180,26 @@ class UpdateTransactionServiceSpec extends Specification {
         then:
         thrown(DomainException)
         0 * bankAccountRepository.update(_)
+        0 * transactionRepository.update(_)
+    }
+
+
+    def "execute throws DomainException when a system category is selected on an edit"() {
+        given:
+        BankAccount account = buildAccount(1L, new BigDecimal("500.00"))
+        Transaction existing = new Transaction(5L, 0, TransactionType.EXPENSE, buildUser(1L), account, null,
+                buildCategoryObj(10L), null, new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
+        transactionRepository.findById(5L) >> existing
+        bankAccountRepository.findById(1L) >> account
+        categoryRepository.findById(11L) >> new Category(11L, 0, null, "Transferência", true, Instant.now(), null)
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 11L, null,
+                new BigDecimal("100.00"), LocalDate.now(), "desc")
+
+        when:
+        service.execute(5L, request)
+
+        then:
+        thrown(DomainException)
         0 * transactionRepository.update(_)
     }
 }

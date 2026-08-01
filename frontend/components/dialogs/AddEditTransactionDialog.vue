@@ -29,12 +29,14 @@ interface SubCategoryOption {
   categoryId: number
   name: string
   active: boolean
+  system: boolean
 }
 
 interface CategoryOption {
   id: number
   name: string
   active: boolean
+  system: boolean
   subCategories: SubCategoryOption[]
 }
 
@@ -101,7 +103,7 @@ const destinationBankAccountItems = computed(() =>
 )
 
 const categoryItems = computed(() =>
-  props.categories.map(c => ({ ...c, label: optionLabel(c) })),
+  props.categories.filter(c => !c.system).map(c => ({ ...c, label: optionLabel(c) })),
 )
 
 const selectedCategory = computed(() =>

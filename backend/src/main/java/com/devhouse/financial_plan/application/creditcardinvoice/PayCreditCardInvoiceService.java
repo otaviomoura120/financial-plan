@@ -1,5 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardinvoice;
 
+import com.devhouse.financial_plan.application.category.ResolveSystemCategoryService;
+import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair;
 import com.devhouse.financial_plan.application.creditcardinvoice.dto.CreditCardInvoicePaymentResponse;
 import com.devhouse.financial_plan.application.creditcardinvoice.dto.PayCreditCardInvoiceRequest;
 import com.devhouse.financial_plan.application.transaction.CreateTransactionService;
@@ -10,6 +12,7 @@ import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardInvoicePayment;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.User;
+import com.devhouse.financial_plan.domain.enums.SystemCategory;
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
@@ -33,16 +36,19 @@ public class PayCreditCardInvoiceService {
     private final CreditCardInvoicePaymentRepository creditCardInvoicePaymentRepository;
     private final UserRepository userRepository;
     private final CreateTransactionService createTransactionService;
+    private final ResolveSystemCategoryService resolveSystemCategoryService;
 
     public PayCreditCardInvoiceService(CreditCardRepository creditCardRepository,
                                         CreditCardTransactionRepository creditCardTransactionRepository,
                                         CreditCardInvoicePaymentRepository creditCardInvoicePaymentRepository,
-                                        UserRepository userRepository, CreateTransactionService createTransactionService) {
+                                        UserRepository userRepository, CreateTransactionService createTransactionService,
+                                        ResolveSystemCategoryService resolveSystemCategoryService) {
         this.creditCardRepository = creditCardRepository;
         this.creditCardTransactionRepository = creditCardTransactionRepository;
         this.creditCardInvoicePaymentRepository = creditCardInvoicePaymentRepository;
         this.userRepository = userRepository;
         this.createTransactionService = createTransactionService;
+        this.resolveSystemCategoryService = resolveSystemCategoryService;
     }
 
     @Transactional
@@ -61,8 +67,10 @@ public class PayCreditCardInvoiceService {
 
         LocalDate dueDate = CreditCardInvoiceCycle.resolveDueDate(referenceMonth, creditCard.getClosingDay(), creditCard.getDueDay());
 
+        SystemCategoryPair systemCategory = resolveSystemCategoryService.execute(creditCard.getSpace().getId(),
+                SystemCategory.CREDIT_CARD_INVOICE_PAYMENT);
         CreateTransactionRequest transactionRequest = new CreateTransactionRequest(TransactionType.EXPENSE, user.getId(),
-                request.bankAccountId(), null, request.categoryId(), request.subCategoryId(), totalAmount,
+                request.bankAccountId(), null, systemCategory.categoryId(), systemCategory.subCategoryId(), totalAmount,
                 request.paidDate(), "Pagamento de fatura - " + creditCard.getName());
         TransactionResponse paymentTransaction = createTransactionService.execute(transactionRequest,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, creditCard.getId());

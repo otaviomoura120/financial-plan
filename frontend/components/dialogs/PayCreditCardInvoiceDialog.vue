@@ -18,26 +18,11 @@ interface OptionItem {
   active: boolean
 }
 
-interface SubCategoryOption {
-  id: number
-  categoryId: number
-  name: string
-  active: boolean
-}
-
-interface CategoryOption {
-  id: number
-  name: string
-  active: boolean
-  subCategories: SubCategoryOption[]
-}
-
 interface Props {
   isDialogVisible: boolean
   creditCardId: number | null
   referenceMonth: string | null
   bankAccounts: OptionItem[]
-  categories: CategoryOption[]
 }
 
 interface Emit {
@@ -61,8 +46,6 @@ function toLocalDateString(date: Date) {
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 
 const bankAccountId = shallowRef<number | null>(null)
-const categoryId = shallowRef<number | null>(null)
-const subCategoryId = shallowRef<number | null>(null)
 const paidDate = shallowRef<string>('')
 const isLoading = shallowRef(false)
 
@@ -71,27 +54,15 @@ function optionLabel(item: OptionItem) {
 }
 
 const bankAccountItems = computed(() => props.bankAccounts.map(ba => ({ ...ba, label: optionLabel(ba) })))
-const categoryItems = computed(() => props.categories.map(c => ({ ...c, label: optionLabel(c) })))
-
-const selectedCategory = computed(() => props.categories.find(c => c.id === categoryId.value) ?? null)
-const subCategoryItems = computed(() => (selectedCategory.value?.subCategories ?? []).map(sc => ({ ...sc, label: optionLabel(sc) })))
 
 const bankAccountRules = [(v: number | null) => v !== null || 'Conta é obrigatória']
-const categoryRules = [(v: number | null) => v !== null || 'Categoria é obrigatória']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
-
-watch(categoryId, () => {
-  if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value))
-    subCategoryId.value = null
-})
 
 watch(
   () => props.isDialogVisible,
   visible => {
     if (visible) {
       bankAccountId.value = null
-      categoryId.value = null
-      subCategoryId.value = null
       paidDate.value = toLocalDateString(new Date())
       clearError()
     }
@@ -114,8 +85,6 @@ async function onSubmit() {
         method: 'POST',
         body: {
           bankAccountId: bankAccountId.value,
-          categoryId: categoryId.value,
-          subCategoryId: subCategoryId.value,
           paidDate: paidDate.value,
         },
       },
@@ -151,7 +120,7 @@ function onClose() {
           Pagar Fatura
         </h4>
         <p class="text-body-1 text-center mb-6">
-          Informe os dados do pagamento da fatura.
+          Informe os dados do pagamento da fatura. A categoria é preenchida automaticamente pelo sistema.
         </p>
 
         <ApiErrorAlert
@@ -169,25 +138,6 @@ function onClose() {
               item-title="label"
               item-value="id"
               :rules="bankAccountRules"
-            />
-
-            <AppSelect
-              v-model="categoryId"
-              label="Categoria"
-              :items="categoryItems"
-              item-title="label"
-              item-value="id"
-              :rules="categoryRules"
-            />
-
-            <AppSelect
-              v-model="subCategoryId"
-              label="Subcategoria"
-              :items="subCategoryItems"
-              item-title="label"
-              item-value="id"
-              clearable
-              :disabled="!selectedCategory"
             />
 
             <AppTextField
