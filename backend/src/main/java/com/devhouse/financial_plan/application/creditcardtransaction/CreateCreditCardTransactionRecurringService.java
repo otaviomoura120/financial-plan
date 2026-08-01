@@ -27,15 +27,18 @@ public class CreateCreditCardTransactionRecurringService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
+    private final EnsureRecurringCreditCardTransactionsGeneratedService ensureRecurringCreditCardTransactionsGeneratedService;
 
     public CreateCreditCardTransactionRecurringService(CreditCardTransactionRecurringRepository creditCardTransactionRecurringRepository,
                                                          CreditCardRepository creditCardRepository, UserRepository userRepository,
-                                                         CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository) {
+                                                         CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository,
+                                                         EnsureRecurringCreditCardTransactionsGeneratedService ensureRecurringCreditCardTransactionsGeneratedService) {
         this.creditCardTransactionRecurringRepository = creditCardTransactionRecurringRepository;
         this.creditCardRepository = creditCardRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
+        this.ensureRecurringCreditCardTransactionsGeneratedService = ensureRecurringCreditCardTransactionsGeneratedService;
     }
 
     @Transactional
@@ -50,6 +53,7 @@ public class CreateCreditCardTransactionRecurringService {
                 subCategory, request.description(), request.defaultAmount(), request.startDate(), true, Instant.now(), null);
         recurring.validate();
         CreditCardTransactionRecurring saved = creditCardTransactionRecurringRepository.save(recurring);
+        ensureRecurringCreditCardTransactionsGeneratedService.executeForRecurring(saved);
         return toResponse(saved);
     }
 

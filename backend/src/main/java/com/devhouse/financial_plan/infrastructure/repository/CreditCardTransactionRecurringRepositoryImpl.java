@@ -92,6 +92,13 @@ public class CreditCardTransactionRecurringRepositoryImpl implements CreditCardT
     }
 
     @Override
+    public List<CreditCardTransactionRecurring> findAllActive() {
+        return jpaCreditCardTransactionRecurringRepository.findByActiveTrue().stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public void delete(Long id) {
         jpaCreditCardTransactionRecurringRepository.deleteById(id);
     }

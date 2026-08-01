@@ -114,6 +114,15 @@ CRUD is exposed via `CreditCardTransactionController` (`/credit-card-transaction
 
 **Anticipation** (`AnticipateCreditCardInstallmentsService`, `POST .../installment-groups/{id}/anticipate`): moves the last N installments of a purchase into an earlier **open** invoice (`targetReferenceMonth`). It rejects if the target invoice is already paid, if `installmentsToAnticipate` is not positive, or if there aren't enough installments strictly after `targetReferenceMonth` to satisfy the request. Eligible installments are picked by descending `installmentNumber` (the last ones first), each moved via the domain's `anticipateTo(...)` (see above — safe against double-anticipation). **It never touches money** — no `TransactionBalanceEffectService` call here; the balance effect only happens later, when the target invoice is actually paid through `PayCreditCardInvoiceService` (CC6), like any other invoice. A full write-up of the invoice/anticipation flow lands in `backend/docs/credit-card-invoice.md` together with CC6.
 
+### CreditCardTransactionRecurring
+A subscription config (Netflix, Spotify, a gym plan) — the template that produces one `CreditCardTransaction` per month, not a charge itself. Tenancy is **indirect**, through `CreditCard`: there is no `space` field, which is why `CreditCardTransactionRecurringRepositoryImpl.findBySpaceId` needs a Criteria subquery over `credit_cards` while `BillRecurring` can filter directly.
+- Links: `creditCard`, `user`, `category`, `subCategory` (optional) — copied into each generated charge at generation time
+- `description`, `defaultAmount` (positive `BigDecimal`), `startDate` (anchors the day-of-month of every generated purchase), `active`
+- `update(category, subCategory, defaultAmount, description)` and `updateSchedule(startDate)` are separate methods, same split as `BillRecurring`
+- **No `endDate`/`installments`/`lastReferenceMonth()`, deliberately unlike `BillRecurring`:** a card subscription never ends on its own — it is stopped by `deactivate()` or by deleting the template. So the generator has no `applyRecurrenceEnd` equivalent to clamp against.
+
+Each month materializes a real single-installment `CreditCardTransaction` (fresh `installmentGroupId`, `credit = false`) whose `referenceMonth` comes from `CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, closingDay)` — so with `closingDay = 5` a day-10 subscription lands in the *next* month's invoice. Generation is idempotent and runs from three places: lazily on `GET /credit-card-transactions`, eagerly when the template is created or updated, and nightly via `RecurringCreditCardTransactionsGenerationScheduler`. Full write-up in `backend/docs/credit-card-invoice.md`, section "Recurring subscriptions".
+
 ### BillRecurring
 A recurrence config (electricity, internet, rent) — the thing that produces monthly occurrences, not an occurrence itself (see `Bill` below). Only exists for bills the user marked recurring; a one-off bill never creates one. Tenancy is direct, same pattern as `CreditCard`/`BankAccount`:
 - `name`, `category`/`subCategory` (optional, used as the defaults copied into each generated occurrence), `defaultAmount` (positive `BigDecimal`, copied into each generated occurrence), `startDate` (`LocalDate` — anchors the first due date and the day-of-month of every future due date), `active`
@@ -316,6 +325,10 @@ POST /endpoint-permissions  → define which roles can access which endpoints
 | PUT | `/{id}` | Update a single installment's `categoryId`/`subCategoryId`/`amount`/`purchaseDate`/`description` (rejects with 422 if its invoice is already paid) |
 | DELETE | `/{id}?includeFuture=` | Delete an installment (hard delete; rejects with 422 if its invoice is already paid). `includeFuture` defaults to `false` (deletes only this row); `includeFuture=true` on a grouped purchase (`totalInstallments > 1`) also deletes every later installment in the same group (rejects with 422, deleting nothing, if any of them belongs to an already-paid invoice) |
 | POST | `/installment-groups/{installmentGroupId}/anticipate` | Move the last N installments of a purchase to an earlier open invoice (`targetReferenceMonth`, `installmentsToAnticipate`); returns the whole updated group |
+| GET | `/recurring?spaceId=` | List the space's `CreditCardTransactionRecurring` subscription templates |
+| POST | `/recurring` | Create a subscription (`creditCardId`, `userId`, `categoryId`, `subCategoryId?`, `description`, `defaultAmount`, `startDate`) — the next 12 months of charges are generated right away |
+| PUT | `/recurring/{id}` | Update a subscription's category/amount/description/`startDate`; rewrites its charges from the current month onward (skipping paid invoices), then materializes any newly-uncovered months |
+| DELETE | `/recurring/{id}` | Delete the template: unpaid charges from the current month onward are removed, past/paid ones are detached (`credit_card_transaction_recurring_id = null`) and kept |
 
 ### Credit Card Invoices `/credit-cards/invoices`, `/credit-cards/{id}/invoices/{referenceMonth}`
 Full cycle explained in `backend/docs/credit-card-invoice.md` — an invoice is never materialized until paid; "paid" == a `CreditCardInvoicePayment` row exists for `(creditCardId, referenceMonth)`.

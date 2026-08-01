@@ -28,16 +28,19 @@ public class UpdateCreditCardTransactionRecurringService {
     private final CreditCardInvoicePaymentRepository creditCardInvoicePaymentRepository;
     private final CategoryRepository categoryRepository;
     private final SubCategoryRepository subCategoryRepository;
+    private final EnsureRecurringCreditCardTransactionsGeneratedService ensureRecurringCreditCardTransactionsGeneratedService;
 
     public UpdateCreditCardTransactionRecurringService(CreditCardTransactionRecurringRepository creditCardTransactionRecurringRepository,
                                                         CreditCardTransactionRepository creditCardTransactionRepository,
                                                         CreditCardInvoicePaymentRepository creditCardInvoicePaymentRepository,
-                                                        CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository) {
+                                                        CategoryRepository categoryRepository, SubCategoryRepository subCategoryRepository,
+                                                        EnsureRecurringCreditCardTransactionsGeneratedService ensureRecurringCreditCardTransactionsGeneratedService) {
         this.creditCardTransactionRecurringRepository = creditCardTransactionRecurringRepository;
         this.creditCardTransactionRepository = creditCardTransactionRepository;
         this.creditCardInvoicePaymentRepository = creditCardInvoicePaymentRepository;
         this.categoryRepository = categoryRepository;
         this.subCategoryRepository = subCategoryRepository;
+        this.ensureRecurringCreditCardTransactionsGeneratedService = ensureRecurringCreditCardTransactionsGeneratedService;
     }
 
     @Transactional
@@ -55,6 +58,7 @@ public class UpdateCreditCardTransactionRecurringService {
         recurring.validate();
         CreditCardTransactionRecurring updated = creditCardTransactionRecurringRepository.update(recurring);
         updateCurrentAndFutureTransactions(updated);
+        ensureRecurringCreditCardTransactionsGeneratedService.executeForRecurring(updated);
         return toResponse(updated);
     }
 

@@ -9,4 +9,6 @@ public interface JpaCreditCardTransactionRecurringRepository extends JpaReposito
         JpaSpecificationExecutor<CreditCardTransactionRecurringEntityJpa> {
 
     List<CreditCardTransactionRecurringEntityJpa> findByCreditCard_Id(Long creditCardId);
+
+    List<CreditCardTransactionRecurringEntityJpa> findByActiveTrue();
 }

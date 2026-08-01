@@ -10,5 +10,6 @@ public interface CreditCardTransactionRecurringRepository {
     CreditCardTransactionRecurring findById(Long id);
     List<CreditCardTransactionRecurring> findBySpaceId(Long spaceId);
     List<CreditCardTransactionRecurring> findByCreditCardId(Long creditCardId);
+    List<CreditCardTransactionRecurring> findAllActive();
     void delete(Long id);
 }

@@ -73,6 +73,37 @@ This avoids double-negation: every consumer that needs the net value calls `getS
 
 **Frontend:** the lançamento dialog has a "Lançar como crédito (abate da fatura)" checkbox (creation only, mutually exclusive with parcelas and recurring); the transaction lists and invoice-items view render credits negative (green) with a "Crédito" chip.
 
+## Recurring subscriptions — `CreditCardTransactionRecurring`
+
+A subscription (Netflix, Spotify, a gym plan) is a **template**, not an occurrence: `CreditCardTransactionRecurring` holds `creditCard`/`user`/`category`/`subCategory?`/`description`/`defaultAmount`/`startDate`/`active` and produces one real `CreditCardTransaction` per month. Unlike an invoice — which is never materialized because there is always something to group by the time anyone asks — a future subscription charge has nothing to group, so it must be written ahead of time (same reasoning as `Bill` in `recurring-bills.md`).
+
+Each generated charge is a single-installment purchase: `totalInstallments = 1`, `credit = false`, a fresh `installmentGroupId` per month (they are independent purchases, not a parcelled one), `amount` snapshotted from `defaultAmount` at generation time.
+
+### Generating — `EnsureRecurringCreditCardTransactionsGeneratedService`
+
+1. Start from the month after the latest existing charge of that recurrence (`findByCreditCardTransactionRecurringId`, max purchase month), or from `startDate`'s month if none exist yet — never before `startDate`.
+2. Walk forward one month at a time up to `capMonth`, which is at least `current month + credit-cards.recurring.horizon-months` (default 12) and honours a further `to` filter up to `credit-cards.recurring.max-horizon-months` (default 60). **That ceiling matters:** `resolveCapMonth` had no upper bound before, so `GET /credit-card-transactions?to=9999-12-31` would insert tens of thousands of rows per subscription inside one request transaction.
+3. `purchaseDate` anchors to `startDate`'s day-of-month, clamped to the target month's length (Jan 31 → Feb 28/29), and `referenceMonth` comes from `CreditCardInvoiceCycle.resolveReferenceMonth(purchaseDate, closingDay)` — so with `closingDay = 5` a day-10 subscription lands in the **next** month's invoice.
+4. Idempotent by construction: `findByCreditCardTransactionRecurringIdAndPurchaseMonth` is checked before every insert. Note this is the **only** duplicate guard — unlike `bills`, which has a DB `@UniqueConstraint(bill_recurring_id, reference_month)` behind it. That is why the invoice listing and the report services deliberately stay read-only: a second concurrent writer racing the nightly job could pass the check simultaneously and produce a genuine duplicate charge.
+
+Two entry points: `execute(spaceId, upToDate)` (lazy, from `ListCreditCardTransactionsService`) and `executeForRecurring(recurring)` (one template, up to the default horizon), used by `CreateCreditCardTransactionRecurringService`, `UpdateCreditCardTransactionRecurringService` and the nightly batch below. `UpdateCreditCardTransactionRecurringService` calls it **after** rewriting current/future charges, so the rewrite settles first and only genuinely-new months get created — this is what makes moving `startDate` backwards take effect immediately instead of waiting for the next run.
+
+### Keeping the horizon full — batch + scheduler
+
+Lazy generation only fires when someone opens the card's transaction screen, so on an idle space the horizon drifts backwards and subscriptions silently vanish from future invoices and reports. `RecurringCreditCardTransactionsGenerationScheduler` (`infrastructure/scheduler/`, enabled by `@EnableScheduling` on `FinancialPlanApplication`) runs `credit-cards.recurring.generation-cron` and delegates to `GenerateRecurringCreditCardTransactionsBatchService`, which walks `CreditCardTransactionRecurringRepository.findAllActive()` across every space and calls `executeForRecurring` per template.
+
+Exactly the shape of the bills job (`recurring-bills.md`): the batch service is not `@Transactional`, so each per-template call crosses a bean boundary and commits on its own — a failing subscription is logged at ERROR and skipped instead of aborting the batch. Daily rather than monthly on purpose, since it is idempotent and a monthly job would miss its window if the app were down that day.
+
+The cron defaults to **03:30**, half an hour after the bills job at 03:00. Spring's scheduler pool is single-threaded by default, so two jobs on the same expression would serialize unpredictably and neither log would tell you which one owned a long run.
+
+### A month whose invoice was already paid is dropped, permanently
+
+`createTransactionIfMissing` skips a month when a `CreditCardInvoicePayment` already exists for the computed `referenceMonth` — correct, and it must stay: the invoice total was computed and paid from exactly the rows in that bucket, and `CreateCreditCardTransactionService` refuses to insert into a paid invoice for the same reason.
+
+The consequence is worth knowing. The skip returns **without persisting anything**, so that month never joins the `max(purchase month)` set the cursor is built from. Once a later month exists, the cursor starts past the hole and the skipped month is never retried — not on the next nightly run, and not even after `UndoCreditCardInvoicePaymentService` reopens the invoice. It is a permanent silent gap, not an infinite retry. A `LOGGER.debug` in the skip branch records it so a support question about a missing subscription charge is answerable from the logs; recovery is manual (add that month's charge via `POST /credit-card-transactions`).
+
+Shifting the purchase forward to the next open invoice — what a real issuer does with a post-closing purchase — would remove the gap, but it moves money the user believes belongs to a month they already budgeted. That is a product decision, not a scheduler detail.
+
 ## Listing invoices — `ListCreditCardInvoicesService`
 
 `GET /credit-cards/invoices?spaceId=&creditCardId=&from=&to=`

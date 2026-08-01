@@ -26,9 +26,11 @@ class CreateCreditCardTransactionRecurringServiceSpec extends Specification {
     UserRepository userRepository = Mock()
     CategoryRepository categoryRepository = Mock()
     SubCategoryRepository subCategoryRepository = Mock()
+    EnsureRecurringCreditCardTransactionsGeneratedService ensureRecurringCreditCardTransactionsGeneratedService = Mock()
 
     CreateCreditCardTransactionRecurringService service = new CreateCreditCardTransactionRecurringService(
-            creditCardTransactionRecurringRepository, creditCardRepository, userRepository, categoryRepository, subCategoryRepository)
+            creditCardTransactionRecurringRepository, creditCardRepository, userRepository, categoryRepository, subCategoryRepository,
+            ensureRecurringCreditCardTransactionsGeneratedService)
 
     private CreditCard buildCreditCard() {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
@@ -64,6 +66,7 @@ class CreateCreditCardTransactionRecurringServiceSpec extends Specification {
         response.defaultAmount() == new BigDecimal("39.90")
         response.startDate() == LocalDate.of(2026, 3, 10)
         response.active()
+        1 * ensureRecurringCreditCardTransactionsGeneratedService.executeForRecurring({ it.id == 10L })
     }
 
     def "execute resolves the optional subCategory when informed"() {

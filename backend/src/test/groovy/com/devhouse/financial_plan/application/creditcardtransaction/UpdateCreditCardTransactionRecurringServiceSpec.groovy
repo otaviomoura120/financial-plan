@@ -28,10 +28,11 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
     CreditCardInvoicePaymentRepository creditCardInvoicePaymentRepository = Mock()
     CategoryRepository categoryRepository = Mock()
     SubCategoryRepository subCategoryRepository = Mock()
+    EnsureRecurringCreditCardTransactionsGeneratedService ensureRecurringCreditCardTransactionsGeneratedService = Mock()
 
     UpdateCreditCardTransactionRecurringService service = new UpdateCreditCardTransactionRecurringService(
             creditCardTransactionRecurringRepository, creditCardTransactionRepository, creditCardInvoicePaymentRepository,
-            categoryRepository, subCategoryRepository)
+            categoryRepository, subCategoryRepository, ensureRecurringCreditCardTransactionsGeneratedService)
 
     private CreditCard buildCreditCard(int closingDay = 28, int dueDay = 5) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
@@ -73,6 +74,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
         response.defaultAmount() == new BigDecimal("59.90")
         response.description() == "Xbox Game Pass"
         response.startDate() == LocalDate.of(2026, 6, 1)
+        1 * ensureRecurringCreditCardTransactionsGeneratedService.executeForRecurring({ it.startDate == LocalDate.of(2026, 6, 1) })
     }
 
     def "execute also updates already-generated transactions from the current month onward"() {

@@ -19,12 +19,16 @@ import java.time.temporal.ChronoUnit
 
 class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specification {
 
+    static final int HORIZON_MONTHS = 12
+    static final int MAX_HORIZON_MONTHS = 60
+
     CreditCardTransactionRecurringRepository creditCardTransactionRecurringRepository = Mock()
     CreditCardTransactionRepository creditCardTransactionRepository = Mock()
     CreditCardInvoicePaymentRepository creditCardInvoicePaymentRepository = Mock()
 
     EnsureRecurringCreditCardTransactionsGeneratedService service = new EnsureRecurringCreditCardTransactionsGeneratedService(
-            creditCardTransactionRecurringRepository, creditCardTransactionRepository, creditCardInvoicePaymentRepository)
+            creditCardTransactionRecurringRepository, creditCardTransactionRepository, creditCardInvoicePaymentRepository,
+            HORIZON_MONTHS, MAX_HORIZON_MONTHS)
 
     private Space buildSpace() {
         new Space(1L, 0, "My Space", null, Instant.now(), null)
@@ -53,7 +57,7 @@ class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specific
                 new BigDecimal("39.90"), false, purchaseDate, "Netflix", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
     }
 
-    def "execute generates through at least 6 months ahead of the current month, even when the requested upToDate is only the current month"() {
+    def "execute generates through at least the configured horizon ahead of the current month, even when the requested upToDate is only the current month"() {
         given:
         YearMonth startMonth = YearMonth.now().minusMonths(2)
         CreditCardTransactionRecurring recurring = buildRecurring(startMonth.atDay(10))
@@ -68,7 +72,7 @@ class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specific
         service.execute(1L, LocalDate.now())
 
         then:
-        YearMonth expectedCapMonth = YearMonth.now().plusMonths(6)
+        YearMonth expectedCapMonth = YearMonth.now().plusMonths(HORIZON_MONTHS)
         saved.size() == ChronoUnit.MONTHS.between(startMonth, expectedCapMonth) + 1
         YearMonth.from(saved.first().purchaseDate) == startMonth
         YearMonth.from(saved.last().purchaseDate) == expectedCapMonth
@@ -76,7 +80,7 @@ class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specific
         saved*.installmentGroupId.toSet().size() == saved.size()
     }
 
-    def "execute extends beyond the 6-month floor when the requested upToDate asks for more"() {
+    def "execute extends beyond the horizon floor when the requested upToDate asks for more"() {
         given:
         YearMonth startMonth = YearMonth.now()
         CreditCardTransactionRecurring recurring = buildRecurring(startMonth.atDay(10))
@@ -88,10 +92,29 @@ class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specific
         creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
 
         when:
-        service.execute(1L, YearMonth.now().plusMonths(9).atDay(1))
+        service.execute(1L, YearMonth.now().plusMonths(HORIZON_MONTHS + 6).atDay(1))
 
         then:
-        YearMonth.from(saved.last().purchaseDate) == YearMonth.now().plusMonths(9)
+        YearMonth.from(saved.last().purchaseDate) == YearMonth.now().plusMonths(HORIZON_MONTHS + 6)
+    }
+
+    def "execute never generates past the max horizon ceiling, however far the requested upToDate reaches"() {
+        given:
+        YearMonth startMonth = YearMonth.now()
+        CreditCardTransactionRecurring recurring = buildRecurring(startMonth.atDay(10))
+        creditCardTransactionRecurringRepository.findBySpaceId(1L) >> [recurring]
+        creditCardTransactionRepository.findByCreditCardTransactionRecurringId(10L) >> []
+        creditCardTransactionRepository.findByCreditCardTransactionRecurringIdAndPurchaseMonth(10L, _) >> []
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
+        List<CreditCardTransaction> saved = []
+        creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
+
+        when:
+        service.execute(1L, YearMonth.now().plusMonths(240).atDay(1))
+
+        then:
+        YearMonth.from(saved.last().purchaseDate) == YearMonth.now().plusMonths(MAX_HORIZON_MONTHS)
+        saved.size() == MAX_HORIZON_MONTHS + 1
     }
 
     def "execute computes referenceMonth via the credit card closing day, not just the purchase month"() {
@@ -200,6 +223,59 @@ class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specific
 
         when:
         service.execute(1L, LocalDate.of(2026, 3, 15))
+
+        then:
+        0 * creditCardTransactionRepository.findByCreditCardTransactionRecurringId(_)
+        0 * creditCardTransactionRepository.save(_)
+    }
+
+    def "executeForRecurring materializes the whole horizon for a single subscription, without looking it up by space"() {
+        given:
+        YearMonth startMonth = YearMonth.now()
+        CreditCardTransactionRecurring recurring = buildRecurring(startMonth.atDay(10))
+        creditCardTransactionRepository.findByCreditCardTransactionRecurringId(10L) >> []
+        creditCardTransactionRepository.findByCreditCardTransactionRecurringIdAndPurchaseMonth(10L, _) >> []
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
+        List<CreditCardTransaction> saved = []
+        creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
+
+        when:
+        service.executeForRecurring(recurring)
+
+        then:
+        0 * creditCardTransactionRecurringRepository.findBySpaceId(_)
+        saved.size() == HORIZON_MONTHS + 1
+        YearMonth.from(saved.first().purchaseDate) == startMonth
+        YearMonth.from(saved.last().purchaseDate) == startMonth.plusMonths(HORIZON_MONTHS)
+    }
+
+    def "executeForRecurring resumes after the last already-generated month instead of regenerating"() {
+        given:
+        YearMonth startMonth = YearMonth.now().minusMonths(3)
+        CreditCardTransactionRecurring recurring = buildRecurring(startMonth.atDay(10))
+        creditCardTransactionRepository.findByCreditCardTransactionRecurringId(10L) >> [
+                buildGeneratedTransaction(startMonth.atDay(10), startMonth.atDay(1)),
+                buildGeneratedTransaction(startMonth.plusMonths(1).atDay(10), startMonth.plusMonths(1).atDay(1))
+        ]
+        creditCardTransactionRepository.findByCreditCardTransactionRecurringIdAndPurchaseMonth(10L, _) >> []
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
+        List<CreditCardTransaction> saved = []
+        creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
+
+        when:
+        service.executeForRecurring(recurring)
+
+        then:
+        YearMonth.from(saved.first().purchaseDate) == startMonth.plusMonths(2)
+        YearMonth.from(saved.last().purchaseDate) == YearMonth.now().plusMonths(HORIZON_MONTHS)
+    }
+
+    def "executeForRecurring ignores an inactive subscription"() {
+        given:
+        CreditCardTransactionRecurring recurring = buildRecurring(YearMonth.now().atDay(10), false)
+
+        when:
+        service.executeForRecurring(recurring)
 
         then:
         0 * creditCardTransactionRepository.findByCreditCardTransactionRecurringId(_)

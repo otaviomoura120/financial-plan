@@ -43,6 +43,8 @@ The per-recurrence call is a separate bean invocation, so each one gets its own 
 
 `CreateBillService` also calls `executeForRecurring` right after saving, so a new recurrence materializes its whole first year immediately instead of waiting for the next listing. `UpdateBillRecurringService` calls it too, after deleting the pending bills that fall past a shortened end — so moving the end forward or backward both take effect at once.
 
+The credit card module now mirrors this whole pattern for subscriptions (`CreditCardTransactionRecurring`), on an offset cron so the two batches don't compete for the single-threaded scheduler pool — see `credit-card-invoice.md`, section "Recurring subscriptions".
+
 ## Listing bill occurrences — `ListBillInstancesService`
 
 `GET /bills/instances?spaceId=&from=&to=`
