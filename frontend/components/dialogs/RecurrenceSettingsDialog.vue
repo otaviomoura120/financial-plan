@@ -164,26 +164,55 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 900"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="900"
     scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
     <VCard
-      class="d-flex flex-column pa-sm-10 pa-4"
+      class="d-flex flex-column pa-4 pa-sm-8"
       style="block-size: 100%"
     >
       <VCardText
-        class="d-flex flex-column flex-grow-1"
+        class="d-flex flex-column flex-grow-1 pa-0"
         style="overflow: hidden; min-height: 0;"
       >
-        <h4 class="text-h4 text-center mb-2">
-          Configurações de Recorrência
-        </h4>
-        <p class="text-body-1 text-center mb-6">
-          Contas que se repetem todo mês. Alterações aqui afetam as contas pendentes do mês atual em diante (já geradas ou não); as de meses anteriores ou já pagas não são alteradas.
+        <div class="d-flex align-start gap-2 mb-1">
+          <h5 class="text-h5">
+            Configurações de Recorrência
+          </h5>
+
+          <VSpacer />
+
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </div>
+
+        <p class="text-body-2 text-disabled mb-6">
+          Contas que se repetem todo mês.
+          <span class="d-inline-flex align-center cursor-pointer">
+            <VIcon
+              icon="tabler-info-circle"
+              size="16"
+            />
+            <VTooltip
+              activator="parent"
+              location="bottom"
+              max-width="320"
+            >
+              Alterações afetam as contas pendentes do mês atual em diante; as de meses anteriores ou já pagas não são alteradas.
+            </VTooltip>
+          </span>
         </p>
 
         <ApiErrorAlert
@@ -242,19 +271,16 @@ function onClose() {
                 <td class="text-disabled">
                   {{ categoryName(billRecurring.categoryId) }}
                 </td>
-                <td>
+                <td class="text-no-wrap tabular-nums font-weight-medium">
                   {{ currencyFormatter.format(billRecurring.defaultAmount) }}
                 </td>
-                <td class="text-disabled">
+                <td class="text-disabled text-no-wrap tabular-nums">
                   {{ formatDate(billRecurring.startDate) }}
                 </td>
-                <td class="text-disabled">
+                <td class="text-disabled text-no-wrap">
                   {{ formatRecurrenceEnd(billRecurring) }}
                 </td>
-                <td
-                  class="text-center"
-                  style="white-space: nowrap"
-                >
+                <td class="text-center text-no-wrap">
                   <VBtn
                     icon
                     variant="text"
@@ -295,10 +321,11 @@ function onClose() {
           </VTable>
         </div>
 
-        <div class="d-flex align-center justify-center mt-6">
+        <div class="d-flex justify-end mt-6">
           <VBtn
             color="secondary"
             variant="tonal"
+            :block="$vuetify.display.xs"
             @click="onClose"
           >
             Fechar
@@ -327,8 +354,11 @@ function onClose() {
 </template>
 
 <style scoped>
+/* The wrapper below delegates scrolling to the parent, so the table needs a floor width —
+   otherwise narrow viewports squeeze the columns instead of scrolling horizontally. */
 .bill-recurrings-table :deep(table) {
   border-collapse: collapse;
+  min-inline-size: 820px;
 }
 
 .bill-recurrings-table :deep(.v-table__wrapper) {

@@ -22,6 +22,9 @@ const emit = defineEmits<Emit>()
 const unsubscribed = ref(false)
 const cancelled = ref(false)
 
+// A destructive confirmation passes confirmColor="error"; the badge should match it.
+const badgeColor = computed(() => props.confirmColor ?? 'warning')
+
 const updateModelValue = (val: boolean) => {
   emit('update:isDialogVisible', val)
 }
@@ -52,40 +55,48 @@ const onCancel = () => {
     :model-value="props.isDialogVisible"
     @update:model-value="updateModelValue"
   >
-    <VCard class="text-center px-10 py-6">
-      <VCardText>
-        <VBtn
-          icon
-          variant="outlined"
-          color="warning"
-          class="my-4"
-          style=" block-size: 88px;inline-size: 88px; pointer-events: none;"
+    <VCard class="text-center px-4 px-sm-8 py-6">
+      <VCardText class="pb-4">
+        <VAvatar
+          :color="badgeColor"
+          variant="tonal"
+          size="72"
+          class="mb-5"
         >
-          <span class="text-5xl">!</span>
-        </VBtn>
+          <VIcon
+            icon="tabler-alert-triangle"
+            size="36"
+          />
+        </VAvatar>
 
-        <h6 class="text-lg font-weight-medium">
+        <h6 class="text-h6 font-weight-medium text-wrap">
           {{ props.confirmationQuestion }}
         </h6>
       </VCardText>
 
-      <VCardText class="d-flex align-center justify-center gap-2">
-        <VBtn
-          variant="elevated"
-          :color="props.confirmColor"
-          @click="onConfirmation"
-        >
-          Confirm
-        </VBtn>
+      <VCardActions class="pa-0">
+        <div class="d-flex flex-column flex-sm-row justify-sm-center gap-3 w-100">
+          <VBtn
+            variant="elevated"
+            :color="props.confirmColor ?? 'primary'"
+            :slim="false"
+            :block="$vuetify.display.xs"
+            @click="onConfirmation"
+          >
+            Confirmar
+          </VBtn>
 
-        <VBtn
-          color="secondary"
-          variant="tonal"
-          @click="onCancel"
-        >
-          Cancel
-        </VBtn>
-      </VCardText>
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            :slim="false"
+            :block="$vuetify.display.xs"
+            @click="onCancel"
+          >
+            Cancelar
+          </VBtn>
+        </div>
+      </VCardActions>
     </VCard>
   </VDialog>
 
@@ -95,28 +106,30 @@ const onCancel = () => {
     max-width="500"
   >
     <VCard>
-      <VCardText class="text-center px-10 py-6">
-        <VBtn
-          icon
-          variant="outlined"
+      <VCardText class="text-center px-4 px-sm-8 py-6">
+        <VAvatar
           color="success"
-          class="my-4"
-          style=" block-size: 88px;inline-size: 88px; pointer-events: none;"
+          variant="tonal"
+          size="72"
+          class="mb-5"
         >
           <VIcon
             icon="tabler-check"
-            size="38"
+            size="36"
           />
-        </VBtn>
+        </VAvatar>
 
-        <h1 class="text-h4 mb-4">
+        <h5 class="text-h5 mb-2">
           {{ props.confirmTitle }}
-        </h1>
+        </h5>
 
-        <p>{{ props.confirmMsg }}</p>
+        <p class="text-body-2 text-disabled">
+          {{ props.confirmMsg }}
+        </p>
 
         <VBtn
           color="success"
+          :block="$vuetify.display.xs"
           @click="unsubscribed = false"
         >
           Ok
@@ -131,25 +144,31 @@ const onCancel = () => {
     max-width="500"
   >
     <VCard>
-      <VCardText class="text-center px-10 py-6">
-        <VBtn
-          icon
-          variant="outlined"
+      <VCardText class="text-center px-4 px-sm-8 py-6">
+        <VAvatar
           color="error"
-          class="my-4"
-          style=" block-size: 88px;inline-size: 88px; pointer-events: none;"
+          variant="tonal"
+          size="72"
+          class="mb-5"
         >
-          <span class="text-5xl font-weight-light">X</span>
-        </VBtn>
+          <VIcon
+            icon="tabler-x"
+            size="36"
+          />
+        </VAvatar>
 
-        <h1 class="text-h4 mb-4">
+        <h5 class="text-h5 mb-2">
           {{ props.cancelTitle }}
-        </h1>
+        </h5>
 
-        <p>{{ props.cancelMsg }}</p>
+        <p class="text-body-2 text-disabled">
+          {{ props.cancelMsg }}
+        </p>
 
         <VBtn
-          color="success"
+          color="secondary"
+          variant="tonal"
+          :block="$vuetify.display.xs"
           @click="cancelled = false"
         >
           Ok

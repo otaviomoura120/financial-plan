@@ -139,22 +139,37 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 560"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="560"
+    scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
-    <VCard class="pa-sm-10 pa-4">
-      <VCardText>
-        <h4 class="text-h4 text-center mb-2">
+    <VCard class="d-flex flex-column">
+      <VCardItem class="px-5 px-sm-8 pt-5 pt-sm-8">
+        <VCardTitle class="text-h5 text-wrap">
           Adicionar Usuário
-        </h4>
-
-        <p class="text-body-1 text-center text-disabled mb-6">
+        </VCardTitle>
+        <VCardSubtitle class="text-wrap">
           Busque por e-mail para adicionar ao espaço atual.
-        </p>
+        </VCardSubtitle>
 
+        <template #append>
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </template>
+      </VCardItem>
+
+      <VCardText class="px-5 px-sm-8">
         <ApiErrorAlert
           v-if="error"
           :error="error"
@@ -163,24 +178,12 @@ function onClose() {
 
         <!-- Step: search -->
         <div v-if="step === 'search'">
-          <div class="d-flex gap-3">
-            <AppTextField
-              v-model="email"
-              label="E-mail"
-              placeholder="usuario@exemplo.com"
-              class="flex-grow-1"
-              @keyup.enter="searchUser"
-            />
-
-            <VBtn
-              :loading="isSearching"
-              :disabled="!email.trim()"
-              style="margin-block-start: 26px"
-              @click="searchUser"
-            >
-              Buscar
-            </VBtn>
-          </div>
+          <AppTextField
+            v-model="email"
+            label="E-mail"
+            placeholder="usuario@exemplo.com"
+            @keyup.enter="searchUser"
+          />
         </div>
 
         <!-- Step: found -->
@@ -210,28 +213,7 @@ function onClose() {
             item-title="name"
             item-value="id"
             :loading="isLoadingRoles"
-            class="mb-4"
           />
-
-          <div class="d-flex align-center justify-center gap-4 mt-2">
-            <VBtn
-              :loading="isSubmitting"
-              :disabled="!selectedRoleId"
-              prepend-icon="tabler-mail"
-              @click="sendInvite"
-            >
-              Enviar Convite
-            </VBtn>
-
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              :disabled="isSubmitting"
-              @click="backToSearch"
-            >
-              Voltar
-            </VBtn>
-          </div>
         </div>
 
         <!-- Step: not-found -->
@@ -256,30 +238,53 @@ function onClose() {
             item-title="name"
             item-value="id"
             :loading="isLoadingRoles"
-            class="mb-4"
           />
-
-          <div class="d-flex align-center justify-center gap-4 mt-2">
-            <VBtn
-              :loading="isSubmitting"
-              :disabled="!selectedRoleId"
-              prepend-icon="tabler-mail"
-              @click="sendInvite"
-            >
-              Enviar Convite
-            </VBtn>
-
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              :disabled="isSubmitting"
-              @click="backToSearch"
-            >
-              Voltar
-            </VBtn>
-          </div>
         </div>
       </VCardText>
+
+      <VDivider />
+
+      <VCardActions class="px-5 px-sm-8 py-4">
+        <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 w-100">
+          <VBtn
+            v-if="step === 'search'"
+            color="primary"
+            variant="elevated"
+            :slim="false"
+            :loading="isSearching"
+            :disabled="!email.trim()"
+            :block="$vuetify.display.xs"
+            @click="searchUser"
+          >
+            Buscar
+          </VBtn>
+
+          <VBtn
+            v-else
+            color="primary"
+            variant="elevated"
+            :slim="false"
+            :loading="isSubmitting"
+            :disabled="!selectedRoleId"
+            prepend-icon="tabler-mail"
+            :block="$vuetify.display.xs"
+            @click="sendInvite"
+          >
+            Enviar Convite
+          </VBtn>
+
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            :slim="false"
+            :disabled="isSubmitting"
+            :block="$vuetify.display.xs"
+            @click="step === 'search' ? onClose() : backToSearch()"
+          >
+            {{ step === 'search' ? 'Cancelar' : 'Voltar' }}
+          </VBtn>
+        </div>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>

@@ -525,8 +525,15 @@ function onClose() {
       <VDivider />
 
       <VCardActions class="px-5 px-sm-8 py-4">
+        <!--
+          VCardActions pushes variant: 'text' and slim: true onto nested buttons, which would
+          strip the primary fill off the submit button — both are overridden explicitly here.
+        -->
         <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 w-100">
           <VBtn
+            color="primary"
+            variant="elevated"
+            :slim="false"
             :loading="isLoading"
             :block="$vuetify.display.xs"
             @click="onSubmit"
@@ -537,6 +544,7 @@ function onClose() {
           <VBtn
             color="secondary"
             variant="tonal"
+            :slim="false"
             :disabled="isLoading"
             :block="$vuetify.display.xs"
             @click="onClose"

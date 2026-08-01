@@ -107,26 +107,37 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 500"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="500"
+    scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
-    <VCard class="pa-sm-10 pa-4">
-      <VCardText>
-        <h4 class="text-h4 text-center mb-2">
+    <VCard class="d-flex flex-column">
+      <VCardItem class="px-5 px-sm-8 pt-5 pt-sm-8">
+        <VCardTitle class="text-h5 text-wrap">
           Alterar Role
-        </h4>
+        </VCardTitle>
+        <VCardSubtitle class="text-wrap">
+          {{ props.member?.userName }} · {{ props.member?.userEmail }}
+        </VCardSubtitle>
 
-        <p class="text-body-1 text-center font-weight-medium mb-0">
-          {{ props.member?.userName }}
-        </p>
+        <template #append>
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </template>
+      </VCardItem>
 
-        <p class="text-body-2 text-center text-disabled mb-6">
-          {{ props.member?.userEmail }}
-        </p>
-
+      <VCardText class="px-5 px-sm-8">
         <ApiErrorAlert
           v-if="error"
           :error="error"
@@ -144,11 +155,19 @@ function onClose() {
             :rules="roleRules"
           />
         </div>
+      </VCardText>
 
-        <div class="d-flex align-center justify-center gap-4 mt-6">
+      <VDivider />
+
+      <VCardActions class="px-5 px-sm-8 py-4">
+        <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 w-100">
           <VBtn
+            color="primary"
+            variant="elevated"
+            :slim="false"
             :loading="isSaving"
             :disabled="isLoadingRoles"
+            :block="$vuetify.display.xs"
             @click="onSave"
           >
             Salvar
@@ -157,13 +176,15 @@ function onClose() {
           <VBtn
             color="secondary"
             variant="tonal"
+            :slim="false"
             :disabled="isSaving"
+            :block="$vuetify.display.xs"
             @click="onClose"
           >
             Cancelar
           </VBtn>
         </div>
-      </VCardText>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>

@@ -123,21 +123,37 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 640"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="640"
+    scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
-    <VCard class="pa-sm-10 pa-4">
-      <VCardText>
-        <h4 class="text-h4 text-center mb-2">
+    <VCard class="d-flex flex-column">
+      <VCardItem class="px-5 px-sm-8 pt-5 pt-sm-8">
+        <VCardTitle class="text-h5 text-wrap">
           {{ isEditMode ? 'Editar Permissão' : 'Adicionar Permissão' }}
-        </h4>
-        <p class="text-body-1 text-center mb-6">
+        </VCardTitle>
+        <VCardSubtitle class="text-wrap">
           {{ isEditMode ? 'Atualize os dados da permissão de endpoint.' : 'Preencha os dados para criar uma nova permissão.' }}
-        </p>
+        </VCardSubtitle>
 
+        <template #append>
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </template>
+      </VCardItem>
+
+      <VCardText class="px-5 px-sm-8">
         <ApiErrorAlert
           v-if="error"
           :error="error"
@@ -193,26 +209,36 @@ function onClose() {
               type="number"
             />
           </div>
-
-          <div class="d-flex align-center justify-center gap-4 mt-6">
-            <VBtn
-              :loading="isLoading"
-              @click="onSubmit"
-            >
-              {{ isEditMode ? 'Salvar' : 'Criar' }}
-            </VBtn>
-
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              :disabled="isLoading"
-              @click="onClose"
-            >
-              Cancelar
-            </VBtn>
-          </div>
         </VForm>
       </VCardText>
+
+      <VDivider />
+
+      <VCardActions class="px-5 px-sm-8 py-4">
+        <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 w-100">
+          <VBtn
+            :loading="isLoading"
+            color="primary"
+            variant="elevated"
+            :block="$vuetify.display.xs"
+            :slim="false"
+            @click="onSubmit"
+          >
+            {{ isEditMode ? 'Salvar' : 'Criar' }}
+          </VBtn>
+
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            :disabled="isLoading"
+            :block="$vuetify.display.xs"
+            :slim="false"
+            @click="onClose"
+          >
+            Cancelar
+          </VBtn>
+        </div>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>

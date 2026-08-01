@@ -142,44 +142,58 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 800"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="800"
+    scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
-    <VCard>
-      <VCardText class="d-flex align-center flex-wrap gap-4 pa-6">
-        <div>
-          <h4 class="text-h5">
-            Itens do Menu
-          </h4>
-          <p class="text-body-2 text-disabled mb-0">
-            {{ props.groupMenu?.name }}
-          </p>
-        </div>
+    <VCard class="d-flex flex-column">
+      <VCardItem class="px-5 px-sm-8 pt-5 pt-sm-8 pb-4">
+        <VCardTitle class="text-h5 text-wrap">
+          Itens do Menu
+        </VCardTitle>
+        <VCardSubtitle class="text-wrap">
+          {{ props.groupMenu?.name }}
+        </VCardSubtitle>
 
-        <VSpacer />
+        <template #append>
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </template>
+      </VCardItem>
 
+      <VCardText class="d-flex flex-wrap align-center gap-2 px-5 px-sm-8 py-0">
         <VTextField
           v-model="search"
           placeholder="Buscar por nome ou endpoint..."
           density="compact"
           prepend-inner-icon="tabler-search"
+          class="flex-grow-1"
           style="max-inline-size: 260px"
           hide-details
         />
 
+        <VSpacer />
+
         <VBtn
           prepend-icon="tabler-plus"
-          size="small"
           @click="openCreate"
         >
           Adicionar
         </VBtn>
       </VCardText>
 
-      <VDivider />
+      <VDivider class="mt-4" />
 
       <ApiErrorAlert
         v-if="error"
@@ -198,73 +212,77 @@ function onClose() {
         </div>
       </VSnackbar>
 
-      <VTable>
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Endpoint</th>
-            <th>Ícone</th>
-            <th class="text-center">
-              Ações
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="child in paginatedChildren"
-            :key="child.id"
-          >
-            <td class="font-weight-medium">
-              {{ child.name }}
-            </td>
-            <td class="text-disabled">
-              {{ child.endpoint }}
-            </td>
-            <td>
-              <VIcon
-                :icon="child.icon"
-                size="18"
-              />
-            </td>
-            <td class="text-center">
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="default"
-                @click="openEdit(child)"
-              >
-                <VIcon icon="tabler-pencil" />
-                <VTooltip activator="parent">
-                  Editar
-                </VTooltip>
-              </VBtn>
-
-              <VBtn
-                icon
-                variant="text"
-                size="small"
-                color="error"
-                @click="openDelete(child)"
-              >
-                <VIcon icon="tabler-trash" />
-                <VTooltip activator="parent">
-                  Excluir
-                </VTooltip>
-              </VBtn>
-            </td>
-          </tr>
-
-          <tr v-if="filteredChildren.length === 0">
-            <td
-              colspan="4"
-              class="text-center text-disabled py-8"
+      <VCardText class="pa-0">
+        <VTable class="group-menu-children-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Endpoint</th>
+              <th>Ícone</th>
+              <th class="text-center">
+                Ações
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="child in paginatedChildren"
+              :key="child.id"
             >
-              {{ search ? 'Nenhum item encontrado para a busca.' : 'Nenhum item cadastrado neste group menu.' }}
-            </td>
-          </tr>
-        </tbody>
-      </VTable>
+              <td class="font-weight-medium">
+                {{ child.name }}
+              </td>
+              <td class="text-disabled">
+                {{ child.endpoint }}
+              </td>
+              <td>
+                <VIcon
+                  :icon="child.icon"
+                  size="18"
+                />
+              </td>
+              <td class="text-center">
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="default"
+                  @click="openEdit(child)"
+                >
+                  <VIcon icon="tabler-pencil" />
+                  <VTooltip activator="parent">
+                    Editar
+                  </VTooltip>
+                </VBtn>
+
+                <VBtn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="error"
+                  @click="openDelete(child)"
+                >
+                  <VIcon icon="tabler-trash" />
+                  <VTooltip activator="parent">
+                    Excluir
+                  </VTooltip>
+                </VBtn>
+              </td>
+            </tr>
+
+            <tr v-if="filteredChildren.length === 0">
+              <td
+                colspan="4"
+                class="text-center text-disabled py-8"
+              >
+                {{ search ? 'Nenhum item encontrado para a busca.' : 'Nenhum item cadastrado neste group menu.' }}
+              </td>
+            </tr>
+          </tbody>
+        </VTable>
+      </VCardText>
+
+      <VDivider v-if="filteredChildren.length > 0" />
 
       <TablePagination
         v-if="filteredChildren.length > 0"
@@ -293,3 +311,11 @@ function onClose() {
     />
   </VDialog>
 </template>
+
+<style scoped>
+/* Endpoint values are long; give the table a floor width so narrow viewports scroll it
+   horizontally instead of squeezing every column. */
+.group-menu-children-table :deep(table) {
+  min-inline-size: 620px;
+}
+</style>

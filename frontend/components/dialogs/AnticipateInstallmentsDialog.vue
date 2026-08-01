@@ -131,21 +131,37 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 500"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="500"
+    scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
-    <VCard class="pa-4 pa-sm-8">
-      <VCardText class="pa-0">
-        <h5 class="text-h5 mb-1">
+    <VCard class="d-flex flex-column">
+      <VCardItem class="px-5 px-sm-8 pt-5 pt-sm-8">
+        <VCardTitle class="text-h5 text-wrap">
           Antecipar Parcelas
-        </h5>
-        <p class="text-body-2 text-disabled mb-6">
+        </VCardTitle>
+        <VCardSubtitle class="text-wrap">
           Move as últimas parcelas desta compra para a fatura aberta atual.
-        </p>
+        </VCardSubtitle>
 
+        <template #append>
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </template>
+      </VCardItem>
+
+      <VCardText class="px-5 px-sm-8">
         <ApiErrorAlert
           v-if="error"
           :error="error"
@@ -176,29 +192,37 @@ function onClose() {
             placeholder="Ex: 2"
             :rules="installmentsRules"
           />
-
-          <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 mt-6">
-            <VBtn
-              :loading="isSubmitting"
-              :disabled="eligibleInstallments.length === 0"
-              :block="$vuetify.display.xs"
-              @click="onSubmit"
-            >
-              Antecipar
-            </VBtn>
-
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              :disabled="isSubmitting"
-              :block="$vuetify.display.xs"
-              @click="onClose"
-            >
-              Cancelar
-            </VBtn>
-          </div>
         </VForm>
       </VCardText>
+
+      <VDivider />
+
+      <VCardActions class="px-5 px-sm-8 py-4">
+        <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 w-100">
+          <VBtn
+            color="primary"
+            variant="elevated"
+            :slim="false"
+            :loading="isSubmitting"
+            :disabled="eligibleInstallments.length === 0"
+            :block="$vuetify.display.xs"
+            @click="onSubmit"
+          >
+            Antecipar
+          </VBtn>
+
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            :slim="false"
+            :disabled="isSubmitting"
+            :block="$vuetify.display.xs"
+            @click="onClose"
+          >
+            Cancelar
+          </VBtn>
+        </div>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>

@@ -160,18 +160,37 @@ function onClose() {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 600"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="600"
+    scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
-    <VCard class="pa-sm-10 pa-4">
-      <VCardText>
-        <h4 class="text-h4 text-center mb-2">
+    <VCard class="d-flex flex-column">
+      <VCardItem class="px-5 px-sm-8 pt-5 pt-sm-8">
+        <VCardTitle class="text-h5 text-wrap">
           Editar meus dados
-        </h4>
+        </VCardTitle>
+        <VCardSubtitle class="text-wrap">
+          Atualize suas informações pessoais.
+        </VCardSubtitle>
 
+        <template #append>
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </template>
+      </VCardItem>
+
+      <VCardText class="px-5 px-sm-8">
         <ApiErrorAlert
           v-if="error"
           :error="error"
@@ -185,10 +204,7 @@ function onClose() {
           <VProgressCircular indeterminate />
         </div>
 
-        <VForm
-          v-else
-          @submit.prevent="onSave"
-        >
+        <VForm v-else>
           <VRow>
             <VCol cols="12">
               <AppTextField
@@ -262,57 +278,62 @@ function onClose() {
               />
             </VCol>
           </VRow>
-
-          <div class="d-flex align-center justify-center gap-4 mt-6">
-            <VBtn
-              type="submit"
-              :loading="isSaving"
-            >
-              Salvar
-            </VBtn>
-
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              :disabled="isSaving"
-              @click="onClose"
-            >
-              Cancelar
-            </VBtn>
-          </div>
-
-          <VDivider
-            v-if="isPasswordUser"
-            class="my-6"
-          />
-
-          <div
-            v-if="isPasswordUser"
-            class="d-flex flex-column align-center gap-2"
-          >
-            <VAlert
-              v-if="resetEmailSent"
-              type="success"
-              variant="tonal"
-              density="compact"
-              class="w-100 mb-2"
-            >
-              E-mail de redefinição de senha enviado. Verifique sua caixa de entrada.
-            </VAlert>
-
-            <VBtn
-              color="warning"
-              variant="tonal"
-              :loading="isRequestingReset"
-              :disabled="resetEmailSent"
-              prepend-icon="tabler-lock-password"
-              @click="requestPasswordReset"
-            >
-              Alterar senha
-            </VBtn>
-          </div>
         </VForm>
+
+        <template v-if="isPasswordUser">
+          <VDivider class="my-6" />
+
+          <VAlert
+            v-if="resetEmailSent"
+            type="success"
+            variant="tonal"
+            density="compact"
+            class="mb-3"
+          >
+            E-mail de redefinição de senha enviado. Verifique sua caixa de entrada.
+          </VAlert>
+
+          <VBtn
+            color="warning"
+            variant="tonal"
+            :loading="isRequestingReset"
+            :disabled="resetEmailSent"
+            prepend-icon="tabler-lock-password"
+            :block="$vuetify.display.xs"
+            @click="requestPasswordReset"
+          >
+            Alterar senha
+          </VBtn>
+        </template>
       </VCardText>
+
+      <VDivider />
+
+      <VCardActions class="px-5 px-sm-8 py-4">
+        <div class="d-flex flex-column flex-sm-row justify-sm-end gap-3 w-100">
+          <VBtn
+            color="primary"
+            variant="elevated"
+            :slim="false"
+            :loading="isSaving"
+            :block="$vuetify.display.xs"
+            @click="onSave"
+          >
+            Salvar
+          </VBtn>
+
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            :slim="false"
+            :disabled="isSaving"
+            :block="$vuetify.display.xs"
+            @click="onClose"
+          >
+            Cancelar
+          </VBtn>
+        </div>
+      </VCardActions>
     </VCard>
   </VDialog>
 </template>

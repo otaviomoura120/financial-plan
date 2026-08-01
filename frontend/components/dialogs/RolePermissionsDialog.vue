@@ -117,26 +117,39 @@ const typeColor: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
 
 <template>
   <VDialog
-    :width="$vuetify.display.smAndDown ? 'auto' : 960"
     :model-value="props.isDialogVisible"
+    :fullscreen="$vuetify.display.smAndDown"
+    max-width="960"
     scrollable
     @update:model-value="onClose"
   >
-    <DialogCloseBtn @click="onClose" />
+    <DialogCloseBtn
+      v-if="!$vuetify.display.smAndDown"
+      @click="onClose"
+    />
 
-    <VCard>
-      <VCardItem class="pa-6 pb-4">
-        <VCardTitle class="text-h5 text-center">
+    <VCard class="d-flex flex-column">
+      <VCardItem class="px-5 px-sm-8 pt-5 pt-sm-8 pb-4">
+        <VCardTitle class="text-h5 text-wrap">
           Permissões da Role
         </VCardTitle>
-        <VCardSubtitle class="text-center mt-1">
+        <VCardSubtitle class="text-wrap">
           {{ props.roleName }}
         </VCardSubtitle>
+
+        <template #append>
+          <IconBtn
+            v-if="$vuetify.display.smAndDown"
+            @click="onClose"
+          >
+            <VIcon icon="tabler-x" />
+          </IconBtn>
+        </template>
       </VCardItem>
 
       <VDivider />
 
-      <VCardText class="pa-0 permissions-scroll">
+      <VCardText class="pa-0">
         <ApiErrorAlert
           v-if="error"
           :error="error"
@@ -242,10 +255,14 @@ const typeColor: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
 
       <VDivider />
 
-      <VCardActions class="pa-4 justify-end">
+      <VCardActions class="px-5 px-sm-8 py-4">
+        <VSpacer />
+
         <VBtn
           color="secondary"
           variant="tonal"
+          :slim="false"
+          :block="$vuetify.display.xs"
           @click="onClose"
         >
           Fechar
@@ -256,11 +273,8 @@ const typeColor: Record<'API' | 'FRONT_PAGE' | 'WIDGET', string> = {
 </template>
 
 <style scoped>
-.permissions-scroll {
-  max-block-size: 65vh;
-  overflow-y: auto;
-}
-
+/* The dialog is scrollable, so VCardText already owns the scroll area — a fixed max-height here
+   would only leave dead space below the table when the dialog goes fullscreen on mobile. */
 .permissions-table :deep(table) {
   border-collapse: collapse;
 }
