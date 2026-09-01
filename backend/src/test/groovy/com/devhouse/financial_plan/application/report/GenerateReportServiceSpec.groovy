@@ -78,6 +78,10 @@ class GenerateReportServiceSpec extends Specification {
         creditCardInvoicePaymentResolver.resolveInvoiceReferenceMonths(_) >> [:]
     }
 
+    private void stubBalanceEffect(BigDecimal effect = BigDecimal.ZERO) {
+        transactionRepository.sumBalanceEffectFrom(_, _) >> effect
+    }
+
     def "execute forwards every filter field to the repository, in the expected order"() {
         given:
         bankAccountRepository.findBySpaceId(_) >> []
@@ -116,6 +120,49 @@ class GenerateReportServiceSpec extends Specification {
         response.totalIncome() == new BigDecimal("300.00")
         response.totalExpense() == new BigDecimal("100.00")
         response.balance() == new BigDecimal("200.00")
+    }
+
+    def "execute counts a transfer as income for the filtered destination bank account"() {
+        given:
+        Transaction transfer = buildTransaction(TransactionType.TRANSFER, new BigDecimal("500.00"), 2L)
+        transactionRepository.findByFilter(*_) >> [transfer]
+        bankAccountRepository.findById(2L) >> buildAccount(2L, new BigDecimal("500.00"))
+        listCreditCardInvoicesService.execute(*_) >> []
+        billRepository.findBySpaceAndPeriod(*_) >> []
+        stubInvoiceReferenceMonths()
+        stubBalanceEffect(new BigDecimal("500.00"))
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, 2L, null, null, null)
+
+        when:
+        ReportResponse response = service.execute(filter)
+
+        then: "the transfer is an inflow for the destination account, matching the credited balance"
+        response.transactions().size() == 1
+        response.totalIncome() == new BigDecimal("500.00")
+        response.totalExpense() == BigDecimal.ZERO
+        response.previousBalance() == BigDecimal.ZERO
+        response.balance() == new BigDecimal("500.00")
+        response.currentBalance() == new BigDecimal("500.00")
+    }
+
+    def "execute counts a transfer as expense for the filtered origin bank account"() {
+        given:
+        Transaction transfer = buildTransaction(TransactionType.TRANSFER, new BigDecimal("500.00"), 2L)
+        transactionRepository.findByFilter(*_) >> [transfer]
+        bankAccountRepository.findById(1L) >> buildAccount(1L, BigDecimal.ZERO)
+        listCreditCardInvoicesService.execute(*_) >> []
+        billRepository.findBySpaceAndPeriod(*_) >> []
+        stubInvoiceReferenceMonths()
+        stubBalanceEffect()
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, 1L, null, null, null)
+
+        when:
+        ReportResponse response = service.execute(filter)
+
+        then:
+        response.totalIncome() == BigDecimal.ZERO
+        response.totalExpense() == new BigDecimal("500.00")
+        response.balance() == new BigDecimal("-500.00")
     }
 
     def "execute returns zero totals when there are no transactions in the period"() {
@@ -181,6 +228,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
+        stubBalanceEffect()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
@@ -198,6 +246,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> []
         billRepository.findBySpaceAndPeriod(*_) >> []
         stubInvoiceReferenceMonths()
+        stubBalanceEffect()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, 2L, null, null, null)
 
         when:
@@ -206,6 +255,102 @@ class GenerateReportServiceSpec extends Specification {
         then:
         response.currentBalance() == new BigDecimal("300.00")
         0 * bankAccountRepository.findBySpaceId(_)
+    }
+
+    def "execute derives previousBalance by discounting the period's own movement from the current balance"() {
+        given:
+        transactionRepository.findByFilter(*_) >> []
+        bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("1500.00"))
+        listCreditCardInvoicesService.execute(*_) >> []
+        billRepository.findBySpaceAndPeriod(*_) >> []
+        stubInvoiceReferenceMonths()
+        stubBalanceEffect(new BigDecimal("500.00"))
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31),
+                null, 1L, null, null, null)
+
+        when:
+        ReportResponse response = service.execute(filter)
+
+        then: "the account closed July at 1000 and gained 500 during August"
+        response.previousBalance() == new BigDecimal("1000.00")
+        response.currentBalance() == new BigDecimal("1500.00")
+    }
+
+    def "execute composes balance as previousBalance plus the period's income minus its expenses"() {
+        given:
+        Transaction income = buildTransaction(TransactionType.INCOME, new BigDecimal("300.00"))
+        Transaction expense = buildTransaction(TransactionType.EXPENSE, new BigDecimal("100.00"))
+        transactionRepository.findByFilter(*_) >> [income, expense]
+        bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("1200.00"))
+        listCreditCardInvoicesService.execute(*_) >> []
+        billRepository.findBySpaceAndPeriod(*_) >> []
+        stubInvoiceReferenceMonths()
+        stubBalanceEffect(new BigDecimal("200.00"))
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31),
+                null, 1L, null, null, null)
+
+        when:
+        ReportResponse response = service.execute(filter)
+
+        then: "1000 carried over from July, plus 300 in and 100 out during August"
+        response.previousBalance() == new BigDecimal("1000.00")
+        response.totalIncome() == new BigDecimal("300.00")
+        response.totalExpense() == new BigDecimal("100.00")
+        response.balance() == new BigDecimal("1200.00")
+    }
+
+    def "execute asks the aggregate only for the filtered bank account, from the period's first day"() {
+        given:
+        transactionRepository.findByFilter(*_) >> []
+        bankAccountRepository.findById(7L) >> buildAccount(7L, new BigDecimal("200.00"))
+        listCreditCardInvoicesService.execute(*_) >> []
+        billRepository.findBySpaceAndPeriod(*_) >> []
+        stubInvoiceReferenceMonths()
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31),
+                null, 7L, null, null, null)
+
+        when:
+        service.execute(filter)
+
+        then:
+        1 * transactionRepository.sumBalanceEffectFrom([7L], LocalDate.of(2026, 8, 1)) >> BigDecimal.ZERO
+    }
+
+    def "execute asks the aggregate for every active account of the space when no bank account is filtered"() {
+        given:
+        transactionRepository.findByFilter(*_) >> []
+        bankAccountRepository.findBySpaceId(1L) >> [buildAccount(1L, new BigDecimal("500.00")),
+                                                     buildAccount(2L, new BigDecimal("300.00")),
+                                                     buildAccount(3L, new BigDecimal("1000.00"), false)]
+        listCreditCardInvoicesService.execute(*_) >> []
+        billRepository.findBySpaceAndPeriod(*_) >> []
+        stubInvoiceReferenceMonths()
+        ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31),
+                null, null, null, null, null)
+
+        when:
+        ReportResponse response = service.execute(filter)
+
+        then: "the inactive account is out of both the balance and the aggregate, keeping the two consistent"
+        1 * transactionRepository.sumBalanceEffectFrom([1L, 2L], LocalDate.of(2026, 8, 1)) >> new BigDecimal("120.00")
+        response.previousBalance() == new BigDecimal("680.00")
+    }
+
+    def "execute returns a zero previousBalance when the period has no start date"() {
+        given:
+        transactionRepository.findByFilter(*_) >> []
+        bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("1500.00"))
+        listCreditCardInvoicesService.execute(*_) >> []
+        billRepository.findBySpaceAndPeriod(*_) >> []
+        stubInvoiceReferenceMonths()
+        ReportFilterRequest filter = new ReportFilterRequest(1L, null, null, null, 1L, null, null, null)
+
+        when:
+        ReportResponse response = service.execute(filter)
+
+        then:
+        response.previousBalance() == BigDecimal.ZERO
+        0 * transactionRepository.sumBalanceEffectFrom(*_)
     }
 
     def "execute includes an open credit card invoice due within the filtered period as pending"() {
@@ -350,6 +495,7 @@ class GenerateReportServiceSpec extends Specification {
         listCreditCardInvoicesService.execute(*_) >> [buildInvoice(LocalDate.of(2026, 3, 17), new BigDecimal("450.00"), false)]
         billRepository.findBySpaceAndPeriod(*_) >> [buildInstance(LocalDate.of(2026, 3, 10), new BigDecimal("150.00"), BillInstanceStatus.PENDING)]
         stubInvoiceReferenceMonths()
+        stubBalanceEffect()
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31),
                 null, null, null, null, null)
 

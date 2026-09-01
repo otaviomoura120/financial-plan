@@ -10,6 +10,7 @@ public record ReportResponse(
         BigDecimal totalIncome,
         BigDecimal totalExpense,
         BigDecimal balance,
+        BigDecimal previousBalance,
         BigDecimal currentBalance,
         List<PendingCreditCardInvoiceResponse> pendingCreditCardInvoices,
         BigDecimal pendingCreditCardTotal,

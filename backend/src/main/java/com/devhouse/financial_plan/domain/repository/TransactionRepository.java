@@ -3,6 +3,7 @@ package com.devhouse.financial_plan.domain.repository;
 import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -11,6 +12,7 @@ public interface TransactionRepository {
     Transaction update(Transaction transaction);
     Transaction findById(Long id);
     List<Transaction> findByFilter(Long spaceId, Long userId, Long bankAccountId, Long categoryId, Long subCategoryId, TransactionType type, LocalDate from, LocalDate to);
+    BigDecimal sumBalanceEffectFrom(List<Long> bankAccountIds, LocalDate from);
     void delete(Long id);
     boolean existsByBankAccountId(Long bankAccountId);
     boolean existsByCategoryId(Long categoryId);

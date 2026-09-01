@@ -66,6 +66,7 @@ interface ReportResponse {
   totalIncome: number
   totalExpense: number
   balance: number
+  previousBalance: number
   currentBalance: number
   pendingCreditCardInvoices: PendingCreditCardInvoiceResponse[]
   pendingCreditCardTotal: number
@@ -107,6 +108,8 @@ const bankAccountId = shallowRef<number | null>(null)
 const categoryId = shallowRef<number | null>(null)
 const subCategoryId = shallowRef<number | null>(null)
 const type = shallowRef<TransactionType | null>(null)
+
+const appliedBankAccountId = shallowRef<number | null>(null)
 
 const report = ref<ReportResponse | null>(null)
 const isLoading = shallowRef(false)
@@ -296,6 +299,8 @@ async function generateReport() {
         type: type.value,
       },
     })
+
+    appliedBankAccountId.value = bankAccountId.value
   }
   catch (e) {
     setError(e)
@@ -329,18 +334,50 @@ function subCategoryName(id: number | null) {
   return subCategoriesById.value.get(id)?.name ?? null
 }
 
-function formatAmount(transaction: TransactionResponse) {
-  const formatted = formatCurrency(transaction.amount)
-
+/**
+ * Resolves whether the transaction is an inflow or an outflow from the point of view of the
+ * bank account currently applied as a filter. A transfer is a single record holding both the
+ * origin and the destination account, so it is an inflow for the destination and an outflow
+ * for the origin. Without an account filter a transfer has no direction to show.
+ */
+function amountDirection(transaction: TransactionResponse): 'IN' | 'OUT' | null {
   if (transaction.type === 'INCOME') {
-    return `+ ${formatted}`
+    return 'IN'
   }
 
   if (transaction.type === 'EXPENSE') {
+    return 'OUT'
+  }
+
+  if (appliedBankAccountId.value === null) {
+    return null
+  }
+
+  return transaction.destinationBankAccountId === appliedBankAccountId.value ? 'IN' : 'OUT'
+}
+
+function formatAmount(transaction: TransactionResponse) {
+  const formatted = formatCurrency(transaction.amount)
+  const direction = amountDirection(transaction)
+
+  if (direction === 'IN') {
+    return `+ ${formatted}`
+  }
+
+  if (direction === 'OUT') {
     return `- ${formatted}`
   }
 
   return formatted
+}
+
+function amountClass(transaction: TransactionResponse) {
+  const direction = amountDirection(transaction)
+
+  return {
+    'text-success': direction === 'IN',
+    'text-error': direction === 'OUT',
+  }
 }
 
 function formatDate(isoDate: string) {
@@ -444,7 +481,19 @@ function formatReferenceMonth(isoDate: string) {
       <VRow>
         <VCol
           cols="12"
-          md="4"
+          md="3"
+        >
+          <CardStatisticsVerticalSimple
+            title="Saldo Anterior"
+            :color="report.previousBalance >= 0 ? 'info' : 'error'"
+            icon="tabler-history"
+            :stats="formatCurrency(report.previousBalance)"
+          />
+        </VCol>
+
+        <VCol
+          cols="12"
+          md="3"
         >
           <CardStatisticsVerticalSimple
             title="Total de Receitas"
@@ -456,7 +505,7 @@ function formatReferenceMonth(isoDate: string) {
 
         <VCol
           cols="12"
-          md="4"
+          md="3"
         >
           <CardStatisticsVerticalSimple
             title="Total de Despesas"
@@ -468,7 +517,7 @@ function formatReferenceMonth(isoDate: string) {
 
         <VCol
           cols="12"
-          md="4"
+          md="3"
         >
           <CardStatisticsVerticalSimple
             title="Saldo do Período"
@@ -660,10 +709,7 @@ function formatReferenceMonth(isoDate: string) {
                       </td>
                       <td
                         class="text-right"
-                        :class="{
-                          'text-success': transaction.type === 'INCOME',
-                          'text-error': transaction.type === 'EXPENSE',
-                        }"
+                        :class="amountClass(transaction)"
                       >
                         {{ formatAmount(transaction) }}
                       </td>

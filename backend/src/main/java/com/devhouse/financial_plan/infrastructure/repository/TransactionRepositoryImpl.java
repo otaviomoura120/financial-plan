@@ -19,11 +19,13 @@ import com.devhouse.financial_plan.infrastructure.repository.jpa.SpaceEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.SubCategoryEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.TransactionEntityJpa;
 import com.devhouse.financial_plan.infrastructure.repository.jpa.UserEntityJpa;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +85,15 @@ public class TransactionRepositoryImpl implements TransactionRepository {
     }
 
     @Override
+    public BigDecimal sumBalanceEffectFrom(List<Long> bankAccountIds, LocalDate from) {
+        if (bankAccountIds.isEmpty() || from == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal effect = jpaTransactionRepository.sumBalanceEffectFrom(bankAccountIds, from);
+        return effect != null ? effect : BigDecimal.ZERO;
+    }
+
+    @Override
     public void delete(Long id) {
         jpaTransactionRepository.deleteById(id);
     }
@@ -112,7 +123,9 @@ public class TransactionRepositoryImpl implements TransactionRepository {
                 predicates.add(criteriaBuilder.equal(root.get("user").get("id"), userId));
             }
             if (bankAccountId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("bankAccount").get("id"), bankAccountId));
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.equal(root.get("bankAccount").get("id"), bankAccountId),
+                        criteriaBuilder.equal(root.join("destinationBankAccount", JoinType.LEFT).get("id"), bankAccountId)));
             }
             if (categoryId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("category").get("id"), categoryId));

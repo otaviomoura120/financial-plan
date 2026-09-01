@@ -9,7 +9,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "transactions")
+@Table(name = "transactions",
+        indexes = {
+                @Index(name = "idx_transactions_bank_account_date", columnList = "bank_account_id, transaction_date"),
+                @Index(name = "idx_transactions_destination_bank_account_date", columnList = "destination_bank_account_id, transaction_date")
+        })
 public class TransactionEntityJpa {
 
     @Id

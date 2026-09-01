@@ -111,6 +111,50 @@ class TransactionSpec extends Specification {
         transfer.isTransfer() && !transfer.isIncome() && !transfer.isExpense()
     }
 
+    def "isCreditFor/isDebitFor orient a transfer by the filtered bank account"() {
+        given:
+        Transaction transfer = buildTransaction(TransactionType.TRANSFER, 1L, 2L, null)
+
+        expect: "the destination account sees an inflow"
+        transfer.isCreditFor(2L)
+        !transfer.isDebitFor(2L)
+
+        and: "the origin account sees an outflow"
+        transfer.isDebitFor(1L)
+        !transfer.isCreditFor(1L)
+
+        and: "an unrelated account sees nothing"
+        !transfer.isCreditFor(3L)
+        !transfer.isDebitFor(3L)
+    }
+
+    def "isCreditFor/isDebitFor ignore a transfer when no bank account is filtered"() {
+        given:
+        Transaction transfer = buildTransaction(TransactionType.TRANSFER, 1L, 2L, null)
+
+        expect:
+        !transfer.isCreditFor(null)
+        !transfer.isDebitFor(null)
+    }
+
+    def "isCreditFor/isDebitFor keep the INCOME and EXPENSE behaviour"() {
+        given:
+        Transaction income = buildTransaction(TransactionType.INCOME, 1L, null, 10L)
+        Transaction expense = buildTransaction(TransactionType.EXPENSE, 1L, null, 10L)
+
+        expect: "without a filtered account the plain type decides"
+        income.isCreditFor(null)
+        !income.isDebitFor(null)
+        expense.isDebitFor(null)
+        !expense.isCreditFor(null)
+
+        and: "with a filtered account it must also be the owning account"
+        income.isCreditFor(1L)
+        !income.isCreditFor(2L)
+        expense.isDebitFor(1L)
+        !expense.isDebitFor(2L)
+    }
+
     def "isLinkedToSource is false when sourceType is not set"() {
         given:
         Transaction transaction = buildTransaction(TransactionType.EXPENSE, 1L, null, 10L)

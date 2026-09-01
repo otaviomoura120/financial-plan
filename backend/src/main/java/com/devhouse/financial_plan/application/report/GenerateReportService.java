@@ -58,30 +58,49 @@ public class GenerateReportService {
         Map<Long, LocalDate> referenceMonthByTransactionId = creditCardInvoicePaymentResolver.resolveInvoiceReferenceMonths(transactions);
 
         List<TransactionResponse> responses = buildResponses(transactions, referenceMonthByTransactionId);
-        BigDecimal totalIncome = sumByType(transactions, true);
-        BigDecimal totalExpense = sumByType(transactions, false);
+        BigDecimal totalIncome = sumByType(transactions, filter.bankAccountId(), true);
+        BigDecimal totalExpense = sumByType(transactions, filter.bankAccountId(), false);
 
-        BigDecimal currentBalance = resolveCurrentBalance(filter);
+        List<BankAccount> accounts = resolveAccounts(filter);
+        BigDecimal currentBalance = sum(accounts, BankAccount::getBalance);
+        BigDecimal previousBalance = resolvePreviousBalance(filter, accounts, currentBalance);
+        BigDecimal balance = previousBalance.add(totalIncome).subtract(totalExpense);
         List<PendingCreditCardInvoiceResponse> pendingCreditCardInvoices = resolvePendingCreditCardInvoices(filter);
         BigDecimal pendingCreditCardTotal = sum(pendingCreditCardInvoices, PendingCreditCardInvoiceResponse::amount);
         List<PendingBillInstanceResponse> pendingBillInstances = resolvePendingBillInstances(filter);
         BigDecimal pendingBillTotal = sum(pendingBillInstances, PendingBillInstanceResponse::amount);
         BigDecimal projectedBalance = currentBalance.subtract(pendingCreditCardTotal).subtract(pendingBillTotal);
 
-        return new ReportResponse(responses, totalIncome, totalExpense, totalIncome.subtract(totalExpense),
-                currentBalance, pendingCreditCardInvoices, pendingCreditCardTotal, pendingBillInstances, pendingBillTotal,
-                projectedBalance);
+        return new ReportResponse(responses, totalIncome, totalExpense, balance,
+                previousBalance, currentBalance, pendingCreditCardInvoices, pendingCreditCardTotal, pendingBillInstances,
+                pendingBillTotal, projectedBalance);
     }
 
-    private BigDecimal resolveCurrentBalance(ReportFilterRequest filter) {
+    private List<BankAccount> resolveAccounts(ReportFilterRequest filter) {
         if (filter.bankAccountId() != null) {
             BankAccount account = bankAccountRepository.findById(filter.bankAccountId());
-            return account != null ? account.getBalance() : BigDecimal.ZERO;
+            return account != null ? List.of(account) : List.of();
         }
         return bankAccountRepository.findBySpaceId(filter.spaceId()).stream()
                 .filter(BankAccount::isActive)
-                .map(BankAccount::getBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .toList();
+    }
+
+    /**
+     * Closing balance of the day before the filtered period. The stored balance already carries the
+     * accounts' initial balance plus every transaction ever applied, and the initial balance is not
+     * backed by any transaction, so the only way to reach the opening balance is to discount from the
+     * current one everything that happened from the period's start onwards - a single aggregate query.
+     */
+    private BigDecimal resolvePreviousBalance(ReportFilterRequest filter, List<BankAccount> accounts,
+                                              BigDecimal currentBalance) {
+        if (filter.from() == null || accounts.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        List<Long> bankAccountIds = accounts.stream()
+                .map(BankAccount::getId)
+                .toList();
+        return currentBalance.subtract(transactionRepository.sumBalanceEffectFrom(bankAccountIds, filter.from()));
     }
 
     private List<PendingCreditCardInvoiceResponse> resolvePendingCreditCardInvoices(ReportFilterRequest filter) {
@@ -126,9 +145,9 @@ public class GenerateReportService {
                 .toList();
     }
 
-    private BigDecimal sumByType(List<Transaction> transactions, boolean income) {
+    private BigDecimal sumByType(List<Transaction> transactions, Long bankAccountId, boolean income) {
         return transactions.stream()
-                .filter(t -> income ? t.isIncome() : t.isExpense())
+                .filter(t -> income ? t.isCreditFor(bankAccountId) : t.isDebitFor(bankAccountId))
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

@@ -101,6 +101,26 @@ public class Transaction {
         return TransactionType.TRANSFER.equals(type);
     }
 
+    public boolean isCreditFor(Long bankAccountId) {
+        if (bankAccountId == null) {
+            return isIncome();
+        }
+        if (isTransfer()) {
+            return destinationBankAccount != null && bankAccountId.equals(destinationBankAccount.getId());
+        }
+        return isIncome() && bankAccountId.equals(bankAccount.getId());
+    }
+
+    public boolean isDebitFor(Long bankAccountId) {
+        if (bankAccountId == null) {
+            return isExpense();
+        }
+        if (isTransfer()) {
+            return bankAccountId.equals(bankAccount.getId());
+        }
+        return isExpense() && bankAccountId.equals(bankAccount.getId());
+    }
+
     public boolean isLinkedToSource() {
         return sourceType != null;
     }
