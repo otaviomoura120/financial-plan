@@ -43,6 +43,7 @@ interface Props {
   isDialogVisible: boolean
   creditCardId: number | null
   closingDay: number | null
+  dueDay: number | null
   transaction?: CreditCardTransactionResponse | null
   categories: CategoryOption[]
 }
@@ -103,6 +104,19 @@ function formatReferenceMonth(referenceMonthValue: string) {
   return label.charAt(0).toUpperCase() + label.slice(1)
 }
 
+// Invoices are named after their due month, like the invoice selector on the transactions list.
+// Mirrors CreditCardInvoiceCycle.resolveDueDate: when the due day doesn't come after the closing day,
+// the invoice is due the month after its reference month.
+function invoiceLabel(referenceMonthValue: string) {
+  if (props.closingDay === null || props.dueDay === null) {
+    return formatReferenceMonth(referenceMonthValue)
+  }
+
+  const dueMonth = props.dueDay <= props.closingDay ? nextReferenceMonth(referenceMonthValue) : referenceMonthValue
+
+  return formatReferenceMonth(dueMonth)
+}
+
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 
 // The three kinds are mutually exclusive: an installment plan only makes sense for a purchase, and a
@@ -160,12 +174,17 @@ const referenceMonthItems = computed(() => {
   }
 
   const current = defaultReferenceMonth(purchaseDate.value, props.closingDay)
-  const next = nextReferenceMonth(current)
+  const values = [current, nextReferenceMonth(current)]
 
-  return [
-    { value: current, label: `${formatReferenceMonth(current)} (atual)` },
-    { value: next, label: `${formatReferenceMonth(next)} (próxima)` },
-  ]
+  // The invoice the transaction already sits in must stay selectable, even when it falls outside the
+  // purchase date's cycle (e.g. the card's closing day changed later); the backend keeps it as is.
+  const originalReferenceMonth = props.transaction?.referenceMonth
+
+  if (originalReferenceMonth && !values.includes(originalReferenceMonth)) {
+    values.unshift(originalReferenceMonth)
+  }
+
+  return values.map(value => ({ value, label: invoiceLabel(value) }))
 })
 
 function optionLabel<T extends { name: string; active: boolean }>(item: T) {
@@ -484,7 +503,7 @@ function onClose() {
             >
               <AppSelect
                 v-model="referenceMonth"
-                label="Fatura"
+                label="Fatura (vencimento)"
                 :items="referenceMonthItems"
                 item-title="label"
                 item-value="value"

@@ -88,11 +88,59 @@ function currentOpenReferenceMonth(closingDay: number) {
   return toLocalDateString(referenceMonthDate)
 }
 
+function shiftMonth(isoMonth: string, offset: number) {
+  const [year, month] = isoMonth.split('-').map(Number)
+
+  return toLocalDateString(new Date(year, month - 1 + offset, 1))
+}
+
+// Mirrors CreditCardInvoiceCycle.resolveDueDate: the invoice is due the month after
+// its reference month when the due day doesn't come after the closing day.
+function dueMonthFromReferenceMonth(referenceMonth: string, closingDay: number, dueDay: number) {
+  return shiftMonth(referenceMonth, dueDay <= closingDay ? 1 : 0)
+}
+
+function referenceMonthFromDueMonth(dueMonth: string, closingDay: number, dueDay: number) {
+  return shiftMonth(dueMonth, dueDay <= closingDay ? -1 : 0)
+}
+
+function clampedDate(isoMonth: string, day: number) {
+  const [year, month] = isoMonth.split('-').map(Number)
+  const daysInMonth = new Date(year, month, 0).getDate()
+
+  return toLocalDateString(new Date(year, month - 1, Math.min(day, daysInMonth)))
+}
+
 const creditCard = ref<CreditCardResponse | null>(null)
 const transactions = ref<CreditCardTransactionResponse[]>([])
 const categories = ref<CategoryResponse[]>([])
 
-const selectedMonth = shallowRef(currentMonthValue())
+// Due month of the selected invoice; empty until the credit card is loaded.
+const selectedMonth = shallowRef('')
+
+const selectedReferenceMonth = computed(() => {
+  if (!creditCard.value || !selectedMonth.value) {
+    return null
+  }
+
+  return referenceMonthFromDueMonth(selectedMonth.value, creditCard.value.closingDay, creditCard.value.dueDay)
+})
+
+const invoiceClosingDate = computed(() =>
+  creditCard.value && selectedReferenceMonth.value
+    ? clampedDate(selectedReferenceMonth.value, creditCard.value.closingDay)
+    : null,
+)
+
+const invoiceDueDate = computed(() =>
+  creditCard.value && selectedMonth.value
+    ? clampedDate(selectedMonth.value, creditCard.value.dueDay)
+    : null,
+)
+
+const invoiceTotal = computed(() =>
+  transactions.value.reduce((sum, t) => sum + (t.credit ? -t.amount : t.amount), 0),
+)
 
 const page = shallowRef(1)
 const itemsPerPage = shallowRef(10)
@@ -145,6 +193,7 @@ watch(
       creditCard.value = null
       transactions.value = []
       categories.value = []
+      selectedMonth.value = ''
       clearError()
     }
   },
@@ -159,14 +208,23 @@ watch(
   },
 )
 
-watch(selectedMonth, () => {
-  if (props.isDialogVisible) {
+watch(selectedMonth, (month, previousMonth) => {
+  // The initial default month is set by fetchAll, which fetches on its own.
+  if (props.isDialogVisible && month && previousMonth) {
     fetchTransactions()
   }
 })
 
 async function fetchAll() {
-  await Promise.all([fetchCreditCard(), fetchCategories(), fetchTransactions()])
+  await Promise.all([fetchCreditCard(), fetchCategories()])
+
+  if (creditCard.value && !selectedMonth.value) {
+    const { closingDay, dueDay } = creditCard.value
+
+    selectedMonth.value = dueMonthFromReferenceMonth(currentOpenReferenceMonth(closingDay), closingDay, dueDay)
+  }
+
+  await fetchTransactions()
 }
 
 async function fetchCreditCard() {
@@ -192,7 +250,7 @@ async function fetchCategories() {
 }
 
 async function fetchTransactions() {
-  if (!spaceStore.activeSpace || !props.creditCardId) {
+  if (!spaceStore.activeSpace || !props.creditCardId || !selectedReferenceMonth.value) {
     return
   }
 
@@ -204,7 +262,7 @@ async function fetchTransactions() {
       query: {
         spaceId: spaceStore.activeSpace.id,
         creditCardId: props.creditCardId,
-        competenceMonth: selectedMonth.value,
+        referenceMonth: selectedReferenceMonth.value,
       },
     })
     page.value = 1
@@ -297,11 +355,16 @@ async function deleteSelectedTransaction(includeFuture: boolean) {
 
 function onTransactionSaved(saved: CreditCardTransactionResponse) {
   const idx = transactions.value.findIndex(t => t.id === saved.id)
+  const belongsToSelectedInvoice = saved.referenceMonth === selectedReferenceMonth.value
 
-  if (idx >= 0) {
+  if (idx >= 0 && belongsToSelectedInvoice) {
     transactions.value[idx] = saved
   }
-  else if (saved.competenceMonth === selectedMonth.value) {
+  else if (idx >= 0) {
+    transactions.value = transactions.value.filter(t => t.id !== saved.id)
+    showSuccess('Lançamento movido para outra fatura.')
+  }
+  else if (belongsToSelectedInvoice) {
     transactions.value = [saved, ...transactions.value]
   }
 }
@@ -311,16 +374,11 @@ async function onRecurringSubscriptionSaved() {
   await fetchTransactions()
 }
 
-function onAnticipated(updated: CreditCardTransactionResponse[]) {
-  for (const updatedTransaction of updated) {
-    const idx = transactions.value.findIndex(t => t.id === updatedTransaction.id)
-
-    if (idx >= 0) {
-      transactions.value[idx] = updatedTransaction
-    }
-  }
-
+async function onAnticipated() {
   showSuccess('Parcelas antecipadas com sucesso.')
+
+  // Anticipated installments move to another invoice, so the current list must be reloaded.
+  await fetchTransactions()
 }
 
 function categoryName(id: number | null) {
@@ -343,12 +401,6 @@ function formatDate(isoDate: string) {
   const [year, month, day] = isoDate.split('-')
 
   return `${day}/${month}/${year}`
-}
-
-function formatReferenceMonth(isoDate: string) {
-  const [year, month] = isoDate.split('-')
-
-  return `${month}/${year}`
 }
 
 function onClose() {
@@ -398,8 +450,9 @@ function onClose() {
 
         <div class="d-flex flex-wrap align-end justify-md-end gap-2">
           <MonthYearSelect
+            v-if="selectedMonth"
             v-model="selectedMonth"
-            label="Mês de Referência"
+            label="Fatura (vencimento)"
             class="flex-grow-1 flex-md-grow-0"
           />
 
@@ -430,6 +483,18 @@ function onClose() {
           >
             Adicionar
           </VBtn>
+        </div>
+
+        <div
+          v-if="invoiceClosingDate && invoiceDueDate"
+          class="d-flex flex-wrap justify-md-end gap-x-4 text-body-2 text-disabled tabular-nums"
+        >
+          <span>Fechamento: {{ formatDate(invoiceClosingDate) }}</span>
+          <span>Vencimento: {{ formatDate(invoiceDueDate) }}</span>
+          <span>
+            Total:
+            <span class="font-weight-medium text-high-emphasis">{{ currencyFormatter.format(invoiceTotal) }}</span>
+          </span>
         </div>
       </VCardText>
 
@@ -479,7 +544,6 @@ function onClose() {
                   Categoria
                 </th>
                 <th>Descrição</th>
-                <th>Competência</th>
                 <th>Parcela</th>
                 <th class="text-right">
                   Valor
@@ -513,12 +577,6 @@ function onClose() {
                     :title="transaction.description || undefined"
                   >
                     {{ transaction.description || '—' }}
-                  </div>
-                </td>
-                <td class="text-no-wrap tabular-nums">
-                  {{ formatReferenceMonth(transaction.competenceMonth) }}
-                  <div class="text-caption text-disabled">
-                    Fatura {{ formatReferenceMonth(transaction.dueDate) }}
                   </div>
                 </td>
                 <td class="text-no-wrap">
@@ -612,10 +670,10 @@ function onClose() {
 
               <tr v-if="!isLoading && transactions.length === 0">
                 <td
-                  colspan="7"
+                  colspan="6"
                   class="text-center text-disabled py-8"
                 >
-                  Nenhum lançamento encontrado para o período selecionado.
+                  Nenhum lançamento encontrado nesta fatura.
                 </td>
               </tr>
             </tbody>
@@ -637,6 +695,7 @@ function onClose() {
       v-model:is-dialog-visible="isAddEditDialogVisible"
       :credit-card-id="props.creditCardId"
       :closing-day="creditCard?.closingDay ?? null"
+      :due-day="creditCard?.dueDay ?? null"
       :transaction="selectedTransaction"
       :categories="categories"
       @saved="onTransactionSaved"
