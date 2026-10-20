@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.transaction
 
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
@@ -31,7 +32,7 @@ class ListTransactionsServiceSpec extends Specification {
     def "execute forwards spaceId and optional filters to the repository"() {
         given:
         Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L), buildAccount(1L), null,
-                new Category(10L, 0, null, "Food", true, Instant.now(), null), null,
+                new Category(10L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null), null,
                 new BigDecimal("100.00"), LocalDate.of(2026, 1, 15), "desc", Instant.now(), null, null, null)
         transactionRepository.findByFilter(1L, null, null, null, null, null,
                 LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)) >> [transaction]

@@ -38,6 +38,7 @@ interface SubCategoryResponse {
 interface CategoryResponse {
   id: number
   name: string
+  kind: 'INCOME' | 'EXPENSE' | null
   active: boolean
   system: boolean
   subCategories: SubCategoryResponse[]

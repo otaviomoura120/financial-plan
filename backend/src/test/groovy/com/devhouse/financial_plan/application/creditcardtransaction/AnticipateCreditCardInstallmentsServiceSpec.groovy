@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardInvoicePayment
@@ -34,7 +35,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
     }
 
     private Category buildCategory() {
-        new Category(20L, 0, null, "Food", true, Instant.now(), null)
+        new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private CreditCardTransaction buildInstallment(Integer number, Integer total, LocalDate referenceMonth,

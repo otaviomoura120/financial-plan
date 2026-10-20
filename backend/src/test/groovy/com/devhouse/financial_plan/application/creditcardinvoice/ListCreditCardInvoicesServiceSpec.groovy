@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardinvoice
 
 import com.devhouse.financial_plan.application.creditcardinvoice.dto.CreditCardInvoiceResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardInvoicePayment
@@ -39,7 +40,7 @@ class ListCreditCardInvoicesServiceSpec extends Specification {
     }
 
     private CreditCardTransaction buildTransaction(CreditCard creditCard, BigDecimal amount, LocalDate referenceMonth, boolean credit) {
-        new CreditCardTransaction(1L, 0, creditCard, null, buildUser(), new Category(20L, 0, null, "Food", true, Instant.now(), null),
+        new CreditCardTransaction(1L, 0, creditCard, null, buildUser(), new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null),
                 null, amount, credit, LocalDate.of(2026, 1, 5), "desc", referenceMonth, "group-1", 1, 1, false, null,
                 Instant.now(), null)
     }

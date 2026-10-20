@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.domain
 
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.enums.TransactionType
 import com.devhouse.financial_plan.domain.exception.DomainException
 import spock.lang.Specification
@@ -19,14 +20,14 @@ class TransactionSpec extends Specification {
         id == null ? null : new BankAccount(id, 0, null, "Account " + id, null, BigDecimal.ZERO, true, Instant.now(), null)
     }
 
-    private Category buildCategory(Long id) {
-        id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
+    private Category buildCategory(Long id, CategoryKind kind = CategoryKind.EXPENSE) {
+        id == null ? null : new Category(id, 0, null, "Category " + id, kind, true, Instant.now(), null)
     }
 
     private Transaction buildTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId,
-                                          Long categoryId) {
+                                          Long categoryId, CategoryKind categoryKind = CategoryKind.of(type)) {
         new Transaction(null, 0, type, buildUser(1L), buildBankAccount(bankAccountId), buildBankAccount(destinationBankAccountId),
-                buildCategory(categoryId), null, new BigDecimal("100.00"),
+                buildCategory(categoryId, categoryKind), null, new BigDecimal("100.00"),
                 LocalDate.now(), "desc", Instant.now(), null, null, null)
     }
 
@@ -64,6 +65,23 @@ class TransactionSpec extends Specification {
 
         where:
         type << [TransactionType.INCOME, TransactionType.EXPENSE]
+    }
+
+    def "validate throws DomainException when the category type does not match the transaction type"() {
+        given:
+        Transaction transaction = buildTransaction(type, 1L, null, 10L, categoryKind)
+
+        when:
+        transaction.validate()
+
+        then:
+        DomainException exception = thrown()
+        exception.message == message
+
+        where:
+        type                    | categoryKind          || message
+        TransactionType.INCOME  | CategoryKind.EXPENSE  || "The selected category is not an income category"
+        TransactionType.EXPENSE | CategoryKind.INCOME   || "The selected category is not an expense category"
     }
 
     def "validate passes for TRANSFER without category when destination differs from origin"() {

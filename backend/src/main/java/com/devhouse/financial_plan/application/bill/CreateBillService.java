@@ -7,6 +7,7 @@ import com.devhouse.financial_plan.domain.BillRecurring;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.CategoryKindPolicy;
 import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BillRecurringRepository;
@@ -43,6 +44,7 @@ public class CreateBillService {
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
+        CategoryKindPolicy.requireExpense(category);
 
         BillRecurring billRecurring = new BillRecurring(null, 0, space, request.name(), category, subCategory,
                 request.defaultAmount(), request.startDate(), request.endDate(), request.installments(), true,

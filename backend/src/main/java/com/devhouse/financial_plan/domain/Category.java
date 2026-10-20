@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.domain;
 
+import com.devhouse.financial_plan.domain.enums.CategoryKind;
 import com.devhouse.financial_plan.domain.enums.SystemCategory;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -13,15 +14,18 @@ public class Category {
     private Integer version;
     private Space space;
     private String name;
+    private CategoryKind kind;
     private boolean active;
     private final Instant createdDate;
     private Instant updatedDate;
 
-    public Category(Long id, Integer version, Space space, String name, boolean active, Instant createdDate, Instant updatedDate) {
+    public Category(Long id, Integer version, Space space, String name, CategoryKind kind, boolean active,
+                    Instant createdDate, Instant updatedDate) {
         this.id = id;
         this.version = version;
         this.space = space;
         this.name = name;
+        this.kind = kind;
         this.active = active;
         this.createdDate = createdDate;
         this.updatedDate = updatedDate;
@@ -34,6 +38,9 @@ public class Category {
         if (name == null || name.isBlank()) {
             throw new DomainException("Category name cannot be empty");
         }
+        if (kind == null && !isSystem()) {
+            throw new DomainException("Category type is required");
+        }
     }
 
     public void rename(String name) {
@@ -42,6 +49,26 @@ public class Category {
         }
         this.name = name;
         this.updatedDate = Instant.now();
+    }
+
+    public void changeKind(CategoryKind kind) {
+        if (kind == null) {
+            throw new DomainException("Category type is required");
+        }
+        this.kind = kind;
+        this.updatedDate = Instant.now();
+    }
+
+    public boolean isKindChangedTo(CategoryKind otherKind) {
+        return otherKind != null && !otherKind.equals(kind);
+    }
+
+    public void requireKind(CategoryKind expected) {
+        if (!Objects.equals(expected, kind)) {
+            throw new DomainException(CategoryKind.INCOME.equals(expected)
+                    ? "The selected category is not an income category"
+                    : "The selected category is not an expense category");
+        }
     }
 
     public void deactivate() {
@@ -78,6 +105,8 @@ public class Category {
     public void setSpace(Space space) { this.space = space; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public CategoryKind getKind() { return kind; }
+    public void setKind(CategoryKind kind) { this.kind = kind; }
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
     public Instant getCreatedDate() { return createdDate; }

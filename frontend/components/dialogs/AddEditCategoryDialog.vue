@@ -10,10 +10,13 @@ interface SubCategoryResponse {
   system: boolean
 }
 
+type CategoryKind = 'INCOME' | 'EXPENSE'
+
 interface CategoryResponse {
   id: number
   version: number
   name: string
+  kind: CategoryKind | null
   active: boolean
   system: boolean
   subCategories: SubCategoryResponse[]
@@ -22,6 +25,7 @@ interface CategoryResponse {
 interface Props {
   isDialogVisible: boolean
   category?: CategoryResponse | null
+  defaultKind?: CategoryKind
 }
 
 interface Emit {
@@ -31,6 +35,7 @@ interface Emit {
 
 const props = withDefaults(defineProps<Props>(), {
   category: null,
+  defaultKind: 'EXPENSE',
 })
 
 const emit = defineEmits<Emit>()
@@ -40,6 +45,7 @@ const { error, setError, clearError } = useApiError()
 
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
 const name = shallowRef('')
+const kind = shallowRef<CategoryKind>('EXPENSE')
 const isLoading = shallowRef(false)
 
 const isEditMode = computed(() => props.category !== null)
@@ -51,6 +57,7 @@ watch(
   visible => {
     if (visible) {
       name.value = props.category?.name ?? ''
+      kind.value = props.category?.kind ?? props.defaultKind
       clearError()
     }
   },
@@ -75,6 +82,7 @@ async function onSubmit() {
         body: {
           version: props.category!.version,
           name: name.value,
+          kind: kind.value,
         },
       })
       saved = { ...saved, subCategories: props.category!.subCategories }
@@ -85,6 +93,7 @@ async function onSubmit() {
         body: {
           spaceId: spaceStore.activeSpace!.id,
           name: name.value,
+          kind: kind.value,
         },
       })
     }
@@ -146,6 +155,43 @@ function onClose() {
 
         <VForm ref="formRef">
           <div class="d-flex flex-column gap-4">
+            <div>
+              <VLabel
+                class="mb-1 text-body-2"
+                text="Tipo"
+              />
+              <VBtnToggle
+                v-model="kind"
+                mandatory
+                divided
+                variant="outlined"
+                density="comfortable"
+                class="w-100"
+                :color="kind === 'INCOME' ? 'success' : 'error'"
+              >
+                <VBtn
+                  value="EXPENSE"
+                  prepend-icon="tabler-trending-down"
+                  class="flex-grow-1"
+                >
+                  Despesa
+                </VBtn>
+                <VBtn
+                  value="INCOME"
+                  prepend-icon="tabler-trending-up"
+                  class="flex-grow-1"
+                >
+                  Receita
+                </VBtn>
+              </VBtnToggle>
+              <div
+                v-if="isEditMode"
+                class="text-caption text-disabled mt-1"
+              >
+                O tipo só pode ser alterado se nenhum lançamento do outro tipo usar esta categoria.
+              </div>
+            </div>
+
             <AppTextField
               v-model="name"
               label="Nome"

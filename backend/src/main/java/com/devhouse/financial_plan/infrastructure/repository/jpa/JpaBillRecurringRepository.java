@@ -9,4 +9,5 @@ public interface JpaBillRecurringRepository extends JpaRepository<BillRecurringE
     List<BillRecurringEntityJpa> findBySpaceId(Long spaceId);
     List<BillRecurringEntityJpa> findBySpaceIdAndActiveTrue(Long spaceId);
     List<BillRecurringEntityJpa> findByActiveTrue();
+    long countByCategory_Id(Long categoryId);
 }

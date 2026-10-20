@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.domain;
 
+import com.devhouse.financial_plan.domain.enums.CategoryKind;
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
@@ -73,6 +74,7 @@ public class Transaction {
             if (category == null) {
                 throw new DomainException("Category is required");
             }
+            category.requireKind(CategoryKind.of(type));
         }
     }
 

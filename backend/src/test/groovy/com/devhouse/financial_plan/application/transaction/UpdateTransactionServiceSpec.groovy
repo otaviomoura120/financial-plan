@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.transaction
 
 import com.devhouse.financial_plan.application.category.ResolveSystemCategoryService
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse
 import com.devhouse.financial_plan.application.transaction.dto.UpdateTransactionRequest
@@ -37,7 +38,7 @@ class UpdateTransactionServiceSpec extends Specification {
 
     def setup() {
         resolveSystemCategoryService.execute(_, SystemCategory.TRANSFER) >> new SystemCategoryPair(90L, null)
-        categoryRepository.findById(90L) >> new Category(90L, 0, null, "Transferência", true, Instant.now(), null)
+        categoryRepository.findById(90L) >> new Category(90L, 0, null, "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private BankAccount buildAccount(Long id, BigDecimal balance) {
@@ -51,7 +52,7 @@ class UpdateTransactionServiceSpec extends Specification {
     }
 
     private Category buildCategoryObj(Long id) {
-        id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
+        id == null ? null : new Category(id, 0, null, "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private Transaction buildExistingTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId,
@@ -191,7 +192,7 @@ class UpdateTransactionServiceSpec extends Specification {
                 buildCategoryObj(10L), null, new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
         transactionRepository.findById(5L) >> existing
         bankAccountRepository.findById(1L) >> account
-        categoryRepository.findById(11L) >> new Category(11L, 0, null, "Transferência", true, Instant.now(), null)
+        categoryRepository.findById(11L) >> new Category(11L, 0, null, "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
         UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 11L, null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 

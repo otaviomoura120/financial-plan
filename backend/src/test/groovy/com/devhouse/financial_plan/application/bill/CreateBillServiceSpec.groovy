@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.bill
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.bill.dto.CreateBillRequest
 import com.devhouse.financial_plan.application.billinstance.EnsureRecurringBillsGeneratedService
 import com.devhouse.financial_plan.domain.BillRecurring
@@ -82,7 +83,7 @@ class CreateBillServiceSpec extends Specification {
     def "execute resolves the optional category and subCategory when informed"() {
         given:
         spaceRepository.findById(1L) >> buildSpace()
-        Category category = new Category(20L, 0, buildSpace(), "Utilities", true, Instant.now(), null)
+        Category category = new Category(20L, 0, buildSpace(), "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
         SubCategory subCategory = new SubCategory(30L, 0, category, "Electricity", true, Instant.now(), null)
         subCategoryRepository.findById(30L) >> subCategory
@@ -140,6 +141,23 @@ class CreateBillServiceSpec extends Specification {
 
         then:
         thrown(DomainException)
+        0 * billRecurringRepository.save(_)
+    }
+
+    def "execute rejects an income category because a bill is always an expense"() {
+        given:
+        spaceRepository.findById(1L) >> buildSpace()
+        categoryRepository.findById(21L) >> new Category(21L, 0, buildSpace(), "Salário", CategoryKind.INCOME, true,
+                Instant.now(), null)
+        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", 21L, null, new BigDecimal("150.00"),
+                LocalDate.of(2026, 3, 10), null, null)
+
+        when:
+        service.execute(request)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "The selected category is not an expense category"
         0 * billRecurringRepository.save(_)
     }
 }

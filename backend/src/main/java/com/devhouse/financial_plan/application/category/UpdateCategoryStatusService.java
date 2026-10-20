@@ -31,7 +31,7 @@ public class UpdateCategoryStatusService {
             category.deactivate();
         }
         Category updated = categoryRepository.update(category);
-        return new CategoryResponse(updated.getId(), updated.getVersion(), updated.getName(), updated.isActive(),
-                updated.isSystem(), List.of());
+        return new CategoryResponse(updated.getId(), updated.getVersion(), updated.getName(), updated.getKind(),
+                updated.isActive(), updated.isSystem(), List.of());
     }
 }

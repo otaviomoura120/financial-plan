@@ -17,4 +17,5 @@ public interface TransactionRepository {
     boolean existsByBankAccountId(Long bankAccountId);
     boolean existsByCategoryId(Long categoryId);
     boolean existsBySubCategoryId(Long subCategoryId);
+    long countByCategoryIdAndType(Long categoryId, TransactionType type);
 }

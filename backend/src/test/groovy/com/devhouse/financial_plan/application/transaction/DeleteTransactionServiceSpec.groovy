@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.transaction
 
 import com.devhouse.financial_plan.application.billinstance.UndoBillInstancePaymentService
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.creditcardinvoice.UndoCreditCardInvoicePaymentService
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Category
@@ -42,7 +43,7 @@ class DeleteTransactionServiceSpec extends Specification {
     }
 
     private Category buildCategoryObj(Long id) {
-        id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
+        id == null ? null : new Category(id, 0, null, "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "execute reverts the EXPENSE effect and deletes the transaction"() {

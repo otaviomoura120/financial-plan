@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.category
 
 import com.devhouse.financial_plan.application.category.dto.SubCategoryResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SubCategory
@@ -16,7 +17,7 @@ class UpdateSubCategoryStatusServiceSpec extends Specification {
 
     private SubCategory buildSubCategory(boolean active) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        Category category = new Category(1L, 0, space, "Food", true, Instant.now(), null)
+        Category category = new Category(1L, 0, space, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         new SubCategory(10L, 0, category, "Groceries", active, Instant.now(), null)
     }
 

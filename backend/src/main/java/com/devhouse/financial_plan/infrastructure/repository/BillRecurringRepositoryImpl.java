@@ -85,6 +85,11 @@ public class BillRecurringRepositoryImpl implements BillRecurringRepository {
         jpaBillRecurringRepository.deleteById(id);
     }
 
+    @Override
+    public long countByCategoryId(Long categoryId) {
+        return jpaBillRecurringRepository.countByCategory_Id(categoryId);
+    }
+
     private void applyFields(BillRecurring billRecurring, BillRecurringEntityJpa entity) {
         entity.setSpace(jpaSpaceRepository.getReferenceById(billRecurring.getSpace().getId()));
         entity.setName(billRecurring.getName());
@@ -113,7 +118,7 @@ public class BillRecurringRepositoryImpl implements BillRecurringRepository {
 
     private Category buildCategory(CategoryEntityJpa entity) {
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
+        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.getKind(), entity.isActive(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
 

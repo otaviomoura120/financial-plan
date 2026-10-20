@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.domain
 
 import com.devhouse.financial_plan.domain.exception.DomainException
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import spock.lang.Specification
 
 import java.time.Instant
@@ -14,7 +15,7 @@ class BillRecurringSpec extends Specification {
     }
 
     private Category buildCategory() {
-        new Category(20L, 0, buildSpace(), "Utilities", true, Instant.now(), null)
+        new Category(20L, 0, buildSpace(), "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private SubCategory buildSubCategory() {
@@ -106,7 +107,7 @@ class BillRecurringSpec extends Specification {
     def "update replaces name, category, subCategory and defaultAmount without touching the schedule"() {
         given:
         BillRecurring billRecurring = buildBillRecurring()
-        Category newCategory = new Category(21L, 0, buildSpace(), "Housing", true, Instant.now(), null)
+        Category newCategory = new Category(21L, 0, buildSpace(), "Housing", CategoryKind.EXPENSE, true, Instant.now(), null)
         SubCategory newSubCategory = new SubCategory(31L, 0, newCategory, "Rent", true, Instant.now(), null)
 
         when:

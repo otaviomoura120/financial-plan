@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.category
 
 import com.devhouse.financial_plan.domain.Category
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SubCategory
 import com.devhouse.financial_plan.domain.enums.SystemCategory
@@ -26,7 +27,7 @@ class EnsureSystemCategoriesServiceSpec extends Specification {
     }
 
     private Category buildCategory(Long id, String name) {
-        new Category(id, 0, buildSpace(), name, true, Instant.now(), null)
+        new Category(id, 0, buildSpace(), name, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "execute creates both system categories when the space has none"() {
@@ -35,6 +36,7 @@ class EnsureSystemCategoriesServiceSpec extends Specification {
         categoryRepository.findBySpaceId(1L) >> []
         subCategoryRepository.findByCategoryId(_) >> []
         List<String> savedCategoryNames = []
+        List<CategoryKind> savedCategoryKinds = []
         List<String> savedSubCategoryNames = []
 
         when:
@@ -43,6 +45,7 @@ class EnsureSystemCategoriesServiceSpec extends Specification {
         then:
         2 * categoryRepository.save(_) >> { Category category ->
             savedCategoryNames << category.getName()
+            savedCategoryKinds << category.getKind()
             buildCategory(50L + savedCategoryNames.size(), category.getName())
         }
         1 * subCategoryRepository.save(_) >> { SubCategory subCategory ->
@@ -50,6 +53,7 @@ class EnsureSystemCategoriesServiceSpec extends Specification {
             subCategory
         }
         savedCategoryNames == ["Pagamento de Fatura", "Transferência"]
+        savedCategoryKinds == [CategoryKind.EXPENSE, null]
         savedSubCategoryNames == ["Fatura de Cartão"]
     }
 

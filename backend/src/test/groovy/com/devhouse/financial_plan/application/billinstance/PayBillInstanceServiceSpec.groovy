@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.billinstance
 
 import com.devhouse.financial_plan.application.billinstance.dto.PayBillInstanceRequest
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.transaction.CreateTransactionService
 import com.devhouse.financial_plan.application.transaction.dto.CreateTransactionRequest
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse
@@ -44,7 +45,7 @@ class PayBillInstanceServiceSpec extends Specification {
 
     def "execute pays the bill using the bill's own category and subCategory"() {
         given:
-        Category category = new Category(20L, 0, buildSpace(), "Utilities", true, Instant.now(), null)
+        Category category = new Category(20L, 0, buildSpace(), "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         SubCategory subCategory = new SubCategory(30L, 0, category, "Electricity", true, Instant.now(), null)
         billRepository.findById(1L) >> buildInstance(category, BillInstanceStatus.PENDING, subCategory)
         userRepository.findByAuth0Sub("auth0|1") >> buildUser()
@@ -89,7 +90,7 @@ class PayBillInstanceServiceSpec extends Specification {
 
     def "execute throws DomainException when the instance is already paid"() {
         given:
-        Category category = new Category(20L, 0, buildSpace(), "Utilities", true, Instant.now(), null)
+        Category category = new Category(20L, 0, buildSpace(), "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         billRepository.findById(1L) >> buildInstance(category, BillInstanceStatus.PAID)
         PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
@@ -103,7 +104,7 @@ class PayBillInstanceServiceSpec extends Specification {
 
     def "execute throws DomainException when the authenticated user cannot be resolved"() {
         given:
-        Category category = new Category(20L, 0, buildSpace(), "Utilities", true, Instant.now(), null)
+        Category category = new Category(20L, 0, buildSpace(), "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         billRepository.findById(1L) >> buildInstance(category, BillInstanceStatus.PENDING)
         userRepository.findByAuth0Sub("auth0|unknown") >> null
         PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))

@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
 import com.devhouse.financial_plan.domain.Category
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardInvoicePayment
 import com.devhouse.financial_plan.domain.CreditCardTransaction
@@ -37,13 +38,13 @@ class DeleteCreditCardTransactionRecurringServiceSpec extends Specification {
 
     private CreditCardTransactionRecurring buildRecurring() {
         new CreditCardTransactionRecurring(10L, 0, buildCreditCard(), buildUser(),
-                new Category(30L, 0, null, "Assinaturas", true, Instant.now(), null), null, "Netflix",
+                new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null), null, "Netflix",
                 new BigDecimal("39.90"), LocalDate.of(2026, 3, 10), true, Instant.now(), null)
     }
 
     private CreditCardTransaction buildGeneratedTransaction(Long id, CreditCardTransactionRecurring recurring, LocalDate referenceMonth) {
         new CreditCardTransaction(id, 0, buildCreditCard(), recurring, buildUser(),
-                new Category(30L, 0, null, "Assinaturas", true, Instant.now(), null), null, new BigDecimal("39.90"),
+                new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null), null, new BigDecimal("39.90"),
                 false, referenceMonth, "Netflix", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
     }
 

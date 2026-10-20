@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.transaction
 
 import com.devhouse.financial_plan.domain.BankAccount
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.Transaction
@@ -28,7 +29,7 @@ class TransactionBalanceEffectServiceSpec extends Specification {
     }
 
     private Category buildCategoryObj(Long id) {
-        id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
+        id == null ? null : new Category(id, 0, null, "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private Transaction buildTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId) {

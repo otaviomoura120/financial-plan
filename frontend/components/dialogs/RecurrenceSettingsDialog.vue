@@ -25,6 +25,7 @@ interface SubCategoryOption {
 interface CategoryOption {
   id: number
   name: string
+  kind: 'INCOME' | 'EXPENSE' | null
   active: boolean
   system: boolean
   subCategories: SubCategoryOption[]

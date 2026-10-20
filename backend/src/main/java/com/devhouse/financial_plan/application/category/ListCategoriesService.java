@@ -35,8 +35,8 @@ public class ListCategoriesService {
         List<SubCategoryResponse> subCategories = subCategoryRepository.findByCategoryId(category.getId()).stream()
                 .map(this::toSubCategoryResponse)
                 .toList();
-        return new CategoryResponse(category.getId(), category.getVersion(), category.getName(), category.isActive(),
-                category.isSystem(), subCategories);
+        return new CategoryResponse(category.getId(), category.getVersion(), category.getName(), category.getKind(),
+                category.isActive(), category.isSystem(), subCategories);
     }
 
     private SubCategoryResponse toSubCategoryResponse(SubCategory subCategory) {

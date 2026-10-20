@@ -7,6 +7,7 @@ import com.devhouse.financial_plan.domain.CreditCard;
 import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.CategoryKindPolicy;
 import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.exception.DomainException;
@@ -58,6 +59,7 @@ public class CreateCreditCardTransactionService {
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
 
         boolean credit = Boolean.TRUE.equals(request.credit());
+        CategoryKindPolicy.requireForCreditCardEntry(category, credit);
         int totalInstallments = credit || request.totalInstallments() == null || request.totalInstallments() <= 1
                 ? 1 : request.totalInstallments();
         LocalDate firstReferenceMonth = CreditCardInvoiceCycle.resolveReferenceMonth(request.purchaseDate(),

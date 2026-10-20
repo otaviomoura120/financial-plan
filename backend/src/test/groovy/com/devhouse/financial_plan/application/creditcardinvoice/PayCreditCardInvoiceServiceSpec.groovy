@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardinvoice
 
 import com.devhouse.financial_plan.application.category.ResolveSystemCategoryService
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair
 import com.devhouse.financial_plan.application.creditcardinvoice.dto.CreditCardInvoicePaymentResponse
 import com.devhouse.financial_plan.application.creditcardinvoice.dto.PayCreditCardInvoiceRequest
@@ -58,7 +59,7 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
     }
 
     private CreditCardTransaction buildTransaction(BigDecimal amount, boolean credit) {
-        new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), new Category(20L, 0, null, "Food", true, Instant.now(), null),
+        new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null),
                 null, amount, credit, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1), "group-1", 1, 1, false, null,
                 Instant.now(), null)
     }

@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.billinstance
 
 import com.devhouse.financial_plan.application.billinstance.dto.BillInstanceResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.billinstance.dto.CreateBillInstanceRequest
 import com.devhouse.financial_plan.domain.Bill
 import com.devhouse.financial_plan.domain.Category
@@ -56,7 +57,7 @@ class CreateBillInstanceServiceSpec extends Specification {
     def "execute resolves the optional category and subCategory when informed"() {
         given:
         spaceRepository.findById(1L) >> buildSpace()
-        Category category = new Category(20L, 0, buildSpace(), "Utilities", true, Instant.now(), null)
+        Category category = new Category(20L, 0, buildSpace(), "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
         SubCategory subCategory = new SubCategory(30L, 0, category, "Electricity", true, Instant.now(), null)
         subCategoryRepository.findById(30L) >> subCategory

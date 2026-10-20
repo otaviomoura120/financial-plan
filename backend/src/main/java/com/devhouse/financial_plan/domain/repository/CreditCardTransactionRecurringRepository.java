@@ -12,4 +12,5 @@ public interface CreditCardTransactionRecurringRepository {
     List<CreditCardTransactionRecurring> findByCreditCardId(Long creditCardId);
     List<CreditCardTransactionRecurring> findAllActive();
     void delete(Long id);
+    long countByCategoryId(Long categoryId);
 }

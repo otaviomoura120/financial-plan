@@ -8,10 +8,13 @@ interface SubCategoryResponse {
   system: boolean
 }
 
+type CategoryKind = 'INCOME' | 'EXPENSE'
+
 interface CategoryResponse {
   id: number
   version: number
   name: string
+  kind: CategoryKind | null
   active: boolean
   system: boolean
   subCategories: SubCategoryResponse[]
@@ -22,6 +25,7 @@ const { error, setError, clearError } = useApiError()
 const { isVisible: snackbarVisible, message: snackbarMessage, color: snackbarColor, icon: snackbarIcon, showSuccess, showError } = useSnackbar()
 
 const categories = ref<CategoryResponse[]>([])
+const activeKind = shallowRef<CategoryKind>('EXPENSE')
 const search = shallowRef('')
 const page = shallowRef(1)
 const itemsPerPage = shallowRef(10)
@@ -41,11 +45,30 @@ const subCategoriesTargetName = shallowRef('')
 const subCategoriesTargetSystem = shallowRef(false)
 const subCategoriesTargetList = shallowRef<SubCategoryResponse[]>([])
 
+// Categories without a kind (the internal transfer category) belong to neither tab.
+const categoriesOfActiveKind = computed(() =>
+  categories.value.filter(c => c.kind === activeKind.value),
+)
+
 const filteredCategories = computed(() =>
-  categories.value.filter(c =>
+  categoriesOfActiveKind.value.filter(c =>
     c.name.toLowerCase().includes(search.value.toLowerCase()),
   ),
 )
+
+const emptyMessage = computed(() => {
+  if (search.value) {
+    return 'Nenhuma categoria encontrada para a busca.'
+  }
+
+  return activeKind.value === 'INCOME'
+    ? 'Nenhuma categoria de receita cadastrada.'
+    : 'Nenhuma categoria de despesa cadastrada.'
+})
+
+function countByKind(kind: CategoryKind) {
+  return categories.value.filter(c => c.kind === kind).length
+}
 
 const paginatedCategories = computed(() => {
   const start = (page.value - 1) * itemsPerPage.value
@@ -67,7 +90,7 @@ watch(
   { immediate: true },
 )
 
-watch(search, () => {
+watch([search, activeKind], () => {
   page.value = 1
 })
 
@@ -202,6 +225,10 @@ function onCategorySaved(saved: CategoryResponse) {
   if (selectedCategory.value?.id === saved.id) {
     selectedCategory.value = saved
   }
+
+  if (saved.kind) {
+    activeKind.value = saved.kind
+  }
 }
 
 function toggleSearch() {
@@ -268,6 +295,24 @@ function activeSubCategoriesCount(category: CategoryResponse) {
           autofocus
         />
       </VCardText>
+
+      <VTabs
+        v-model="activeKind"
+        class="px-4"
+      >
+        <VTab
+          value="EXPENSE"
+          prepend-icon="tabler-trending-down"
+        >
+          Despesas ({{ countByKind('EXPENSE') }})
+        </VTab>
+        <VTab
+          value="INCOME"
+          prepend-icon="tabler-trending-up"
+        >
+          Receitas ({{ countByKind('INCOME') }})
+        </VTab>
+      </VTabs>
 
       <VDivider />
 
@@ -409,7 +454,7 @@ function activeSubCategoriesCount(category: CategoryResponse) {
                 colspan="4"
                 class="text-center text-disabled py-8"
               >
-                {{ search ? 'Nenhuma categoria encontrada para a busca.' : 'Nenhuma categoria cadastrada.' }}
+                {{ emptyMessage }}
               </td>
             </tr>
           </tbody>
@@ -428,6 +473,7 @@ function activeSubCategoriesCount(category: CategoryResponse) {
     <AddEditCategoryDialog
       v-model:is-dialog-visible="isAddEditDialogVisible"
       :category="selectedCategory"
+      :default-kind="activeKind"
       @saved="onCategorySaved"
     />
 

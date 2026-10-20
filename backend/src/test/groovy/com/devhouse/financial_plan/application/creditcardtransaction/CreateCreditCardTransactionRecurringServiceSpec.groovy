@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreateCreditCardTransactionRecurringRequest
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionRecurringResponse
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.CreditCard
@@ -46,7 +47,7 @@ class CreateCreditCardTransactionRecurringServiceSpec extends Specification {
         given:
         creditCardRepository.findById(20L) >> buildCreditCard()
         userRepository.findById(1L) >> buildUser()
-        Category category = new Category(30L, 0, null, "Assinaturas", true, Instant.now(), null)
+        Category category = new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(30L) >> category
         creditCardTransactionRecurringRepository.save(_) >> { CreditCardTransactionRecurring r ->
             new CreditCardTransactionRecurring(10L, 0, r.creditCard, r.user, r.category, r.subCategory, r.description,
@@ -73,7 +74,7 @@ class CreateCreditCardTransactionRecurringServiceSpec extends Specification {
         given:
         creditCardRepository.findById(20L) >> buildCreditCard()
         userRepository.findById(1L) >> buildUser()
-        Category category = new Category(30L, 0, null, "Assinaturas", true, Instant.now(), null)
+        Category category = new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(30L) >> category
         SubCategory subCategory = new SubCategory(40L, 0, category, "Streaming", true, null, null)
         subCategoryRepository.findById(40L) >> subCategory

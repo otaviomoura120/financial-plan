@@ -18,4 +18,5 @@ public interface CreditCardTransactionRepository {
     List<CreditCardTransaction> findByCreditCardTransactionRecurringId(Long creditCardTransactionRecurringId);
     List<CreditCardTransaction> findByCreditCardTransactionRecurringIdAndPurchaseMonth(Long creditCardTransactionRecurringId, YearMonth month);
     void delete(Long id);
+    long countByCategoryIdAndCredit(Long categoryId, boolean credit);
 }

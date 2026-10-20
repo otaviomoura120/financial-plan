@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
 import com.devhouse.financial_plan.domain.Category
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardInvoicePayment
 import com.devhouse.financial_plan.domain.CreditCardTransaction
@@ -44,7 +45,7 @@ class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specific
     }
 
     private Category buildCategory() {
-        new Category(30L, 0, null, "Assinaturas", true, Instant.now(), null)
+        new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private CreditCardTransactionRecurring buildRecurring(LocalDate startDate, boolean active = true, CreditCard creditCard = buildCreditCard()) {

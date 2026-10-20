@@ -12,4 +12,5 @@ public interface JpaBillRepository extends JpaRepository<BillEntityJpa, Long>,
 
     Optional<BillEntityJpa> findByBillRecurring_IdAndReferenceMonth(Long billRecurringId, LocalDate referenceMonth);
     List<BillEntityJpa> findByBillRecurring_Id(Long billRecurringId);
+    long countByCategory_Id(Long categoryId);
 }

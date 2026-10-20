@@ -80,7 +80,7 @@ public class SubCategoryRepositoryImpl implements SubCategoryRepository {
 
     private Category buildCategory(CategoryEntityJpa entity) {
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
+        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.getKind(), entity.isActive(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
 

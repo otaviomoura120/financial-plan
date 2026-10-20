@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.domain
 
 import com.devhouse.financial_plan.domain.exception.DomainException
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import spock.lang.Specification
 
 import java.time.Instant
@@ -19,7 +20,7 @@ class CreditCardTransactionSpec extends Specification {
     }
 
     private Category buildCategory() {
-        new Category(20L, 0, null, "Food", true, Instant.now(), null)
+        new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private CreditCardTransaction buildTransaction(String installmentGroupId, Integer installmentNumber, Integer totalInstallments) {
@@ -237,7 +238,7 @@ class CreditCardTransactionSpec extends Specification {
     def "update replaces category, subCategory, amount, purchaseDate and description without touching installment fields"() {
         given:
         CreditCardTransaction transaction = buildTransaction("group-1", 3, 12)
-        Category newCategory = new Category(21L, 0, null, "Travel", true, Instant.now(), null)
+        Category newCategory = new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         SubCategory newSubCategory = new SubCategory(30L, 0, newCategory, "Flights", true, null, null)
 
         when:

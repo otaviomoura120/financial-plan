@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.category
 
 import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SubCategory
@@ -23,7 +24,7 @@ class ResolveSystemCategoryServiceSpec extends Specification {
 
     private Category buildCategory(Long id, String name) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        new Category(id, 0, space, name, true, Instant.now(), null)
+        new Category(id, 0, space, name, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "execute provisions the categories before resolving and returns both ids"() {

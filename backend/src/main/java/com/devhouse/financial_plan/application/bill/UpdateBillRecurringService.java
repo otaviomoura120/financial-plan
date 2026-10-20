@@ -7,6 +7,7 @@ import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.BillRecurring;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.SubCategory;
+import com.devhouse.financial_plan.domain.CategoryKindPolicy;
 import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.BillRecurringRepository;
@@ -48,6 +49,7 @@ public class UpdateBillRecurringService {
         Category category = resolveCategory(request.categoryId());
         SubCategory subCategory = resolveSubCategory(request.subCategoryId());
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
+        CategoryKindPolicy.requireExpense(category);
         billRecurring.update(request.name(), category, subCategory, request.defaultAmount());
         billRecurring.updateSchedule(request.startDate(), request.endDate(), request.installments());
         billRecurring.validate();

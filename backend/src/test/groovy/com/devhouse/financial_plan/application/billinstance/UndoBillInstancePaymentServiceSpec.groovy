@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.billinstance
 
 import com.devhouse.financial_plan.application.transaction.TransactionBalanceEffectService
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Bill
 import com.devhouse.financial_plan.domain.Category
@@ -45,7 +46,7 @@ class UndoBillInstancePaymentServiceSpec extends Specification {
     private Transaction buildPaymentTransaction(BankAccount bankAccount) {
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
-        Category category = new Category(30L, 0, null, "Contas", true, Instant.now(), null)
+        Category category = new Category(30L, 0, null, "Contas", CategoryKind.EXPENSE, true, Instant.now(), null)
         new Transaction(99L, 0, TransactionType.EXPENSE, user, bankAccount, null, category, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 9), "Pagamento de conta - Energy Bill", Instant.now(), null,
                 TransactionSourceType.BILL_INSTANCE_PAYMENT, 1L)

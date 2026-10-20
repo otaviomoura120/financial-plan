@@ -31,12 +31,12 @@ public class CreateCategoryService {
         if (space == null) {
             throw new DomainException("Space not found");
         }
-        Category category = new Category(null, 0, space, request.name(), true, Instant.now(), null);
+        Category category = new Category(null, 0, space, request.name(), request.kind(), true, Instant.now(), null);
         category.validate();
         categoryNameValidator.rejectReservedName(request.name());
         categoryNameValidator.rejectDuplicatedCategoryName(request.spaceId(), request.name(), null);
         Category saved = categoryRepository.save(category);
-        return new CategoryResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.isActive(),
-                saved.isSystem(), List.of());
+        return new CategoryResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.getKind(),
+                saved.isActive(), saved.isSystem(), List.of());
     }
 }

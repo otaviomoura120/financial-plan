@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.bill
 
 import com.devhouse.financial_plan.application.bill.dto.BillResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.bill.dto.UpdateBillRecurringRequest
 import com.devhouse.financial_plan.application.billinstance.EnsureRecurringBillsGeneratedService
 import com.devhouse.financial_plan.domain.Bill
@@ -47,7 +48,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
     def "execute updates name, category, defaultAmount and startDate"() {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
-        Category category = new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
+        Category category = new Category(20L, 0, null, "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
         billRecurringRepository.update(_) >> { BillRecurring b -> b }
         billRepository.findByBillRecurringId(10L) >> []
@@ -67,7 +68,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
     def "execute also updates already-generated pending bills from the current month onward"() {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
-        Category category = new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
+        Category category = new Category(20L, 0, null, "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
         billRecurringRepository.update(_) >> { BillRecurring b -> b }
         Bill pastBill = buildGeneratedBill(1L, YearMonth.now().minusMonths(2).atDay(1))
@@ -96,7 +97,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
     def "execute recalculates dueDate for pending bills from the current month onward when startDate changes"() {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
-        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
+        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         billRecurringRepository.update(_) >> { BillRecurring b -> b }
         YearMonth pastMonth = YearMonth.now().minusMonths(2)
         YearMonth currentMonth = YearMonth.now()
@@ -120,7 +121,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
     def "execute clamps the recalculated dueDate to the target month's length"() {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
-        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
+        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         billRecurringRepository.update(_) >> { BillRecurring b -> b }
         YearMonth currentMonth = YearMonth.now()
         Bill currentMonthBill = buildGeneratedBill(1L, currentMonth.atDay(1), currentMonth.atDay(10))
@@ -138,7 +139,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
     def "execute does not update a current/future bill that is already paid"() {
         given:
         billRecurringRepository.findById(10L) >> buildBillRecurring()
-        Category category = new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
+        Category category = new Category(20L, 0, null, "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
         billRecurringRepository.update(_) >> { BillRecurring b -> b }
         YearMonth currentMonth = YearMonth.now()

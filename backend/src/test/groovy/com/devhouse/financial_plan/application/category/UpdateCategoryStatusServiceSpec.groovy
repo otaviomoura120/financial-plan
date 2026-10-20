@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.category
 
 import com.devhouse.financial_plan.application.category.dto.CategoryResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.repository.CategoryRepository
@@ -15,7 +16,7 @@ class UpdateCategoryStatusServiceSpec extends Specification {
 
     private Category buildCategory(boolean active) {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        new Category(10L, 0, space, "Food", active, Instant.now(), null)
+        new Category(10L, 0, space, "Food", CategoryKind.EXPENSE, active, Instant.now(), null)
     }
 
     def "execute activates an inactive category"() {

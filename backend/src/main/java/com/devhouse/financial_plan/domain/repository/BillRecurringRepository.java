@@ -12,4 +12,5 @@ public interface BillRecurringRepository {
     List<BillRecurring> findActiveBySpaceId(Long spaceId);
     List<BillRecurring> findAllActive();
     void delete(Long id);
+    long countByCategoryId(Long categoryId);
 }

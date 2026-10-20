@@ -35,6 +35,7 @@ interface SubCategoryOption {
 interface CategoryOption {
   id: number
   name: string
+  kind: 'INCOME' | 'EXPENSE' | null
   active: boolean
   system: boolean
   subCategories: SubCategoryOption[]
@@ -84,11 +85,13 @@ const isLoading = shallowRef(false)
 const isEditMode = computed(() => props.transaction !== null)
 const isTransfer = computed(() => type.value === 'TRANSFER')
 
-const typeItems = [
-  { title: 'Receita', value: 'INCOME' },
-  { title: 'Despesa', value: 'EXPENSE' },
-  { title: 'Transferência', value: 'TRANSFER' },
-]
+const typeColor = computed(() => {
+  if (type.value === 'INCOME') {
+    return 'success'
+  }
+
+  return type.value === 'EXPENSE' ? 'error' : 'info'
+})
 
 function optionLabel<T extends { name: string; active: boolean }>(item: T) {
   return item.active ? item.name : `${item.name} (inativo)`
@@ -102,8 +105,16 @@ const destinationBankAccountItems = computed(() =>
   bankAccountItems.value.filter(ba => ba.id !== bankAccountId.value),
 )
 
+// Only categories of the chosen type are offered. When editing, an old transaction whose category no longer
+// matches its type keeps that category visible (flagged) instead of silently dropping it from the select.
 const categoryItems = computed(() =>
-  props.categories.filter(c => !c.system).map(c => ({ ...c, label: optionLabel(c) })),
+  props.categories
+    .filter(c => !c.system && (c.kind === type.value || c.id === categoryId.value))
+    .map(c => ({ ...c, label: c.kind === type.value ? optionLabel(c) : `${optionLabel(c)} (tipo incompatível)` })),
+)
+
+const hasNoCategoryOfType = computed(() =>
+  !isTransfer.value && !props.categories.some(c => !c.system && c.kind === type.value),
 )
 
 const selectedCategory = computed(() =>
@@ -114,7 +125,6 @@ const subCategoryItems = computed(() =>
   (selectedCategory.value?.subCategories ?? []).map(sc => ({ ...sc, label: optionLabel(sc) })),
 )
 
-const typeRules = [(v: string) => !!v || 'Tipo é obrigatório']
 const bankAccountRules = [(v: number | null) => v !== null || 'Conta de origem é obrigatória']
 
 const destinationRules = [
@@ -122,19 +132,27 @@ const destinationRules = [
   (v: number | null) => !isTransfer.value || v !== bankAccountId.value || 'Conta de destino deve ser diferente da origem',
 ]
 
-const categoryRules = [(v: number | null) => isTransfer.value || v !== null || 'Categoria é obrigatória']
+const categoryRules = [
+  (v: number | null) => isTransfer.value || v !== null || 'Categoria é obrigatória',
+  (v: number | null) => isTransfer.value || v === null || selectedCategory.value?.kind === type.value
+    || 'Categoria não corresponde ao tipo da transação',
+]
+
 const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
-watch(type, () => {
-  if (isTransfer.value) {
+// Runs only on user changes (not when the dialog hydrates an existing transaction), so editing an old
+// transaction keeps its category on screen even when it no longer matches the type.
+function onTypeChange(value: TransactionType) {
+  type.value = value
+  if (selectedCategory.value?.kind !== value) {
     categoryId.value = null
     subCategoryId.value = null
   }
-  else {
+  if (!isTransfer.value) {
     destinationBankAccountId.value = null
   }
-})
+}
 
 watch(categoryId, () => {
   if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value)) {
@@ -261,22 +279,42 @@ function onClose() {
 
         <VForm ref="formRef">
           <VRow>
-            <VCol
-              cols="12"
-              md="6"
-            >
-              <AppSelect
-                v-model="type"
-                label="Tipo"
-                :items="typeItems"
-                :rules="typeRules"
-              />
+            <VCol cols="12">
+              <VBtnToggle
+                :model-value="type"
+                mandatory
+                divided
+                variant="outlined"
+                density="comfortable"
+                class="w-100"
+                :color="typeColor"
+                @update:model-value="onTypeChange"
+              >
+                <VBtn
+                  value="EXPENSE"
+                  :prepend-icon="$vuetify.display.xs ? undefined : 'tabler-trending-down'"
+                  class="flex-grow-1"
+                >
+                  Despesa
+                </VBtn>
+                <VBtn
+                  value="INCOME"
+                  :prepend-icon="$vuetify.display.xs ? undefined : 'tabler-trending-up'"
+                  class="flex-grow-1"
+                >
+                  Receita
+                </VBtn>
+                <VBtn
+                  value="TRANSFER"
+                  :prepend-icon="$vuetify.display.xs ? undefined : 'tabler-arrows-exchange'"
+                  class="flex-grow-1"
+                >
+                  Transferência
+                </VBtn>
+              </VBtnToggle>
             </VCol>
 
-            <VCol
-              cols="12"
-              md="6"
-            >
+            <VCol cols="12">
               <AppCurrencyField
                 v-model="amount"
                 label="Valor"
@@ -326,7 +364,17 @@ function onClose() {
                   item-title="label"
                   item-value="id"
                   :rules="categoryRules"
-                />
+                  :hint="hasNoCategoryOfType ? `Nenhuma categoria de ${type === 'INCOME' ? 'receita' : 'despesa'} cadastrada.` : undefined"
+                  :persistent-hint="hasNoCategoryOfType"
+                >
+                  <template #no-data>
+                    <VListItem
+                      title="Nenhuma categoria deste tipo"
+                      subtitle="Cadastre uma na tela de Categorias"
+                      to="/categories"
+                    />
+                  </template>
+                </AppSelect>
               </VCol>
 
               <VCol

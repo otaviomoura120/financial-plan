@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.report
 
 import com.devhouse.financial_plan.application.report.dto.CategoryReportFilterRequest
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.report.dto.CategoryReportItemSource
 import com.devhouse.financial_plan.application.report.dto.CategoryReportResponse
 import com.devhouse.financial_plan.domain.BankAccount
@@ -31,8 +32,8 @@ class GenerateCategoryReportServiceSpec extends Specification {
     User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
             null, null, Instant.now(), null, false)
     BankAccount bankAccount = new BankAccount(5L, 0, space, "Conta Corrente", "Nubank", BigDecimal.ZERO, true, Instant.now(), null)
-    Category food = new Category(20L, 0, space, "Alimentação", true, Instant.now(), null)
-    Category salary = new Category(21L, 0, space, "Salário", true, Instant.now(), null)
+    Category food = new Category(20L, 0, space, "Alimentação", CategoryKind.EXPENSE, true, Instant.now(), null)
+    Category salary = new Category(21L, 0, space, "Salário", CategoryKind.EXPENSE, true, Instant.now(), null)
     SubCategory restaurants = new SubCategory(30L, 0, food, "Restaurantes", true, Instant.now(), null)
 
     private CategoryReportFilterRequest filter(Map overrides = [:]) {

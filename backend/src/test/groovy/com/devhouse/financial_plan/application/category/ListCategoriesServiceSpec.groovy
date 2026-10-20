@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.category
 
 import com.devhouse.financial_plan.application.category.dto.CategoryResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SubCategory
@@ -21,7 +22,7 @@ class ListCategoriesServiceSpec extends Specification {
     def "execute returns categories of the space with their subcategories populated"() {
         given:
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        Category category = new Category(10L, 0, space, "Food", true, Instant.now(), null)
+        Category category = new Category(10L, 0, space, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         SubCategory subCategory = new SubCategory(20L, 0, category, "Restaurants", true, Instant.now(), null)
         categoryRepository.findBySpaceId(1L) >> [category]
         subCategoryRepository.findByCategoryId(10L) >> [subCategory]

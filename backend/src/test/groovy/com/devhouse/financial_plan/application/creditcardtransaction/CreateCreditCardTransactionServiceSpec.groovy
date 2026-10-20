@@ -15,6 +15,7 @@ import com.devhouse.financial_plan.domain.repository.CreditCardRepository
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository
 import com.devhouse.financial_plan.domain.repository.UserRepository
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import spock.lang.Specification
 
 import java.time.Instant
@@ -330,5 +331,48 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         then:
         thrown(DomainException)
         0 * creditCardTransactionRepository.save(_)
+    }
+
+    def "execute accepts an income category on an invoice credit and an expense category on a purchase"() {
+        given:
+        creditCardRepository.findById(10L) >> buildCreditCard()
+        userRepository.findById(1L) >> Mock(User)
+        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Category", kind, true, Instant.now(), null)
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+                new BigDecimal("100.00"), credit, LocalDate.of(2026, 3, 5), "Entry", null, null)
+
+        when:
+        service.execute(request)
+
+        then:
+        1 * creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> t }
+
+        where:
+        credit | kind
+        true   | CategoryKind.INCOME
+        false  | CategoryKind.EXPENSE
+    }
+
+    def "execute rejects a category whose kind does not match the entry"() {
+        given:
+        creditCardRepository.findById(10L) >> buildCreditCard()
+        userRepository.findById(1L) >> Mock(User)
+        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Category", kind, true, Instant.now(), null)
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+                new BigDecimal("100.00"), credit, LocalDate.of(2026, 3, 5), "Entry", null, null)
+
+        when:
+        service.execute(request)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == message
+        0 * creditCardTransactionRepository.save(_)
+
+        where:
+        credit | kind                 || message
+        true   | CategoryKind.EXPENSE || "The selected category is not an income category"
+        false  | CategoryKind.INCOME  || "The selected category is not an expense category"
     }
 }

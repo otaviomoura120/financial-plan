@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardTransaction
@@ -30,7 +31,7 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
     }
 
     private Category category() {
-        new Category(20L, 0, null, "Food", true, Instant.now(), null)
+        new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "execute returns the credit card transactions matching the filter"() {

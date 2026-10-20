@@ -101,6 +101,11 @@ public class BillRepositoryImpl implements BillRepository {
         jpaBillRepository.deleteById(id);
     }
 
+    @Override
+    public long countByCategoryId(Long categoryId) {
+        return jpaBillRepository.countByCategory_Id(categoryId);
+    }
+
     private Specification<BillEntityJpa> buildSpecification(Long spaceId, LocalDate from, LocalDate to, Long categoryId, Long subCategoryId) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -164,7 +169,7 @@ public class BillRepositoryImpl implements BillRepository {
 
     private Category buildCategory(CategoryEntityJpa entity) {
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
+        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.getKind(), entity.isActive(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
 

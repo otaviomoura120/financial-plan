@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.category
 
 import com.devhouse.financial_plan.application.category.dto.SubCategoryResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.category.dto.UpdateSubCategoryRequest
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
@@ -21,7 +22,7 @@ class UpdateSubCategoryServiceSpec extends Specification {
 
     private Category buildCategory() {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        new Category(1L, 0, space, "Food", true, Instant.now(), null)
+        new Category(1L, 0, space, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "execute renames an existing subcategory"() {
@@ -79,7 +80,7 @@ class UpdateSubCategoryServiceSpec extends Specification {
     def "execute throws DomainException when the subcategory belongs to a system category"() {
         given:
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        Category systemCategory = new Category(1L, 0, space, "Pagamento de Fatura", true, Instant.now(), null)
+        Category systemCategory = new Category(1L, 0, space, "Pagamento de Fatura", CategoryKind.EXPENSE, true, Instant.now(), null)
         subCategoryRepository.findById(10L) >> new SubCategory(10L, 0, systemCategory, "Fatura de Cartão", true, Instant.now(), null)
         UpdateSubCategoryRequest request = new UpdateSubCategoryRequest(0, "Outro nome")
 

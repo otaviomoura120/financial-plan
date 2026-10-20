@@ -105,3 +105,19 @@ system categories out of their `categoryItems` computed — never at fetch time,
 lookups still need them to render the label in the statement. `pages/categories/index.vue` shows a
 "Sistema" chip and disables edit/toggle/delete; `ManageSubCategoriesDialog` does the same for the
 subcategory rows and hides the "Adicionar" row.
+
+## Category kind
+
+Every category also carries a `kind` (`CategoryKind`: `INCOME` or `EXPENSE`), and subcategories inherit
+it. `Pagamento de Fatura` is `EXPENSE`; `Transferência` has no kind, since a transfer is neither income
+nor expense and only ever uses the reserved category.
+
+- `Transaction.validate()` requires the category kind to match the transaction type.
+- Bills, recurring bills, credit card purchases and subscriptions only accept `EXPENSE`
+  (`CategoryKindPolicy.requireExpense`); a credit on the card invoice (refund, cashback) only accepts
+  `INCOME` (`CategoryKindPolicy.requireForCreditCardEntry`).
+- A category's kind can only change while nothing of the other type uses it
+  (`CategoryKindChangeGuard`); otherwise the update is rejected and the entries must be moved first.
+
+Existing databases are migrated with `docs/category-kind-migration.sql`, which suggests the kind of each
+category from its current usage.

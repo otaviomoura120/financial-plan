@@ -67,6 +67,7 @@ interface SubCategoryResponse {
 interface CategoryResponse {
   id: number
   name: string
+  kind: 'INCOME' | 'EXPENSE' | null
   active: boolean
   system: boolean
   subCategories: SubCategoryResponse[]
@@ -116,8 +117,13 @@ const bankAccountItems = computed(() =>
   bankAccounts.value.map(ba => ({ title: ba.active ? ba.name : `${ba.name} (inativo)`, value: ba.id })),
 )
 
+// With an income/expense type picked, only categories of that type make sense as a filter.
+function matchesSelectedType(category: CategoryResponse) {
+  return type.value !== 'INCOME' && type.value !== 'EXPENSE' ? true : category.kind === type.value
+}
+
 const categoryItems = computed(() =>
-  categories.value.filter(c => !c.system).map(c => ({ title: c.active ? c.name : `${c.name} (inativo)`, value: c.id })),
+  categories.value.filter(c => !c.system && matchesSelectedType(c)).map(c => ({ title: c.active ? c.name : `${c.name} (inativo)`, value: c.id })),
 )
 
 const selectedCategory = computed(() =>
@@ -184,6 +190,12 @@ function toggleSubGroup(group: CategoryReportGroupResponse, subGroup: CategoryRe
     expandedSubGroups.value.add(key)
   }
 }
+
+watch(type, () => {
+  if (selectedCategory.value && !matchesSelectedType(selectedCategory.value)) {
+    categoryId.value = null
+  }
+})
 
 watch(categoryId, () => {
   if (!subCategoryItems.value.some(sc => sc.value === subCategoryId.value)) {

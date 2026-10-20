@@ -138,6 +138,11 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
         jpaCreditCardTransactionRepository.deleteById(id);
     }
 
+    @Override
+    public long countByCategoryIdAndCredit(Long categoryId, boolean credit) {
+        return jpaCreditCardTransactionRepository.countByCategory_IdAndCredit(categoryId, credit);
+    }
+
     private Specification<CreditCardTransactionEntityJpa> buildSpecification(Long spaceId, Long creditCardId, Long categoryId,
                                                                               Long subCategoryId, Long userId, LocalDate referenceMonth) {
         return (root, query, criteriaBuilder) -> {
@@ -240,7 +245,7 @@ public class CreditCardTransactionRepositoryImpl implements CreditCardTransactio
 
     private Category buildCategory(CategoryEntityJpa entity) {
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
+        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.getKind(), entity.isActive(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
 

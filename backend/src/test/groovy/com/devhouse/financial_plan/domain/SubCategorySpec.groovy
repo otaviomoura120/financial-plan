@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.domain
 
 import com.devhouse.financial_plan.domain.exception.DomainException
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import spock.lang.Specification
 
 import java.time.Instant
@@ -9,7 +10,7 @@ class SubCategorySpec extends Specification {
 
     private Category buildCategory() {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
-        new Category(1L, 0, space, "Food", true, Instant.now(), null)
+        new Category(1L, 0, space, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "validate passes when name and category are present"() {
@@ -70,8 +71,8 @@ class SubCategorySpec extends Specification {
 
     def "isSystem follows the parent category"() {
         given:
-        Category systemCategory = new Category(1L, 0, null, "Pagamento de Fatura", true, Instant.now(), null)
-        Category normalCategory = new Category(2L, 0, null, "Alimentação", true, Instant.now(), null)
+        Category systemCategory = new Category(1L, 0, null, "Pagamento de Fatura", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category normalCategory = new Category(2L, 0, null, "Alimentação", CategoryKind.EXPENSE, true, Instant.now(), null)
 
         expect:
         new SubCategory(10L, 0, systemCategory, "Fatura de Cartão", true, Instant.now(), null).isSystem()

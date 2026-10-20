@@ -13,6 +13,7 @@ public interface JpaCreditCardTransactionRepository extends JpaRepository<Credit
     List<CreditCardTransactionEntityJpa> findByCreditCard_Id(Long creditCardId);
     List<CreditCardTransactionEntityJpa> findByCreditCard_IdAndReferenceMonth(Long creditCardId, LocalDate referenceMonth);
     boolean existsByCreditCard_Id(Long creditCardId);
+    long countByCategory_IdAndCredit(Long categoryId, boolean credit);
     List<CreditCardTransactionEntityJpa> findByCreditCardTransactionRecurring_Id(Long creditCardTransactionRecurringId);
     List<CreditCardTransactionEntityJpa> findByCreditCardTransactionRecurring_IdAndPurchaseDateBetween(
             Long creditCardTransactionRecurringId, LocalDate startDate, LocalDate endDate);

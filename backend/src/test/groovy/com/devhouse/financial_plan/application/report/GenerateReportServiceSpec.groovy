@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.report
 
 import com.devhouse.financial_plan.application.billinstance.EnsureRecurringBillsGeneratedService
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.creditcardinvoice.ListCreditCardInvoicesService
 import com.devhouse.financial_plan.application.creditcardinvoice.dto.CreditCardInvoiceResponse
 import com.devhouse.financial_plan.application.report.dto.ReportFilterRequest
@@ -51,7 +52,7 @@ class GenerateReportServiceSpec extends Specification {
     }
 
     private Transaction buildTransaction(TransactionType type, BigDecimal amount, Long destinationBankAccountId = null) {
-        Category category = TransactionType.TRANSFER.equals(type) ? null : new Category(10L, 0, null, "Food", true, Instant.now(), null)
+        Category category = TransactionType.TRANSFER.equals(type) ? null : new Category(10L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         new Transaction(1L, 0, type, buildUser(1L), buildAccount(1L),
                 destinationBankAccountId != null ? buildAccount(destinationBankAccountId) : null,
                 category, null, amount, LocalDate.now(), "desc", Instant.now(), null, null, null)
@@ -68,7 +69,7 @@ class GenerateReportServiceSpec extends Specification {
     }
 
     private Transaction buildInvoicePaymentTransaction(Long id, Long creditCardId, BigDecimal amount, LocalDate transactionDate) {
-        Category category = new Category(10L, 0, null, "Cartão de Crédito", true, Instant.now(), null)
+        Category category = new Category(10L, 0, null, "Cartão de Crédito", CategoryKind.EXPENSE, true, Instant.now(), null)
         new Transaction(id, 0, TransactionType.EXPENSE, buildUser(1L), buildAccount(1L), null, category, null,
                 amount, transactionDate, "Pagamento de fatura", Instant.now(), null,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, creditCardId)

@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardTransaction
@@ -22,7 +23,7 @@ class ListInstallmentGroupServiceSpec extends Specification {
         CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
-        Category category = new Category(20L, 0, null, "Food", true, Instant.now(), null)
+        Category category = new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         new CreditCardTransaction(installmentNumber as Long, 0, creditCard, null, user, category, null,
                 new BigDecimal("33.33"), false, LocalDate.of(2026, 3, 5), "desc",
                 LocalDate.of(2026, 3, 1).plusMonths(installmentNumber - 1),

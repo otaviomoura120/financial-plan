@@ -34,6 +34,7 @@ interface SubCategoryOption {
 interface CategoryOption {
   id: number
   name: string
+  kind: 'INCOME' | 'EXPENSE' | null
   active: boolean
   system: boolean
   subCategories: SubCategoryOption[]
@@ -191,8 +192,18 @@ function optionLabel<T extends { name: string; active: boolean }>(item: T) {
   return item.active ? item.name : `${item.name} (inativo)`
 }
 
+// A credit on the invoice (refund, cashback) is money coming back, so it takes income categories; purchases and
+// subscriptions take expense ones. In edit mode the type picker is hidden and the entry keeps its own credit flag.
+const expectedCategoryKind = computed(() => {
+  const credit = isEditMode.value ? props.transaction?.credit : isCredit.value
+
+  return credit ? 'INCOME' : 'EXPENSE'
+})
+
 const categoryItems = computed(() =>
-  props.categories.filter(c => !c.system).map(c => ({ ...c, label: optionLabel(c) })),
+  props.categories
+    .filter(c => !c.system && (c.kind === expectedCategoryKind.value || c.id === categoryId.value))
+    .map(c => ({ ...c, label: optionLabel(c) })),
 )
 
 const selectedCategory = computed(() =>
@@ -260,6 +271,10 @@ watch(purchaseDate, () => {
 watch(transactionType, type => {
   if (type !== 'purchase') {
     totalInstallments.value = ''
+  }
+  if (!isEditMode.value && selectedCategory.value && selectedCategory.value.kind !== expectedCategoryKind.value) {
+    categoryId.value = null
+    subCategoryId.value = null
   }
 })
 

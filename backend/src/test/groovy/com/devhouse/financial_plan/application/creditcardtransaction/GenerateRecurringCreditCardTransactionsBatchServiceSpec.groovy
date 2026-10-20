@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
 import com.devhouse.financial_plan.domain.Category
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.CreditCardTransactionRecurring
 import com.devhouse.financial_plan.domain.Space
@@ -25,7 +26,7 @@ class GenerateRecurringCreditCardTransactionsBatchServiceSpec extends Specificat
                 10, 17, true, Instant.now(), null)
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
-        Category category = new Category(30L, 0, null, "Assinaturas", true, Instant.now(), null)
+        Category category = new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
         new CreditCardTransactionRecurring(id, 0, creditCard, user, category, null, "Netflix",
                 new BigDecimal("39.90"), LocalDate.of(2026, 3, 10), true, Instant.now(), null)
     }

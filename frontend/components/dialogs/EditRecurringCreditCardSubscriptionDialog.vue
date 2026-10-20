@@ -26,6 +26,7 @@ interface SubCategoryOption {
 interface CategoryOption {
   id: number
   name: string
+  kind: 'INCOME' | 'EXPENSE' | null
   active: boolean
   system: boolean
   subCategories: SubCategoryOption[]
@@ -60,7 +61,7 @@ function optionLabel<T extends { name: string; active: boolean }>(item: T) {
   return item.active ? item.name : `${item.name} (inativo)`
 }
 
-const categoryItems = computed(() => props.categories.filter(c => !c.system).map(c => ({ ...c, label: optionLabel(c) })))
+const categoryItems = computed(() => props.categories.filter(c => !c.system && (c.kind === 'EXPENSE' || c.id === categoryId.value)).map(c => ({ ...c, label: optionLabel(c) })))
 
 const selectedCategory = computed(() =>
   props.categories.find(c => c.id === categoryId.value) ?? null,

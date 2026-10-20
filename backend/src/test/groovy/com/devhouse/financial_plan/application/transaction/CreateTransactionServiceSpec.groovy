@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.transaction
 
 import com.devhouse.financial_plan.application.category.ResolveSystemCategoryService
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair
 import com.devhouse.financial_plan.application.transaction.dto.CreateTransactionRequest
 import com.devhouse.financial_plan.application.transaction.dto.TransactionResponse
@@ -40,7 +41,7 @@ class CreateTransactionServiceSpec extends Specification {
 
     def setup() {
         resolveSystemCategoryService.execute(_, SystemCategory.TRANSFER) >> new SystemCategoryPair(90L, null)
-        categoryRepository.findById(90L) >> new Category(90L, 0, null, "Transferência", true, Instant.now(), null)
+        categoryRepository.findById(90L) >> new Category(90L, 0, null, "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private CreateTransactionRequest buildRequest(TransactionType type, Long bankAccountId, Long destinationBankAccountId,
@@ -60,7 +61,7 @@ class CreateTransactionServiceSpec extends Specification {
     }
 
     private Category buildCategoryObj(Long id) {
-        id == null ? null : new Category(id, 0, null, "Category " + id, true, Instant.now(), null)
+        id == null ? null : new Category(id, 0, null, "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "execute creates INCOME transaction and credits the bank account"() {
@@ -250,7 +251,7 @@ class CreateTransactionServiceSpec extends Specification {
         given:
         userRepository.findById(1L) >> Mock(User)
         bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("500.00"))
-        categoryRepository.findById(10L) >> new Category(10L, 0, null, "Pagamento de Fatura", true, Instant.now(), null)
+        categoryRepository.findById(10L) >> new Category(10L, 0, null, "Pagamento de Fatura", CategoryKind.EXPENSE, true, Instant.now(), null)
         CreateTransactionRequest request = buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null)
 
         when:
@@ -265,7 +266,7 @@ class CreateTransactionServiceSpec extends Specification {
         given:
         userRepository.findById(1L) >> Mock(User)
         bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("500.00"))
-        categoryRepository.findById(10L) >> new Category(10L, 0, null, "Pagamento de Fatura", true, Instant.now(), null)
+        categoryRepository.findById(10L) >> new Category(10L, 0, null, "Pagamento de Fatura", CategoryKind.EXPENSE, true, Instant.now(), null)
         CreateTransactionRequest request = buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null)
         Transaction captured = null
 

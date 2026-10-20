@@ -57,7 +57,8 @@ public class EnsureSystemCategoriesService {
         if (space == null) {
             throw new DomainException("Space not found");
         }
-        Category category = new Category(null, 0, space, systemCategory.getCategoryName(), true, Instant.now(), null);
+        Category category = new Category(null, 0, space, systemCategory.getCategoryName(), systemCategory.getKind(),
+                true, Instant.now(), null);
         category.validate();
         return categoryRepository.save(category);
     }

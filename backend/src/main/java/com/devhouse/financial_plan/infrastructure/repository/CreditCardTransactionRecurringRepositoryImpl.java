@@ -103,6 +103,11 @@ public class CreditCardTransactionRecurringRepositoryImpl implements CreditCardT
         jpaCreditCardTransactionRecurringRepository.deleteById(id);
     }
 
+    @Override
+    public long countByCategoryId(Long categoryId) {
+        return jpaCreditCardTransactionRecurringRepository.countByCategory_Id(categoryId);
+    }
+
     private Subquery<Long> creditCardIdsInSpace(Long spaceId, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
         Subquery<Long> subquery = query.subquery(Long.class);
         Root<CreditCardEntityJpa> creditCardRoot = subquery.from(CreditCardEntityJpa.class);
@@ -160,7 +165,7 @@ public class CreditCardTransactionRecurringRepositoryImpl implements CreditCardT
 
     private Category buildCategory(CategoryEntityJpa entity) {
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
+        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.getKind(), entity.isActive(),
                 entity.getCreatedAt(), entity.getUpdatedAt());
     }
 

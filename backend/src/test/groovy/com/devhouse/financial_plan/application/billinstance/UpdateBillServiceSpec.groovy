@@ -1,6 +1,7 @@
 package com.devhouse.financial_plan.application.billinstance
 
 import com.devhouse.financial_plan.application.billinstance.dto.UpdateBillInstanceRequest
+import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Bill
 import com.devhouse.financial_plan.domain.Category
 import com.devhouse.financial_plan.domain.Space
@@ -31,7 +32,7 @@ class UpdateBillServiceSpec extends Specification {
     def "execute updates name, category, amount and dueDate when pending"() {
         given:
         billRepository.findById(1L) >> buildInstance(BillInstanceStatus.PENDING)
-        Category category = new Category(20L, 0, null, "Utilities", true, Instant.now(), null)
+        Category category = new Category(20L, 0, null, "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
         billRepository.update(_) >> { Bill b -> b }
         UpdateBillInstanceRequest request = new UpdateBillInstanceRequest(0, "Power Bill", 20L, null,

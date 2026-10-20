@@ -36,6 +36,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     public Category update(Category category) {
         CategoryEntityJpa entity = jpaCategoryRepository.findById(category.getId()).orElseThrow();
         entity.setName(category.getName());
+        entity.setKind(category.getKind());
         entity.setActive(category.isActive());
         entity.setUpdatedAt(category.getUpdatedDate());
         CategoryEntityJpa updated = jpaCategoryRepository.saveAndFlush(entity);
@@ -64,6 +65,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     private void applyFields(Category category, CategoryEntityJpa entity) {
         entity.setSpace(jpaSpaceRepository.getReferenceById(category.getSpace().getId()));
         entity.setName(category.getName());
+        entity.setKind(category.getKind());
         entity.setActive(category.isActive());
         entity.setCreatedAt(category.getCreatedDate());
         entity.setUpdatedAt(category.getUpdatedDate());
@@ -71,8 +73,8 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
     private Category toDomain(CategoryEntityJpa entity) {
         Space space = entity.getSpace() != null ? buildSpace(entity.getSpace()) : null;
-        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.isActive(),
-                entity.getCreatedAt(), entity.getUpdatedAt());
+        return new Category(entity.getId(), entity.getVersion(), space, entity.getName(), entity.getKind(),
+                entity.isActive(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 
     private Space buildSpace(SpaceEntityJpa entity) {
