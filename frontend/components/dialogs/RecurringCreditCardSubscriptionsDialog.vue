@@ -83,9 +83,7 @@ async function fetchRecurrings() {
   clearError()
 
   try {
-    recurrings.value = await $fetch<CreditCardTransactionRecurringResponse[]>('/api/credit-card-transactions/recurring', {
-      query: { spaceId: spaceStore.activeSpace.id },
-    })
+    recurrings.value = await $fetch<CreditCardTransactionRecurringResponse[]>('/api/credit-card-transactions/recurring')
   }
   catch (e) {
     setError(e)

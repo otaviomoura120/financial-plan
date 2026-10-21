@@ -46,13 +46,13 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
     }
 
     private CreditCardTransactionRecurring buildRecurring(CreditCard creditCard = buildCreditCard()) {
-        Category category = new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(30L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
         new CreditCardTransactionRecurring(10L, 0, creditCard, buildUser(), category, null, "Netflix", new BigDecimal("39.90"),
                 LocalDate.of(2026, 3, 10), true, Instant.now(), null)
     }
 
     private CreditCardTransaction buildGeneratedTransaction(Long id, LocalDate purchaseDate, LocalDate referenceMonth, CreditCard creditCard = buildCreditCard()) {
-        Category category = new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(30L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
         new CreditCardTransaction(id, 0, creditCard, buildRecurring(creditCard), buildUser(), category, null,
                 new BigDecimal("39.90"), false, purchaseDate, "Netflix", referenceMonth, "group-1", 1, 1, false, null, Instant.now(), null)
     }
@@ -60,7 +60,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
     def "execute updates category, defaultAmount and startDate"() {
         given:
         creditCardTransactionRecurringRepository.findById(10L) >> buildRecurring()
-        Category category = new Category(31L, 0, null, "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(31L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(31L) >> category
         creditCardTransactionRecurringRepository.update(_) >> { CreditCardTransactionRecurring r -> r }
         creditCardTransactionRepository.findByCreditCardTransactionRecurringId(10L) >> []
@@ -68,7 +68,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
                 new BigDecimal("59.90"), "Xbox Game Pass", LocalDate.of(2026, 6, 1))
 
         when:
-        CreditCardTransactionRecurringResponse response = service.execute(10L, request)
+        CreditCardTransactionRecurringResponse response = service.execute(1L, 10L, request)
 
         then:
         response.categoryId() == 31L
@@ -81,7 +81,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
     def "execute also updates already-generated transactions from the current month onward"() {
         given:
         creditCardTransactionRecurringRepository.findById(10L) >> buildRecurring()
-        Category newCategory = new Category(31L, 0, null, "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category newCategory = new Category(31L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(31L) >> newCategory
         creditCardTransactionRecurringRepository.update(_) >> { CreditCardTransactionRecurring r -> r }
         CreditCardTransaction pastTransaction = buildGeneratedTransaction(1L, YearMonth.now().minusMonths(2).atDay(10), YearMonth.now().minusMonths(2).atDay(1))
@@ -93,7 +93,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
                 new BigDecimal("59.90"), "Xbox Game Pass", LocalDate.of(2026, 3, 10))
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         currentMonthTransaction.getCategory() == newCategory
@@ -111,7 +111,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
     def "execute recalculates purchaseDate for pending transactions from the current month onward when startDate changes"() {
         given:
         creditCardTransactionRecurringRepository.findById(10L) >> buildRecurring()
-        categoryRepository.findById(31L) >> new Category(31L, 0, null, "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(31L) >> new Category(31L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRecurringRepository.update(_) >> { CreditCardTransactionRecurring r -> r }
         YearMonth pastMonth = YearMonth.now().minusMonths(2)
         YearMonth currentMonth = YearMonth.now()
@@ -125,7 +125,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
                 new BigDecimal("39.90"), "Netflix", LocalDate.of(2026, 1, 15))
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         currentMonthTransaction.getPurchaseDate() == currentMonth.atDay(15)
@@ -139,7 +139,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard(5, 15)
         creditCardTransactionRecurringRepository.findById(10L) >> buildRecurring(creditCard)
-        categoryRepository.findById(31L) >> new Category(31L, 0, null, "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(31L) >> new Category(31L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRecurringRepository.update(_) >> { CreditCardTransactionRecurring r -> r }
         YearMonth currentMonth = YearMonth.now()
         CreditCardTransaction transaction = buildGeneratedTransaction(1L, currentMonth.atDay(3), currentMonth.atDay(1), creditCard)
@@ -149,7 +149,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
                 new BigDecimal("39.90"), "Netflix", LocalDate.of(2026, 1, 10))
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         transaction.getPurchaseDate() == currentMonth.atDay(10)
@@ -160,7 +160,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard(5, 15)
         creditCardTransactionRecurringRepository.findById(10L) >> buildRecurring(creditCard)
-        categoryRepository.findById(31L) >> new Category(31L, 0, null, "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(31L) >> new Category(31L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRecurringRepository.update(_) >> { CreditCardTransactionRecurring r -> r }
         YearMonth currentMonth = YearMonth.now()
         CreditCardTransaction transaction = buildGeneratedTransaction(1L, currentMonth.atDay(3), currentMonth.atDay(1), creditCard)
@@ -171,7 +171,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
                 new BigDecimal("39.90"), "Netflix", LocalDate.of(2026, 1, 10))
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         transaction.getPurchaseDate() == currentMonth.atDay(3)
@@ -182,7 +182,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
     def "execute does not update a current/future transaction whose invoice is already paid"() {
         given:
         creditCardTransactionRecurringRepository.findById(10L) >> buildRecurring()
-        Category newCategory = new Category(31L, 0, null, "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category newCategory = new Category(31L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Lazer", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(31L) >> newCategory
         creditCardTransactionRecurringRepository.update(_) >> { CreditCardTransactionRecurring r -> r }
         YearMonth currentMonth = YearMonth.now()
@@ -193,7 +193,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
                 new BigDecimal("59.90"), "Xbox Game Pass", LocalDate.of(2026, 3, 15))
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         paidTransaction.getCategory() != newCategory
@@ -208,7 +208,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
                 new BigDecimal("59.90"), "Xbox Game Pass", LocalDate.of(2026, 3, 10))
 
         when:
-        service.execute(99L, request)
+        service.execute(1L, 99L, request)
 
         then:
         thrown(DomainException)
@@ -223,7 +223,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
                 new BigDecimal("59.90"), "Xbox Game Pass", LocalDate.of(2026, 3, 10))
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -237,7 +237,7 @@ class UpdateCreditCardTransactionRecurringServiceSpec extends Specification {
                 new BigDecimal("59.90"), "Xbox Game Pass", LocalDate.of(2026, 3, 10))
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(org.springframework.orm.ObjectOptimisticLockingFailureException)

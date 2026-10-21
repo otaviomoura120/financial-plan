@@ -46,7 +46,7 @@ class UndoBillInstancePaymentServiceSpec extends Specification {
     private Transaction buildPaymentTransaction(BankAccount bankAccount) {
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
-        Category category = new Category(30L, 0, null, "Contas", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(30L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Contas", CategoryKind.EXPENSE, true, Instant.now(), null)
         new Transaction(99L, 0, TransactionType.EXPENSE, user, bankAccount, null, category, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 9), "Pagamento de conta - Energy Bill", Instant.now(), null,
                 TransactionSourceType.BILL_INSTANCE_PAYMENT, 1L)
@@ -62,7 +62,7 @@ class UndoBillInstancePaymentServiceSpec extends Specification {
         bankAccountRepository.findById(2L) >> account
 
         when:
-        service.execute(1L)
+        service.execute(1L, 1L)
 
         then:
         account.getBalance() == new BigDecimal("500.00")
@@ -77,7 +77,7 @@ class UndoBillInstancePaymentServiceSpec extends Specification {
         billRepository.findById(99L) >> null
 
         when:
-        service.execute(99L)
+        service.execute(1L, 99L)
 
         then:
         thrown(DomainException)
@@ -90,7 +90,7 @@ class UndoBillInstancePaymentServiceSpec extends Specification {
         billRepository.findById(1L) >> buildInstance(BillInstanceStatus.PENDING)
 
         when:
-        service.execute(1L)
+        service.execute(1L, 1L)
 
         then:
         thrown(DomainException)

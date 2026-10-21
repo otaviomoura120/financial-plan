@@ -7,7 +7,6 @@ import java.time.LocalDate;
 
 public record CreateTransactionRequest(
         TransactionType type,
-        Long userId,
         Long bankAccountId,
         Long destinationBankAccountId,
         Long categoryId,

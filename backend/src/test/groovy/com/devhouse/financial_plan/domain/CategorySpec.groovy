@@ -143,4 +143,13 @@ class CategorySpec extends Specification {
         DomainException exception = thrown()
         exception.message == "The selected category is not an income category"
     }
+
+    def "belongsToSpace is true only for the space the category is associated with"() {
+        given:
+        Category category = buildCategory(true)
+
+        expect:
+        category.belongsToSpace(1L)
+        !category.belongsToSpace(2L)
+    }
 }

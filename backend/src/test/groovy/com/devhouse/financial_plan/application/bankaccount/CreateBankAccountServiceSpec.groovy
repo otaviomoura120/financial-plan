@@ -19,7 +19,7 @@ class CreateBankAccountServiceSpec extends Specification {
 
     def "execute creates bank account linked to space"() {
         given:
-        CreateBankAccountRequest request = new CreateBankAccountRequest(1L, "Main Account", "BankCorp", new BigDecimal("1000.00"))
+        CreateBankAccountRequest request = new CreateBankAccountRequest("Main Account", "BankCorp", new BigDecimal("1000.00"))
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
         BankAccount savedAccount = new BankAccount(10L, 0, space, "Main Account", "BankCorp",
                 new BigDecimal("1000.00"), true, Instant.now(), null)
@@ -28,7 +28,7 @@ class CreateBankAccountServiceSpec extends Specification {
         bankAccountRepository.save(_) >> savedAccount
 
         when:
-        BankAccountResponse response = service.execute(request)
+        BankAccountResponse response = service.execute(1L, request)
 
         then:
         response.id() == 10L
@@ -40,11 +40,11 @@ class CreateBankAccountServiceSpec extends Specification {
 
     def "execute throws DomainException when space not found"() {
         given:
-        CreateBankAccountRequest request = new CreateBankAccountRequest(99L, "Main Account", "BankCorp", new BigDecimal("500.00"))
+        CreateBankAccountRequest request = new CreateBankAccountRequest("Main Account", "BankCorp", new BigDecimal("500.00"))
         spaceRepository.findById(99L) >> null
 
         when:
-        service.execute(request)
+        service.execute(99L, request)
 
         then:
         thrown(DomainException)
@@ -53,12 +53,12 @@ class CreateBankAccountServiceSpec extends Specification {
 
     def "execute throws DomainException when account name is blank"() {
         given:
-        CreateBankAccountRequest request = new CreateBankAccountRequest(1L, "", "BankCorp", new BigDecimal("500.00"))
+        CreateBankAccountRequest request = new CreateBankAccountRequest("", "BankCorp", new BigDecimal("500.00"))
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
         spaceRepository.findById(1L) >> space
 
         when:
-        service.execute(request)
+        service.execute(1L, request)
 
         then:
         thrown(DomainException)

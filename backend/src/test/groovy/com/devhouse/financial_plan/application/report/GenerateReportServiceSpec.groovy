@@ -52,7 +52,7 @@ class GenerateReportServiceSpec extends Specification {
     }
 
     private Transaction buildTransaction(TransactionType type, BigDecimal amount, Long destinationBankAccountId = null) {
-        Category category = TransactionType.TRANSFER.equals(type) ? null : new Category(10L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = TransactionType.TRANSFER.equals(type) ? null : new Category(10L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         new Transaction(1L, 0, type, buildUser(1L), buildAccount(1L),
                 destinationBankAccountId != null ? buildAccount(destinationBankAccountId) : null,
                 category, null, amount, LocalDate.now(), "desc", Instant.now(), null, null, null)
@@ -69,7 +69,7 @@ class GenerateReportServiceSpec extends Specification {
     }
 
     private Transaction buildInvoicePaymentTransaction(Long id, Long creditCardId, BigDecimal amount, LocalDate transactionDate) {
-        Category category = new Category(10L, 0, null, "Cartão de Crédito", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(10L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Cartão de Crédito", CategoryKind.EXPENSE, true, Instant.now(), null)
         new Transaction(id, 0, TransactionType.EXPENSE, buildUser(1L), buildAccount(1L), null, category, null,
                 amount, transactionDate, "Pagamento de fatura", Instant.now(), null,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, creditCardId)
@@ -93,7 +93,7 @@ class GenerateReportServiceSpec extends Specification {
                 2L, 3L, 4L, 5L, TransactionType.EXPENSE)
 
         when:
-        service.execute(filter)
+        service.execute(1L, filter)
 
         then:
         1 * transactionRepository.findByFilter(1L, 2L, 3L, 4L, 5L, TransactionType.EXPENSE,
@@ -113,7 +113,7 @@ class GenerateReportServiceSpec extends Specification {
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.transactions().size() == 3
@@ -135,7 +135,7 @@ class GenerateReportServiceSpec extends Specification {
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, 2L, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then: "the transfer is an inflow for the destination account, matching the credited balance"
         response.transactions().size() == 1
@@ -158,7 +158,7 @@ class GenerateReportServiceSpec extends Specification {
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, 1L, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.totalIncome() == BigDecimal.ZERO
@@ -176,7 +176,7 @@ class GenerateReportServiceSpec extends Specification {
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.transactions().isEmpty()
@@ -185,12 +185,12 @@ class GenerateReportServiceSpec extends Specification {
         response.balance() == BigDecimal.ZERO
     }
 
-    def "execute throws DomainException when spaceId is missing"() {
+    def "execute throws DomainException when the authorized space is missing"() {
         given:
         ReportFilterRequest filter = new ReportFilterRequest(null, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
-        service.execute(filter)
+        service.execute(null, filter)
 
         then:
         thrown(DomainException)
@@ -210,14 +210,31 @@ class GenerateReportServiceSpec extends Specification {
         ReportFilterRequest filterSpaceTwo = new ReportFilterRequest(2L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
-        ReportResponse responseSpaceOne = service.execute(filterSpaceOne)
-        ReportResponse responseSpaceTwo = service.execute(filterSpaceTwo)
+        ReportResponse responseSpaceOne = service.execute(1L, filterSpaceOne)
+        ReportResponse responseSpaceTwo = service.execute(2L, filterSpaceTwo)
 
         then:
         responseSpaceOne.transactions().size() == 1
         responseSpaceOne.totalIncome() == new BigDecimal("100.00")
         responseSpaceTwo.transactions().isEmpty()
         responseSpaceTwo.totalIncome() == BigDecimal.ZERO
+    }
+
+    def "execute ignores the spaceId sent in the filter and queries only the authorized space"() {
+        given:
+        bankAccountRepository.findBySpaceId(_) >> []
+        listCreditCardInvoicesService.execute(*_) >> []
+        billRepository.findBySpaceAndPeriod(*_) >> []
+        stubInvoiceReferenceMonths()
+        ReportFilterRequest filterFromAnotherSpace = new ReportFilterRequest(2L, LocalDate.now(), LocalDate.now(), null, null,
+                null, null, null)
+
+        when:
+        service.execute(1L, filterFromAnotherSpace)
+
+        then:
+        1 * transactionRepository.findByFilter(1L, _, _, _, _, _, _, _) >> []
+        0 * transactionRepository.findByFilter(2L, _, _, _, _, _, _, _)
     }
 
     def "execute sums the balance of every active bank account in the space when bankAccountId is not filtered"() {
@@ -233,7 +250,7 @@ class GenerateReportServiceSpec extends Specification {
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.currentBalance() == new BigDecimal("800.00")
@@ -251,7 +268,7 @@ class GenerateReportServiceSpec extends Specification {
         ReportFilterRequest filter = new ReportFilterRequest(1L, LocalDate.now(), LocalDate.now(), null, 2L, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.currentBalance() == new BigDecimal("300.00")
@@ -270,7 +287,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, 1L, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then: "the account closed July at 1000 and gained 500 during August"
         response.previousBalance() == new BigDecimal("1000.00")
@@ -291,7 +308,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, 1L, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then: "1000 carried over from July, plus 300 in and 100 out during August"
         response.previousBalance() == new BigDecimal("1000.00")
@@ -311,7 +328,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, 7L, null, null, null)
 
         when:
-        service.execute(filter)
+        service.execute(1L, filter)
 
         then:
         1 * transactionRepository.sumBalanceEffectFrom([7L], LocalDate.of(2026, 8, 1)) >> BigDecimal.ZERO
@@ -330,7 +347,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then: "the inactive account is out of both the balance and the aggregate, keeping the two consistent"
         1 * transactionRepository.sumBalanceEffectFrom([1L, 2L], LocalDate.of(2026, 8, 1)) >> new BigDecimal("120.00")
@@ -347,7 +364,7 @@ class GenerateReportServiceSpec extends Specification {
         ReportFilterRequest filter = new ReportFilterRequest(1L, null, null, null, 1L, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.previousBalance() == BigDecimal.ZERO
@@ -366,7 +383,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.pendingCreditCardInvoices().size() == 1
@@ -386,7 +403,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.pendingCreditCardInvoices().isEmpty()
@@ -407,7 +424,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.pendingCreditCardInvoices()[0].amount() == new BigDecimal("33.34")
@@ -426,7 +443,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         1 * ensureRecurringBillsGeneratedService.execute(1L, LocalDate.of(2026, 3, 31))
@@ -447,7 +464,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.pendingBillInstances().isEmpty()
@@ -467,7 +484,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.pendingBillInstances().isEmpty()
@@ -483,7 +500,7 @@ class GenerateReportServiceSpec extends Specification {
         ReportFilterRequest filter = new ReportFilterRequest(1L, null, null, null, null, null, null, null)
 
         when:
-        service.execute(filter)
+        service.execute(1L, filter)
 
         then:
         1 * ensureRecurringBillsGeneratedService.execute(1L, LocalDate.now())
@@ -501,7 +518,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.currentBalance() == new BigDecimal("1000.00")
@@ -523,7 +540,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, 7L, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.transactions().isEmpty()
@@ -543,7 +560,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, 7L, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.transactions().size() == 1
@@ -566,7 +583,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, 7L, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.pendingCreditCardInvoices().size() == 2
@@ -585,7 +602,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, 7L, 8L, null)
 
         when:
-        service.execute(filter)
+        service.execute(1L, filter)
 
         then:
         1 * billRepository.findBySpaceAndPeriod(1L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31), 7L, 8L) >> []
@@ -604,7 +621,7 @@ class GenerateReportServiceSpec extends Specification {
                 null, null, null, null, null)
 
         when:
-        ReportResponse response = service.execute(filter)
+        ReportResponse response = service.execute(1L, filter)
 
         then:
         response.transactions()[0].sourceType() == TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT

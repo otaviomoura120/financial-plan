@@ -42,17 +42,17 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard()
         creditCardRepository.findById(10L) >> creditCard
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
         List<CreditCardTransaction> saved = []
         creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
 
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", null, null)
 
         when:
-        CreditCardTransactionResponse response = service.execute(request)
+        CreditCardTransactionResponse response = service.execute(1L, "auth0|1", request)
 
         then:
         saved.size() == 1
@@ -71,17 +71,17 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard()
         creditCardRepository.findById(10L) >> creditCard
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
         List<CreditCardTransaction> saved = []
         creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
 
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", null, LocalDate.of(2026, 4, 1))
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         saved.size() == 1
@@ -92,17 +92,17 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard()
         creditCardRepository.findById(10L) >> creditCard
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
         List<CreditCardTransaction> saved = []
         creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
 
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("300.00"), false, LocalDate.of(2026, 3, 5), "desc", 3, LocalDate.of(2026, 4, 1))
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         saved.size() == 3
@@ -113,14 +113,14 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard()
         creditCardRepository.findById(10L) >> creditCard
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
 
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", null, LocalDate.of(2026, 8, 1))
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         DomainException exception = thrown(DomainException)
@@ -132,15 +132,15 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard()
         creditCardRepository.findById(10L) >> creditCard
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 4, 1)) >> Mock(CreditCardInvoicePayment)
 
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", null, LocalDate.of(2026, 4, 1))
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         DomainException exception = thrown(DomainException)
@@ -152,17 +152,17 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard()
         creditCardRepository.findById(10L) >> creditCard
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
         List<CreditCardTransaction> saved = []
         creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
 
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), true, LocalDate.of(2026, 3, 5), "Cashback", 6, null)
 
         when:
-        CreditCardTransactionResponse response = service.execute(request)
+        CreditCardTransactionResponse response = service.execute(1L, "auth0|1", request)
 
         then:
         saved.size() == 1
@@ -179,17 +179,17 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard()
         creditCardRepository.findById(10L) >> creditCard
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
         List<CreditCardTransaction> saved = []
         creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
 
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", 3, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         saved.size() == 3
@@ -212,17 +212,17 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
         CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 1, 10, true, Instant.now(), null)
         creditCardRepository.findById(10L) >> creditCard
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
         List<CreditCardTransaction> saved = []
         creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
 
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 7, 12), "desc", 2, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         saved[0].referenceMonth == LocalDate.of(2026, 8, 1)
@@ -235,17 +235,17 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         given:
         CreditCard creditCard = buildCreditCard()
         creditCardRepository.findById(10L) >> creditCard
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
         List<CreditCardTransaction> saved = []
         creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
 
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", 3, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         saved[0].amount == new BigDecimal("33.33")
@@ -257,11 +257,11 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
     def "execute throws DomainException when credit card does not exist"() {
         given:
         creditCardRepository.findById(99L) >> null
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(99L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(99L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -271,12 +271,12 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
     def "execute throws DomainException when user does not exist"() {
         given:
         creditCardRepository.findById(10L) >> buildCreditCard()
-        userRepository.findById(1L) >> null
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        userRepository.findByAuth0Sub("auth0|1") >> null
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -286,13 +286,13 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
     def "execute throws DomainException when category does not exist"() {
         given:
         creditCardRepository.findById(10L) >> buildCreditCard()
-        userRepository.findById(1L) >> Mock(User)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
         categoryRepository.findById(20L) >> null
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -302,14 +302,14 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
     def "execute throws DomainException when sub category does not exist"() {
         given:
         creditCardRepository.findById(10L) >> buildCreditCard()
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         subCategoryRepository.findById(30L) >> null
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, 30L,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, 30L,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -319,14 +319,14 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
     def "execute throws DomainException when the target invoice month is already paid"() {
         given:
         creditCardRepository.findById(10L) >> buildCreditCard()
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> Mock(CreditCardInvoicePayment)
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -336,14 +336,14 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
     def "execute accepts an income category on an invoice credit and an expense category on a purchase"() {
         given:
         creditCardRepository.findById(10L) >> buildCreditCard()
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Category", kind, true, Instant.now(), null)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Category", kind, true, Instant.now(), null)
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), credit, LocalDate.of(2026, 3, 5), "Entry", null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         1 * creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> t }
@@ -357,13 +357,13 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
     def "execute rejects a category whose kind does not match the entry"() {
         given:
         creditCardRepository.findById(10L) >> buildCreditCard()
-        userRepository.findById(1L) >> Mock(User)
-        categoryRepository.findById(20L) >> new Category(20L, 0, null, "Category", kind, true, Instant.now(), null)
-        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 1L, 20L, null,
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Category", kind, true, Instant.now(), null)
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
                 new BigDecimal("100.00"), credit, LocalDate.of(2026, 3, 5), "Entry", null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         DomainException exception = thrown()
@@ -374,5 +374,21 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         credit | kind                 || message
         true   | CategoryKind.EXPENSE || "The selected category is not an income category"
         false  | CategoryKind.INCOME  || "The selected category is not an expense category"
+    }
+
+    def "execute rejects a credit card that belongs to another space"() {
+        given:
+        creditCardRepository.findById(10L) >> buildCreditCard()
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
+                new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", 1, null)
+
+        when:
+        service.execute(2L, "auth0|1", request)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Credit card not found"
+        0 * creditCardTransactionRepository.save(_)
     }
 }

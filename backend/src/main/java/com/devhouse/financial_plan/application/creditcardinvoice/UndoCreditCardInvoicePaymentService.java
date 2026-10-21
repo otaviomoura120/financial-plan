@@ -27,9 +27,9 @@ public class UndoCreditCardInvoicePaymentService {
     }
 
     @Transactional
-    public void execute(Long creditCardId, LocalDate referenceMonth) {
+    public void execute(Long spaceId, Long creditCardId, LocalDate referenceMonth) {
         CreditCardInvoicePayment payment = creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(creditCardId, referenceMonth);
-        if (payment == null) {
+        if (payment == null || !payment.getCreditCard().belongsToSpace(spaceId)) {
             throw new DomainException("Credit card invoice payment not found");
         }
         Transaction transaction = transactionRepository.findById(payment.getPaymentTransactionId());

@@ -27,7 +27,7 @@ class UpdateSubCategoryStatusServiceSpec extends Specification {
         subCategoryRepository.findById(10L) >> subCategory
 
         when:
-        SubCategoryResponse response = service.execute(10L, true)
+        SubCategoryResponse response = service.execute(1L, 10L, true)
 
         then:
         response.active()
@@ -40,7 +40,7 @@ class UpdateSubCategoryStatusServiceSpec extends Specification {
         subCategoryRepository.findById(10L) >> subCategory
 
         when:
-        SubCategoryResponse response = service.execute(10L, false)
+        SubCategoryResponse response = service.execute(1L, 10L, false)
 
         then:
         !response.active()

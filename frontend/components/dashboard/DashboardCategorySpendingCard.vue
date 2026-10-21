@@ -206,7 +206,7 @@ async function fetchCategoryReport() {
 
     categoryReport.value = await $fetch<CategoryReportResponse>('/api/reports/by-category', {
       method: 'POST',
-      body: { spaceId: props.spaceId, from, to, type: 'EXPENSE' },
+      body: { from, to, type: 'EXPENSE' },
     })
   }
   catch (e) {

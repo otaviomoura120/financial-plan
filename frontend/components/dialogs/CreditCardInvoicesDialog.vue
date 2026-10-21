@@ -141,9 +141,7 @@ async function fetchCreditCard() {
     return
   }
 
-  const cards = await $fetch<CreditCardResponse[]>('/api/credit-cards', {
-    query: { spaceId: spaceStore.activeSpace.id },
-  })
+  const cards = await $fetch<CreditCardResponse[]>('/api/credit-cards')
 
   creditCard.value = cards.find(c => c.id === props.creditCardId) ?? null
 }
@@ -153,11 +151,9 @@ async function fetchDropdownData() {
     return
   }
 
-  const spaceId = spaceStore.activeSpace.id
-
   const [bankAccountsResult, categoriesResult] = await Promise.all([
-    $fetch<OptionItem[]>('/api/bank-accounts', { query: { spaceId } }),
-    $fetch<CategoryResponse[]>('/api/categories', { query: { spaceId } }),
+    $fetch<OptionItem[]>('/api/bank-accounts'),
+    $fetch<CategoryResponse[]>('/api/categories'),
   ])
 
   bankAccounts.value = bankAccountsResult
@@ -175,7 +171,6 @@ async function fetchInvoices() {
   try {
     invoices.value = await $fetch<CreditCardInvoiceResponse[]>('/api/credit-cards/invoices', {
       query: {
-        spaceId: spaceStore.activeSpace.id,
         creditCardId: props.creditCardId,
         from: from.value,
         to: to.value,

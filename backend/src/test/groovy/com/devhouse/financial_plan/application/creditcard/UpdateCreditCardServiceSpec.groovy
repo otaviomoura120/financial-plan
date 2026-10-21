@@ -31,7 +31,7 @@ class UpdateCreditCardServiceSpec extends Specification {
         UpdateCreditCardRequest request = new UpdateCreditCardRequest(0, "Itaú", new BigDecimal("8000.00"), 5, 12, null)
 
         when:
-        CreditCardResponse response = service.execute(10L, request)
+        CreditCardResponse response = service.execute(1L, 10L, request)
 
         then:
         response.name() == "Itaú"
@@ -51,7 +51,7 @@ class UpdateCreditCardServiceSpec extends Specification {
         UpdateCreditCardRequest request = new UpdateCreditCardRequest(0, "Nubank", new BigDecimal("5000.00"), 10, 17, 5L)
 
         when:
-        CreditCardResponse response = service.execute(10L, request)
+        CreditCardResponse response = service.execute(1L, 10L, request)
 
         then:
         response.bankAccountId() == 5L
@@ -66,7 +66,7 @@ class UpdateCreditCardServiceSpec extends Specification {
         UpdateCreditCardRequest request = new UpdateCreditCardRequest(0, "Nubank", new BigDecimal("5000.00"), 10, 17, 99L)
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -83,7 +83,7 @@ class UpdateCreditCardServiceSpec extends Specification {
         UpdateCreditCardRequest request = new UpdateCreditCardRequest(0, "Nubank", new BigDecimal("5000.00"), 10, 17, 5L)
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -97,7 +97,7 @@ class UpdateCreditCardServiceSpec extends Specification {
         UpdateCreditCardRequest request = new UpdateCreditCardRequest(0, "", new BigDecimal("8000.00"), 5, 12, null)
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -111,10 +111,23 @@ class UpdateCreditCardServiceSpec extends Specification {
         UpdateCreditCardRequest request = new UpdateCreditCardRequest(99, "Itaú", new BigDecimal("8000.00"), 5, 12, null)
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(org.springframework.orm.ObjectOptimisticLockingFailureException)
+        0 * creditCardRepository.update(_)
+    }
+
+    def "execute rejects a credit card that belongs to another space"() {
+        given:
+        creditCardRepository.findById(10L) >> buildCreditCard()
+
+        when:
+        service.execute(2L, 10L, new UpdateCreditCardRequest(0, "Renamed", new BigDecimal("1000.00"), 10, 17, null))
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Credit card not found"
         0 * creditCardRepository.update(_)
     }
 }

@@ -24,7 +24,7 @@ class UpdateCreditCardStatusServiceSpec extends Specification {
         creditCardRepository.findById(10L) >> creditCard
 
         when:
-        CreditCardResponse response = service.execute(10L, true)
+        CreditCardResponse response = service.execute(1L, 10L, true)
 
         then:
         response.active()
@@ -37,7 +37,7 @@ class UpdateCreditCardStatusServiceSpec extends Specification {
         creditCardRepository.findById(10L) >> creditCard
 
         when:
-        CreditCardResponse response = service.execute(10L, false)
+        CreditCardResponse response = service.execute(1L, 10L, false)
 
         then:
         !response.active()

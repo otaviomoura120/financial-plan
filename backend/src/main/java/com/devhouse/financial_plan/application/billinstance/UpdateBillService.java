@@ -27,14 +27,14 @@ public class UpdateBillService {
         this.subCategoryRepository = subCategoryRepository;
     }
 
-    public BillInstanceResponse execute(Long id, UpdateBillInstanceRequest request) {
+    public BillInstanceResponse execute(Long spaceId, Long id, UpdateBillInstanceRequest request) {
         Bill bill = billRepository.findById(id);
-        if (bill == null) {
+        if (bill == null || !bill.belongsToSpace(spaceId)) {
             throw new DomainException("Bill not found");
         }
         bill.setVersion(request.version());
-        Category category = resolveCategory(request.categoryId());
-        SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        Category category = resolveCategory(request.categoryId(), spaceId);
+        SubCategory subCategory = resolveSubCategory(request.subCategoryId(), spaceId);
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
         CategoryKindPolicy.requireExpense(category);
         bill.updateDetails(request.name(), category, subCategory, request.amount(), request.dueDate());
@@ -43,23 +43,23 @@ public class UpdateBillService {
         return toResponse(updated);
     }
 
-    private Category resolveCategory(Long categoryId) {
+    private Category resolveCategory(Long categoryId, Long spaceId) {
         if (categoryId == null) {
             return null;
         }
         Category category = categoryRepository.findById(categoryId);
-        if (category == null) {
+        if (category == null || !category.belongsToSpace(spaceId)) {
             throw new DomainException("Category not found");
         }
         return category;
     }
 
-    private SubCategory resolveSubCategory(Long subCategoryId) {
+    private SubCategory resolveSubCategory(Long subCategoryId, Long spaceId) {
         if (subCategoryId == null) {
             return null;
         }
         SubCategory subCategory = subCategoryRepository.findById(subCategoryId);
-        if (subCategory == null) {
+        if (subCategory == null || !subCategory.belongsToSpace(spaceId)) {
             throw new DomainException("Sub category not found");
         }
         return subCategory;

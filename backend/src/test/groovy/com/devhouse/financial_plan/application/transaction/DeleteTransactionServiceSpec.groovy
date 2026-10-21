@@ -43,7 +43,7 @@ class DeleteTransactionServiceSpec extends Specification {
     }
 
     private Category buildCategoryObj(Long id) {
-        id == null ? null : new Category(id, 0, null, "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
+        id == null ? null : new Category(id, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "execute reverts the EXPENSE effect and deletes the transaction"() {
@@ -56,7 +56,7 @@ class DeleteTransactionServiceSpec extends Specification {
         bankAccountRepository.findById(1L) >> account
 
         when:
-        service.execute(1L)
+        service.execute(1L, 1L)
 
         then:
         1 * bankAccountRepository.update(_)
@@ -76,7 +76,7 @@ class DeleteTransactionServiceSpec extends Specification {
         bankAccountRepository.findById(2L) >> destination
 
         when:
-        service.execute(2L)
+        service.execute(1L, 2L)
 
         then:
         1 * transactionRepository.delete(2L)
@@ -89,7 +89,7 @@ class DeleteTransactionServiceSpec extends Specification {
         transactionRepository.findById(99L) >> null
 
         when:
-        service.execute(99L)
+        service.execute(1L, 99L)
 
         then:
         thrown(DomainException)
@@ -106,11 +106,11 @@ class DeleteTransactionServiceSpec extends Specification {
         transactionRepository.findById(3L) >> transaction
 
         when:
-        service.execute(3L)
+        service.execute(1L, 3L)
 
         then:
-        1 * undoBillInstancePaymentService.execute(50L)
-        0 * undoCreditCardInvoicePaymentService.execute(_, _)
+        1 * undoBillInstancePaymentService.execute(1L, 50L)
+        0 * undoCreditCardInvoicePaymentService.execute(*_)
         0 * bankAccountRepository.update(_)
         0 * transactionRepository.delete(_)
     }
@@ -128,11 +128,11 @@ class DeleteTransactionServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByPaymentTransactionIdIn([4L]) >> [payment]
 
         when:
-        service.execute(4L)
+        service.execute(1L, 4L)
 
         then:
-        1 * undoCreditCardInvoicePaymentService.execute(60L, referenceMonth)
-        0 * undoBillInstancePaymentService.execute(_)
+        1 * undoCreditCardInvoicePaymentService.execute(1L, 60L, referenceMonth)
+        0 * undoBillInstancePaymentService.execute(*_)
         0 * bankAccountRepository.update(_)
         0 * transactionRepository.delete(_)
     }
@@ -147,10 +147,27 @@ class DeleteTransactionServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByPaymentTransactionIdIn([5L]) >> []
 
         when:
-        service.execute(5L)
+        service.execute(1L, 5L)
 
         then:
         thrown(DomainException)
-        0 * undoCreditCardInvoicePaymentService.execute(_, _)
+        0 * undoCreditCardInvoicePaymentService.execute(*_)
+    }
+
+    def "execute rejects a transaction that belongs to another space and keeps it"() {
+        given:
+        Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L),
+                buildAccount(1L, new BigDecimal("400.00")), null, buildCategoryObj(10L), null, new BigDecimal("100.00"),
+                LocalDate.now(), "desc", Instant.now(), null, null, null)
+        transactionRepository.findById(1L) >> transaction
+
+        when:
+        service.execute(2L, 1L)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Transaction not found"
+        0 * transactionRepository.delete(_)
+        0 * bankAccountRepository.update(_)
     }
 }

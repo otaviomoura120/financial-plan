@@ -37,10 +37,10 @@ public class CreateBillInstanceService {
     }
 
     @Transactional
-    public BillInstanceResponse execute(CreateBillInstanceRequest request) {
-        Space space = resolveSpace(request.spaceId());
-        Category category = resolveCategory(request.categoryId());
-        SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+    public BillInstanceResponse execute(Long spaceId, CreateBillInstanceRequest request) {
+        Space space = resolveSpace(spaceId);
+        Category category = resolveCategory(request.categoryId(), spaceId);
+        SubCategory subCategory = resolveSubCategory(request.subCategoryId(), spaceId);
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
         CategoryKindPolicy.requireExpense(category);
         YearMonth referenceMonth = YearMonth.from(request.dueDate());
@@ -60,23 +60,23 @@ public class CreateBillInstanceService {
         return space;
     }
 
-    private Category resolveCategory(Long categoryId) {
+    private Category resolveCategory(Long categoryId, Long spaceId) {
         if (categoryId == null) {
             return null;
         }
         Category category = categoryRepository.findById(categoryId);
-        if (category == null) {
+        if (category == null || !category.belongsToSpace(spaceId)) {
             throw new DomainException("Category not found");
         }
         return category;
     }
 
-    private SubCategory resolveSubCategory(Long subCategoryId) {
+    private SubCategory resolveSubCategory(Long subCategoryId, Long spaceId) {
         if (subCategoryId == null) {
             return null;
         }
         SubCategory subCategory = subCategoryRepository.findById(subCategoryId);
-        if (subCategory == null) {
+        if (subCategory == null || !subCategory.belongsToSpace(spaceId)) {
             throw new DomainException("Sub category not found");
         }
         return subCategory;

@@ -13,4 +13,9 @@ public record ReportFilterRequest(
         Long categoryId,
         Long subCategoryId,
         TransactionType type
-) {}
+) {
+
+    public ReportFilterRequest scopedTo(Long spaceId) {
+        return new ReportFilterRequest(spaceId, from, to, userId, bankAccountId, categoryId, subCategoryId, type);
+    }
+}

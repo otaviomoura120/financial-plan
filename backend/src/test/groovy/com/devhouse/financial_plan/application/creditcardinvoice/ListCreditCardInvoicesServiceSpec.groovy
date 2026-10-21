@@ -40,7 +40,7 @@ class ListCreditCardInvoicesServiceSpec extends Specification {
     }
 
     private CreditCardTransaction buildTransaction(CreditCard creditCard, BigDecimal amount, LocalDate referenceMonth, boolean credit) {
-        new CreditCardTransaction(1L, 0, creditCard, null, buildUser(), new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null),
+        new CreditCardTransaction(1L, 0, creditCard, null, buildUser(), new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null),
                 null, amount, credit, LocalDate.of(2026, 1, 5), "desc", referenceMonth, "group-1", 1, 1, false, null,
                 Instant.now(), null)
     }

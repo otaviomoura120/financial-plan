@@ -51,11 +51,11 @@ public class CreateCreditCardTransactionService {
     }
 
     @Transactional
-    public CreditCardTransactionResponse execute(CreateCreditCardTransactionRequest request) {
-        CreditCard creditCard = resolveCreditCard(request.creditCardId());
-        User user = resolveUser(request.userId());
-        Category category = resolveCategory(request.categoryId());
-        SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+    public CreditCardTransactionResponse execute(Long spaceId, String auth0Sub, CreateCreditCardTransactionRequest request) {
+        CreditCard creditCard = resolveCreditCard(request.creditCardId(), spaceId);
+        User user = resolveUser(auth0Sub);
+        Category category = resolveCategory(request.categoryId(), spaceId);
+        SubCategory subCategory = resolveSubCategory(request.subCategoryId(), spaceId);
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
 
         boolean credit = Boolean.TRUE.equals(request.credit());
@@ -111,36 +111,36 @@ public class CreateCreditCardTransactionService {
         }
     }
 
-    private CreditCard resolveCreditCard(Long creditCardId) {
+    private CreditCard resolveCreditCard(Long creditCardId, Long spaceId) {
         CreditCard creditCard = creditCardId != null ? creditCardRepository.findById(creditCardId) : null;
-        if (creditCard == null) {
+        if (creditCard == null || !creditCard.belongsToSpace(spaceId)) {
             throw new DomainException("Credit card not found");
         }
         return creditCard;
     }
 
-    private User resolveUser(Long userId) {
-        User user = userId != null ? userRepository.findById(userId) : null;
+    private User resolveUser(String auth0Sub) {
+        User user = userRepository.findByAuth0Sub(auth0Sub);
         if (user == null) {
             throw new DomainException("User not found");
         }
         return user;
     }
 
-    private Category resolveCategory(Long categoryId) {
+    private Category resolveCategory(Long categoryId, Long spaceId) {
         Category category = categoryId != null ? categoryRepository.findById(categoryId) : null;
-        if (category == null) {
+        if (category == null || !category.belongsToSpace(spaceId)) {
             throw new DomainException("Category not found");
         }
         return category;
     }
 
-    private SubCategory resolveSubCategory(Long subCategoryId) {
+    private SubCategory resolveSubCategory(Long subCategoryId, Long spaceId) {
         if (subCategoryId == null) {
             return null;
         }
         SubCategory subCategory = subCategoryRepository.findById(subCategoryId);
-        if (subCategory == null) {
+        if (subCategory == null || !subCategory.belongsToSpace(spaceId)) {
             throw new DomainException("Sub category not found");
         }
         return subCategory;

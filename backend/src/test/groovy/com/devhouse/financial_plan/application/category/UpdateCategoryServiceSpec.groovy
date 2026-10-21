@@ -47,7 +47,7 @@ class UpdateCategoryServiceSpec extends Specification {
         UpdateCategoryRequest request = new UpdateCategoryRequest(0, "Groceries", CategoryKind.EXPENSE)
 
         when:
-        CategoryResponse response = service.execute(10L, request)
+        CategoryResponse response = service.execute(1L, 10L, request)
 
         then:
         response.name() == "Groceries"
@@ -62,7 +62,7 @@ class UpdateCategoryServiceSpec extends Specification {
         UpdateCategoryRequest request = new UpdateCategoryRequest(0, "", CategoryKind.EXPENSE)
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -76,7 +76,7 @@ class UpdateCategoryServiceSpec extends Specification {
         UpdateCategoryRequest request = new UpdateCategoryRequest(99, "Groceries", CategoryKind.EXPENSE)
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(org.springframework.orm.ObjectOptimisticLockingFailureException)
@@ -93,7 +93,7 @@ class UpdateCategoryServiceSpec extends Specification {
         UpdateCategoryRequest request = new UpdateCategoryRequest(0, "Food", CategoryKind.EXPENSE)
 
         when:
-        CategoryResponse response = service.execute(10L, request)
+        CategoryResponse response = service.execute(1L, 10L, request)
 
         then:
         response.name() == "Food"
@@ -108,7 +108,7 @@ class UpdateCategoryServiceSpec extends Specification {
         UpdateCategoryRequest request = new UpdateCategoryRequest(0, "TRANSPORT", CategoryKind.EXPENSE)
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -122,7 +122,7 @@ class UpdateCategoryServiceSpec extends Specification {
         UpdateCategoryRequest request = new UpdateCategoryRequest(0, "Outra coisa", CategoryKind.EXPENSE)
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -137,7 +137,7 @@ class UpdateCategoryServiceSpec extends Specification {
         categoryRepository.update(_) >> { Category c -> c }
 
         when:
-        CategoryResponse response = service.execute(10L, new UpdateCategoryRequest(0, "Food", CategoryKind.EXPENSE))
+        CategoryResponse response = service.execute(1L, 10L, new UpdateCategoryRequest(0, "Food", CategoryKind.EXPENSE))
 
         then:
         response.kind() == CategoryKind.EXPENSE
@@ -153,7 +153,7 @@ class UpdateCategoryServiceSpec extends Specification {
         transactionRepository.countByCategoryIdAndType(10L, TransactionType.EXPENSE) >> 0L
 
         when:
-        CategoryResponse response = service.execute(10L, new UpdateCategoryRequest(0, "Food", CategoryKind.INCOME))
+        CategoryResponse response = service.execute(1L, 10L, new UpdateCategoryRequest(0, "Food", CategoryKind.INCOME))
 
         then:
         1 * categoryRepository.update({ Category c -> c.getKind() == CategoryKind.INCOME }) >> { Category c -> c }
@@ -172,7 +172,7 @@ class UpdateCategoryServiceSpec extends Specification {
         creditCardTransactionRecurringRepository.countByCategoryId(10L) >> 1L
 
         when:
-        service.execute(10L, new UpdateCategoryRequest(0, "Food", CategoryKind.INCOME))
+        service.execute(1L, 10L, new UpdateCategoryRequest(0, "Food", CategoryKind.INCOME))
 
         then:
         DomainException exception = thrown()
@@ -192,7 +192,7 @@ class UpdateCategoryServiceSpec extends Specification {
         creditCardTransactionRepository.countByCategoryIdAndCredit(10L, true) >> 1L
 
         when:
-        service.execute(10L, new UpdateCategoryRequest(0, "Salário", CategoryKind.EXPENSE))
+        service.execute(1L, 10L, new UpdateCategoryRequest(0, "Salário", CategoryKind.EXPENSE))
 
         then:
         DomainException exception = thrown()
@@ -209,10 +209,23 @@ class UpdateCategoryServiceSpec extends Specification {
         categoryRepository.findBySpaceId(1L) >> [category]
 
         when:
-        service.execute(10L, new UpdateCategoryRequest(0, "Food", null))
+        service.execute(1L, 10L, new UpdateCategoryRequest(0, "Food", null))
 
         then:
         thrown(DomainException)
+        0 * categoryRepository.update(_)
+    }
+
+    def "execute rejects a category that belongs to another space"() {
+        given:
+        categoryRepository.findById(10L) >> buildCategory()
+
+        when:
+        service.execute(2L, 10L, new UpdateCategoryRequest(0, "Groceries", CategoryKind.EXPENSE))
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Category not found"
         0 * categoryRepository.update(_)
     }
 }

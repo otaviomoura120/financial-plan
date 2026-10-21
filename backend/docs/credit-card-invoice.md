@@ -106,7 +106,7 @@ Shifting the purchase forward to the next open invoice — what a real issuer do
 
 ## Listing invoices — `ListCreditCardInvoicesService`
 
-`GET /credit-cards/invoices?spaceId=&creditCardId=&from=&to=`
+`GET /credit-cards/invoices?creditCardId=&from=&to=` (Space from the `X-Space-Id` header)
 
 1. Resolve the candidate `CreditCard`s: `creditCardRepository.findBySpaceId(spaceId)`, optionally narrowed to one card if `creditCardId` is given (a mismatched id simply yields no results — no separate "wrong space" error).
 2. For each card, fetch **every** `CreditCardTransaction` (`findByCreditCardId`, no date filter — an installment's `referenceMonth` can be months away from its `purchaseDate`) and group them by `referenceMonth`.

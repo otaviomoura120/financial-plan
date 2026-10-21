@@ -23,9 +23,9 @@ public class UpdateCategoryService {
         this.categoryKindChangeGuard = categoryKindChangeGuard;
     }
 
-    public CategoryResponse execute(Long id, UpdateCategoryRequest request) {
+    public CategoryResponse execute(Long spaceId, Long id, UpdateCategoryRequest request) {
         Category category = categoryRepository.findById(id);
-        if (category == null) {
+        if (category == null || !category.belongsToSpace(spaceId)) {
             throw new DomainException("Category not found");
         }
         if (category.isSystem()) {

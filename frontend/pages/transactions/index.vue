@@ -146,11 +146,9 @@ async function fetchDropdownData() {
     return
   }
 
-  const spaceId = spaceStore.activeSpace.id
-
   const [bankAccountsResult, categoriesResult] = await Promise.all([
-    $fetch<BankAccountResponse[]>('/api/bank-accounts', { query: { spaceId } }),
-    $fetch<CategoryResponse[]>('/api/categories', { query: { spaceId } }),
+    $fetch<BankAccountResponse[]>('/api/bank-accounts'),
+    $fetch<CategoryResponse[]>('/api/categories'),
   ])
 
   bankAccounts.value = bankAccountsResult
@@ -168,7 +166,6 @@ async function fetchTransactions() {
   try {
     transactions.value = await $fetch<TransactionResponse[]>('/api/transactions', {
       query: {
-        spaceId: spaceStore.activeSpace.id,
         from: from.value,
         to: to.value,
       },

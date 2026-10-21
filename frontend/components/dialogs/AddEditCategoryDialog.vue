@@ -40,7 +40,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emit>()
 
-const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
@@ -91,7 +90,6 @@ async function onSubmit() {
       saved = await $fetch<CategoryResponse>('/api/categories', {
         method: 'POST',
         body: {
-          spaceId: spaceStore.activeSpace!.id,
           name: name.value,
           kind: kind.value,
         },

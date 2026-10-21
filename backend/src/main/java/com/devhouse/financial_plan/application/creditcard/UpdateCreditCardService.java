@@ -20,10 +20,10 @@ public class UpdateCreditCardService {
         this.bankAccountRepository = bankAccountRepository;
     }
 
-    public CreditCardResponse execute(Long id, UpdateCreditCardRequest request) {
-        CreditCard creditCard = creditCardRepository.findById(id);
+    public CreditCardResponse execute(Long spaceId, Long id, UpdateCreditCardRequest request) {
+        CreditCard creditCard = resolveCreditCard(id, spaceId);
         creditCard.setVersion(request.version());
-        BankAccount bankAccount = resolveBankAccount(request.bankAccountId(), creditCard.getSpace().getId());
+        BankAccount bankAccount = resolveBankAccount(request.bankAccountId(), spaceId);
         creditCard.update(request.name(), request.limit(), request.closingDay(), request.dueDay(), bankAccount);
         creditCard.validate();
         CreditCard updated = creditCardRepository.update(creditCard);
@@ -51,5 +51,13 @@ public class UpdateCreditCardService {
                 creditCard.isActive(), creditCard.getCreatedDate(),
                 bankAccount != null ? bankAccount.getId() : null,
                 bankAccount != null ? bankAccount.getName() : null);
+    }
+
+    private CreditCard resolveCreditCard(Long id, Long spaceId) {
+        CreditCard creditCard = creditCardRepository.findById(id);
+        if (creditCard == null || !creditCard.belongsToSpace(spaceId)) {
+            throw new DomainException("Credit card not found");
+        }
+        return creditCard;
     }
 }

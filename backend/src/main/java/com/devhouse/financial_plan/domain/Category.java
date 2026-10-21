@@ -90,6 +90,10 @@ public class Category {
         return name.trim().equalsIgnoreCase(otherName.trim());
     }
 
+    public boolean belongsToSpace(Long spaceId) {
+        return space != null && Objects.equals(space.getId(), spaceId);
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

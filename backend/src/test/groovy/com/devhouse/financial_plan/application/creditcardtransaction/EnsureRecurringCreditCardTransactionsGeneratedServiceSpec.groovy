@@ -45,7 +45,7 @@ class EnsureRecurringCreditCardTransactionsGeneratedServiceSpec extends Specific
     }
 
     private Category buildCategory() {
-        new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
+        new Category(30L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private CreditCardTransactionRecurring buildRecurring(LocalDate startDate, boolean active = true, CreditCard creditCard = buildCreditCard()) {

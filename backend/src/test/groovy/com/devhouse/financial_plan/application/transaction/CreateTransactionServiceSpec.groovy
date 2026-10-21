@@ -41,12 +41,12 @@ class CreateTransactionServiceSpec extends Specification {
 
     def setup() {
         resolveSystemCategoryService.execute(_, SystemCategory.TRANSFER) >> new SystemCategoryPair(90L, null)
-        categoryRepository.findById(90L) >> new Category(90L, 0, null, "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(90L) >> new Category(90L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private CreateTransactionRequest buildRequest(TransactionType type, Long bankAccountId, Long destinationBankAccountId,
                                                    Long categoryId, Long subCategoryId) {
-        new CreateTransactionRequest(type, 1L, bankAccountId, destinationBankAccountId, categoryId, subCategoryId,
+        new CreateTransactionRequest(type, bankAccountId, destinationBankAccountId, categoryId, subCategoryId,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
     }
 
@@ -61,15 +61,15 @@ class CreateTransactionServiceSpec extends Specification {
     }
 
     private Category buildCategoryObj(Long id) {
-        id == null ? null : new Category(id, 0, null, "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
+        id == null ? null : new Category(id, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "execute creates INCOME transaction and credits the bank account"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
         BankAccount account = buildAccount(1L, new BigDecimal("500.00"))
         bankAccountRepository.findById(1L) >> account
-        categoryRepository.findById(10L) >> Mock(Category)
+        categoryRepository.findById(10L) >> Mock(Category) { belongsToSpace(_) >> true }
         CreateTransactionRequest request = buildRequest(TransactionType.INCOME, 1L, null, 10L, null)
         Transaction saved = new Transaction(5L, 0, TransactionType.INCOME, buildUser(1L), account, null,
                 buildCategoryObj(10L), null,
@@ -77,7 +77,7 @@ class CreateTransactionServiceSpec extends Specification {
         transactionRepository.save(_) >> saved
 
         when:
-        TransactionResponse response = service.execute(request)
+        TransactionResponse response = service.execute(1L, "auth0|1", request)
 
         then:
         response.id() == 5L
@@ -87,10 +87,10 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute creates EXPENSE transaction and debits the bank account"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
         BankAccount account = buildAccount(1L, new BigDecimal("500.00"))
         bankAccountRepository.findById(1L) >> account
-        categoryRepository.findById(10L) >> Mock(Category)
+        categoryRepository.findById(10L) >> Mock(Category) { belongsToSpace(_) >> true }
         CreateTransactionRequest request = buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null)
         Transaction saved = new Transaction(6L, 0, TransactionType.EXPENSE, buildUser(1L), account, null,
                 buildCategoryObj(10L), null,
@@ -98,7 +98,7 @@ class CreateTransactionServiceSpec extends Specification {
         transactionRepository.save(_) >> saved
 
         when:
-        TransactionResponse response = service.execute(request)
+        TransactionResponse response = service.execute(1L, "auth0|1", request)
 
         then:
         response.id() == 6L
@@ -108,7 +108,7 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute creates TRANSFER transaction, debiting origin and crediting destination"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
         BankAccount origin = buildAccount(1L, new BigDecimal("500.00"))
         BankAccount destination = buildAccount(2L, new BigDecimal("200.00"))
         bankAccountRepository.findById(1L) >> origin
@@ -119,7 +119,7 @@ class CreateTransactionServiceSpec extends Specification {
         transactionRepository.save(_) >> saved
 
         when:
-        TransactionResponse response = service.execute(request)
+        TransactionResponse response = service.execute(1L, "auth0|1", request)
 
         then:
         response.id() == 7L
@@ -131,11 +131,11 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute throws DomainException when user does not exist"() {
         given:
-        userRepository.findById(1L) >> null
+        userRepository.findByAuth0Sub("auth0|1") >> null
         CreateTransactionRequest request = buildRequest(TransactionType.INCOME, 1L, null, 10L, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -145,12 +145,12 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute throws DomainException when bank account does not exist"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
         bankAccountRepository.findById(1L) >> null
         CreateTransactionRequest request = buildRequest(TransactionType.INCOME, 1L, null, 10L, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -160,13 +160,13 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute throws DomainException when category does not exist"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
-        bankAccountRepository.findById(1L) >> Mock(BankAccount)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        bankAccountRepository.findById(1L) >> Mock(BankAccount) { belongsToSpace(_) >> true }
         categoryRepository.findById(10L) >> null
         CreateTransactionRequest request = buildRequest(TransactionType.INCOME, 1L, null, 10L, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -176,14 +176,14 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute throws DomainException when sub category does not exist"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
-        bankAccountRepository.findById(1L) >> Mock(BankAccount)
-        categoryRepository.findById(10L) >> Mock(Category)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        bankAccountRepository.findById(1L) >> Mock(BankAccount) { belongsToSpace(_) >> true }
+        categoryRepository.findById(10L) >> Mock(Category) { belongsToSpace(_) >> true }
         subCategoryRepository.findById(30L) >> null
         CreateTransactionRequest request = buildRequest(TransactionType.INCOME, 1L, null, 10L, 30L)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -193,13 +193,13 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute throws DomainException when destination bank account does not exist"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
-        bankAccountRepository.findById(1L) >> Mock(BankAccount)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        bankAccountRepository.findById(1L) >> Mock(BankAccount) { belongsToSpace(_) >> true }
         bankAccountRepository.findById(2L) >> null
         CreateTransactionRequest request = buildRequest(TransactionType.TRANSFER, 1L, 2L, null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -209,12 +209,12 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute throws DomainException for TRANSFER when destination equals origin bank account"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
         bankAccountRepository.findById(1L) >> buildAccount(1L, BigDecimal.ZERO)
         CreateTransactionRequest request = buildRequest(TransactionType.TRANSFER, 1L, 1L, null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -225,7 +225,7 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute stamps the TRANSFER system category on a transfer instead of leaving it uncategorised"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
         BankAccount origin = buildAccount(1L, new BigDecimal("500.00"))
         BankAccount destination = buildAccount(2L, new BigDecimal("200.00"))
         bankAccountRepository.findById(1L) >> origin
@@ -234,7 +234,7 @@ class CreateTransactionServiceSpec extends Specification {
         Transaction captured = null
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         1 * transactionRepository.save(_) >> { Transaction t ->
@@ -249,13 +249,13 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute throws DomainException when a system category is selected on a user owned transaction"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
         bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("500.00"))
-        categoryRepository.findById(10L) >> new Category(10L, 0, null, "Pagamento de Fatura", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(10L) >> new Category(10L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Pagamento de Fatura", CategoryKind.EXPENSE, true, Instant.now(), null)
         CreateTransactionRequest request = buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -264,14 +264,13 @@ class CreateTransactionServiceSpec extends Specification {
 
     def "execute accepts the system category when the transaction is generated by the system"() {
         given:
-        userRepository.findById(1L) >> Mock(User)
         bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("500.00"))
-        categoryRepository.findById(10L) >> new Category(10L, 0, null, "Pagamento de Fatura", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(10L) >> new Category(10L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Pagamento de Fatura", CategoryKind.EXPENSE, true, Instant.now(), null)
         CreateTransactionRequest request = buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null)
         Transaction captured = null
 
         when:
-        service.execute(request, TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 10L)
+        service.execute(1L, Mock(User), request, TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 10L)
 
         then:
         1 * transactionRepository.save(_) >> { Transaction t ->
@@ -280,5 +279,73 @@ class CreateTransactionServiceSpec extends Specification {
         }
         captured.getCategory().getId() == 10L
         captured.getSourceType() == TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT
+    }
+
+    def "execute records the transaction for the authenticated user resolved from auth0Sub"() {
+        given:
+        User authenticated = buildUser(7L)
+        userRepository.findByAuth0Sub("auth0|1") >> authenticated
+        bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("500.00"))
+        categoryRepository.findById(10L) >> buildCategoryObj(10L)
+        Transaction captured = null
+
+        when:
+        service.execute(1L, "auth0|1", buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null))
+
+        then:
+        1 * transactionRepository.save(_) >> { Transaction t ->
+            captured = t
+            t
+        }
+        captured.getUser().getId() == 7L
+    }
+
+    def "execute rejects a bank account that belongs to another space"() {
+        given:
+        userRepository.findByAuth0Sub("auth0|1") >> buildUser(1L)
+        bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("500.00"))
+        categoryRepository.findById(10L) >> buildCategoryObj(10L)
+
+        when:
+        service.execute(2L, "auth0|1", buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null))
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Bank account not found"
+        0 * transactionRepository.save(_)
+        0 * bankAccountRepository.update(_)
+    }
+
+    def "execute rejects a destination bank account that belongs to another space"() {
+        given:
+        userRepository.findByAuth0Sub("auth0|1") >> buildUser(1L)
+        bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("500.00"))
+        Space otherSpace = new Space(2L, 0, "Other Space", null, Instant.now(), null)
+        bankAccountRepository.findById(2L) >> new BankAccount(2L, 0, otherSpace, "Foreign", "BankCorp", BigDecimal.ZERO, true,
+                Instant.now(), null)
+
+        when:
+        service.execute(1L, "auth0|1", buildRequest(TransactionType.TRANSFER, 1L, 2L, null, null))
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Destination bank account not found"
+        0 * transactionRepository.save(_)
+    }
+
+    def "execute rejects a category that belongs to another space"() {
+        given:
+        userRepository.findByAuth0Sub("auth0|1") >> buildUser(1L)
+        bankAccountRepository.findById(1L) >> buildAccount(1L, new BigDecimal("500.00"))
+        Space otherSpace = new Space(2L, 0, "Other Space", null, Instant.now(), null)
+        categoryRepository.findById(10L) >> new Category(10L, 0, otherSpace, "Foreign", CategoryKind.EXPENSE, true, Instant.now(), null)
+
+        when:
+        service.execute(1L, "auth0|1", buildRequest(TransactionType.EXPENSE, 1L, null, 10L, null))
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Category not found"
+        0 * transactionRepository.save(_)
     }
 }

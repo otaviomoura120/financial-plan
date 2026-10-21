@@ -51,8 +51,8 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse create(@RequestBody CreateUserRequest request) {
-        return createUserService.execute(request);
+    public UserResponse create(@RequestBody CreateUserRequest request, Authentication authentication) {
+        return createUserService.execute(authentication.getName(), request);
     }
 
     @PutMapping("/{id}")

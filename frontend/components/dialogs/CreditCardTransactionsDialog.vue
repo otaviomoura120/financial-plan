@@ -233,9 +233,7 @@ async function fetchCreditCard() {
     return
   }
 
-  const cards = await $fetch<CreditCardResponse[]>('/api/credit-cards', {
-    query: { spaceId: spaceStore.activeSpace.id },
-  })
+  const cards = await $fetch<CreditCardResponse[]>('/api/credit-cards')
 
   creditCard.value = cards.find(c => c.id === props.creditCardId) ?? null
 }
@@ -245,9 +243,7 @@ async function fetchCategories() {
     return
   }
 
-  categories.value = await $fetch<CategoryResponse[]>('/api/categories', {
-    query: { spaceId: spaceStore.activeSpace.id },
-  })
+  categories.value = await $fetch<CategoryResponse[]>('/api/categories')
 }
 
 async function fetchTransactions() {
@@ -261,7 +257,6 @@ async function fetchTransactions() {
   try {
     transactions.value = await $fetch<CreditCardTransactionResponse[]>('/api/credit-card-transactions', {
       query: {
-        spaceId: spaceStore.activeSpace.id,
         creditCardId: props.creditCardId,
         referenceMonth: selectedReferenceMonth.value,
       },

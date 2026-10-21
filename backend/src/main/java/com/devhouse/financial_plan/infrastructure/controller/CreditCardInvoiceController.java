@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.infrastructure.security.SecurityService;
 import com.devhouse.financial_plan.application.creditcardinvoice.ListCreditCardInvoicesService;
 import com.devhouse.financial_plan.application.creditcardinvoice.PayCreditCardInvoiceService;
 import com.devhouse.financial_plan.application.creditcardinvoice.UndoCreditCardInvoicePaymentService;
@@ -33,7 +34,7 @@ public class CreditCardInvoiceController {
 
     @GetMapping("/invoices")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<CreditCardInvoiceResponse> list(@RequestParam Long spaceId,
+    public List<CreditCardInvoiceResponse> list(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId,
                                                  @RequestParam(required = false) Long creditCardId,
                                                  @RequestParam(required = false) LocalDate from,
                                                  @RequestParam(required = false) LocalDate to,
@@ -43,17 +44,17 @@ public class CreditCardInvoiceController {
 
     @PostMapping("/{id}/invoices/{referenceMonth}/pay")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CreditCardInvoicePaymentResponse pay(@PathVariable Long id, @PathVariable LocalDate referenceMonth,
+    public CreditCardInvoicePaymentResponse pay(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @PathVariable LocalDate referenceMonth,
                                                  @RequestBody PayCreditCardInvoiceRequest body,
                                                  Authentication authentication, HttpServletRequest request) {
-        return payCreditCardInvoiceService.execute(id, referenceMonth, body, authentication.getName());
+        return payCreditCardInvoiceService.execute(spaceId, id, referenceMonth, body, authentication.getName());
     }
 
     @PostMapping("/{id}/invoices/{referenceMonth}/undo-payment")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void undoPayment(@PathVariable Long id, @PathVariable LocalDate referenceMonth,
+    public void undoPayment(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @PathVariable LocalDate referenceMonth,
                              Authentication authentication, HttpServletRequest request) {
-        undoCreditCardInvoicePaymentService.execute(id, referenceMonth);
+        undoCreditCardInvoicePaymentService.execute(spaceId, id, referenceMonth);
     }
 }

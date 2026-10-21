@@ -46,18 +46,18 @@ class CreateCreditCardTransactionRecurringServiceSpec extends Specification {
     def "execute creates a credit card transaction recurring"() {
         given:
         creditCardRepository.findById(20L) >> buildCreditCard()
-        userRepository.findById(1L) >> buildUser()
-        Category category = new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
+        userRepository.findByAuth0Sub("auth0|1") >> buildUser()
+        Category category = new Category(30L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(30L) >> category
         creditCardTransactionRecurringRepository.save(_) >> { CreditCardTransactionRecurring r ->
             new CreditCardTransactionRecurring(10L, 0, r.creditCard, r.user, r.category, r.subCategory, r.description,
                     r.defaultAmount, r.startDate, r.active, r.createdDate, r.updatedDate)
         }
-        CreateCreditCardTransactionRecurringRequest request = new CreateCreditCardTransactionRecurringRequest(20L, 1L, 30L,
+        CreateCreditCardTransactionRecurringRequest request = new CreateCreditCardTransactionRecurringRequest(20L, 30L,
                 null, "Netflix", new BigDecimal("39.90"), LocalDate.of(2026, 3, 10))
 
         when:
-        CreditCardTransactionRecurringResponse response = service.execute(request)
+        CreditCardTransactionRecurringResponse response = service.execute(1L, "auth0|1", request)
 
         then:
         response.id() == 10L
@@ -73,8 +73,8 @@ class CreateCreditCardTransactionRecurringServiceSpec extends Specification {
     def "execute resolves the optional subCategory when informed"() {
         given:
         creditCardRepository.findById(20L) >> buildCreditCard()
-        userRepository.findById(1L) >> buildUser()
-        Category category = new Category(30L, 0, null, "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
+        userRepository.findByAuth0Sub("auth0|1") >> buildUser()
+        Category category = new Category(30L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Assinaturas", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(30L) >> category
         SubCategory subCategory = new SubCategory(40L, 0, category, "Streaming", true, null, null)
         subCategoryRepository.findById(40L) >> subCategory
@@ -82,11 +82,11 @@ class CreateCreditCardTransactionRecurringServiceSpec extends Specification {
             new CreditCardTransactionRecurring(10L, 0, r.creditCard, r.user, r.category, r.subCategory, r.description,
                     r.defaultAmount, r.startDate, r.active, r.createdDate, r.updatedDate)
         }
-        CreateCreditCardTransactionRecurringRequest request = new CreateCreditCardTransactionRecurringRequest(20L, 1L, 30L,
+        CreateCreditCardTransactionRecurringRequest request = new CreateCreditCardTransactionRecurringRequest(20L, 30L,
                 40L, "Netflix", new BigDecimal("39.90"), LocalDate.of(2026, 3, 10))
 
         when:
-        CreditCardTransactionRecurringResponse response = service.execute(request)
+        CreditCardTransactionRecurringResponse response = service.execute(1L, "auth0|1", request)
 
         then:
         response.subCategoryId() == 40L
@@ -95,11 +95,11 @@ class CreateCreditCardTransactionRecurringServiceSpec extends Specification {
     def "execute throws DomainException when credit card does not exist"() {
         given:
         creditCardRepository.findById(20L) >> null
-        CreateCreditCardTransactionRecurringRequest request = new CreateCreditCardTransactionRecurringRequest(20L, 1L, 30L,
+        CreateCreditCardTransactionRecurringRequest request = new CreateCreditCardTransactionRecurringRequest(20L, 30L,
                 null, "Netflix", new BigDecimal("39.90"), LocalDate.of(2026, 3, 10))
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)
@@ -109,13 +109,13 @@ class CreateCreditCardTransactionRecurringServiceSpec extends Specification {
     def "execute throws DomainException when category does not exist"() {
         given:
         creditCardRepository.findById(20L) >> buildCreditCard()
-        userRepository.findById(1L) >> buildUser()
+        userRepository.findByAuth0Sub("auth0|1") >> buildUser()
         categoryRepository.findById(30L) >> null
-        CreateCreditCardTransactionRecurringRequest request = new CreateCreditCardTransactionRecurringRequest(20L, 1L, 30L,
+        CreateCreditCardTransactionRecurringRequest request = new CreateCreditCardTransactionRecurringRequest(20L, 30L,
                 null, "Netflix", new BigDecimal("39.90"), LocalDate.of(2026, 3, 10))
 
         when:
-        service.execute(request)
+        service.execute(1L, "auth0|1", request)
 
         then:
         thrown(DomainException)

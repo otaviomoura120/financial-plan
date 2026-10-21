@@ -21,9 +21,9 @@ public class DeleteCategoryService {
         this.transactionRepository = transactionRepository;
     }
 
-    public void execute(Long id) {
+    public void execute(Long spaceId, Long id) {
         Category category = categoryRepository.findById(id);
-        if (category == null) {
+        if (category == null || !category.belongsToSpace(spaceId)) {
             throw new DomainException("Category not found");
         }
         if (category.isSystem()) {

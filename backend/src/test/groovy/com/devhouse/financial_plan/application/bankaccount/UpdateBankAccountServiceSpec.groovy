@@ -28,7 +28,7 @@ class UpdateBankAccountServiceSpec extends Specification {
         UpdateBankAccountRequest request = new UpdateBankAccountRequest(0, "New Name", "New Bank")
 
         when:
-        BankAccountResponse response = service.execute(10L, request)
+        BankAccountResponse response = service.execute(1L, 10L, request)
 
         then:
         response.name() == "New Name"
@@ -43,7 +43,7 @@ class UpdateBankAccountServiceSpec extends Specification {
         UpdateBankAccountRequest request = new UpdateBankAccountRequest(0, "", "New Bank")
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -57,10 +57,23 @@ class UpdateBankAccountServiceSpec extends Specification {
         UpdateBankAccountRequest request = new UpdateBankAccountRequest(99, "New Name", "New Bank")
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(org.springframework.orm.ObjectOptimisticLockingFailureException)
+        0 * bankAccountRepository.update(_)
+    }
+
+    def "execute rejects a bank account that belongs to another space"() {
+        given:
+        bankAccountRepository.findById(10L) >> buildAccount()
+
+        when:
+        service.execute(2L, 10L, new UpdateBankAccountRequest(0, "Renamed", "BankCorp"))
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Bank account not found"
         0 * bankAccountRepository.update(_)
     }
 }

@@ -28,7 +28,7 @@ class DeleteBillServiceSpec extends Specification {
         billRepository.findById(1L) >> bill
 
         when:
-        service.execute(1L)
+        service.execute(1L, 1L)
 
         then:
         1 * billRepository.delete(1L)
@@ -39,7 +39,7 @@ class DeleteBillServiceSpec extends Specification {
         billRepository.findById(99L) >> null
 
         when:
-        service.execute(99L)
+        service.execute(1L, 99L)
 
         then:
         thrown(DomainException)
@@ -52,7 +52,7 @@ class DeleteBillServiceSpec extends Specification {
         billRepository.findById(1L) >> bill
 
         when:
-        service.execute(1L)
+        service.execute(1L, 1L)
 
         then:
         thrown(DomainException)

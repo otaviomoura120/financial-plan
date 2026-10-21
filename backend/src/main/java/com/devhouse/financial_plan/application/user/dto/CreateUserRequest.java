@@ -3,7 +3,6 @@ package com.devhouse.financial_plan.application.user.dto;
 import java.time.Instant;
 
 public record CreateUserRequest(
-        String auth0Sub,
         String name,
         String nickname,
         String profilePhoto,

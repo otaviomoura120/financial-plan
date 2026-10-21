@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
+import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
@@ -23,7 +24,7 @@ class ListInstallmentGroupServiceSpec extends Specification {
         CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
-        Category category = new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         new CreditCardTransaction(installmentNumber as Long, 0, creditCard, null, user, category, null,
                 new BigDecimal("33.33"), false, LocalDate.of(2026, 3, 5), "desc",
                 LocalDate.of(2026, 3, 1).plusMonths(installmentNumber - 1),
@@ -35,7 +36,7 @@ class ListInstallmentGroupServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> [buildInstallment(3), buildInstallment(1), buildInstallment(2)]
 
         when:
-        List<CreditCardTransactionResponse> responses = service.execute("group-1")
+        List<CreditCardTransactionResponse> responses = service.execute(1L, "group-1")
 
         then:
         responses.size() == 3
@@ -50,9 +51,21 @@ class ListInstallmentGroupServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("missing") >> []
 
         when:
-        List<CreditCardTransactionResponse> responses = service.execute("missing")
+        List<CreditCardTransactionResponse> responses = service.execute(1L, "missing")
 
         then:
         responses.isEmpty()
+    }
+
+    def "execute rejects an installment group whose credit card belongs to another space"() {
+        given:
+        creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> [buildInstallment(1), buildInstallment(2)]
+
+        when:
+        service.execute(2L, "group-1")
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Installment group not found"
     }
 }

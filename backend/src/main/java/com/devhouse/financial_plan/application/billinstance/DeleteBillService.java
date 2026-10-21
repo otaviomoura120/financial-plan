@@ -14,9 +14,9 @@ public class DeleteBillService {
         this.billRepository = billRepository;
     }
 
-    public void execute(Long id) {
+    public void execute(Long spaceId, Long id) {
         Bill bill = billRepository.findById(id);
-        if (bill == null) {
+        if (bill == null || !bill.belongsToSpace(spaceId)) {
             throw new DomainException("Bill not found");
         }
         if (!bill.isPending()) {

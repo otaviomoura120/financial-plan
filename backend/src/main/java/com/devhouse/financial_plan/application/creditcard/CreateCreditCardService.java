@@ -27,8 +27,8 @@ public class CreateCreditCardService {
         this.bankAccountRepository = bankAccountRepository;
     }
 
-    public CreditCardResponse execute(CreateCreditCardRequest request) {
-        Space space = spaceRepository.findById(request.spaceId());
+    public CreditCardResponse execute(Long spaceId, CreateCreditCardRequest request) {
+        Space space = spaceRepository.findById(spaceId);
         if (space == null) {
             throw new DomainException("Space not found");
         }

@@ -25,9 +25,9 @@ public class CreateSubCategoryService {
         this.categoryNameValidator = categoryNameValidator;
     }
 
-    public SubCategoryResponse execute(CreateSubCategoryRequest request) {
+    public SubCategoryResponse execute(Long spaceId, CreateSubCategoryRequest request) {
         Category category = categoryRepository.findById(request.categoryId());
-        if (category == null) {
+        if (category == null || !category.belongsToSpace(spaceId)) {
             throw new DomainException("Category not found");
         }
         if (category.isSystem()) {

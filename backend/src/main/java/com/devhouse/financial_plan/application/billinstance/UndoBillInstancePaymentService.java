@@ -24,9 +24,9 @@ public class UndoBillInstancePaymentService {
     }
 
     @Transactional
-    public void execute(Long billId) {
+    public void execute(Long spaceId, Long billId) {
         Bill bill = billRepository.findById(billId);
-        if (bill == null) {
+        if (bill == null || !bill.belongsToSpace(spaceId)) {
             throw new DomainException("Bill instance not found");
         }
         if (!bill.isPaid()) {

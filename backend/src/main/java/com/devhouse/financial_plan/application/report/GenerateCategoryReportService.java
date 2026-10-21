@@ -42,7 +42,8 @@ public class GenerateCategoryReportService {
         this.creditCardTransactionRepository = creditCardTransactionRepository;
     }
 
-    public CategoryReportResponse execute(CategoryReportFilterRequest filter) {
+    public CategoryReportResponse execute(Long spaceId, CategoryReportFilterRequest request) {
+        CategoryReportFilterRequest filter = request.scopedTo(spaceId);
         if (filter.spaceId() == null) {
             throw new DomainException("Space is required");
         }

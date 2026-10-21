@@ -101,7 +101,6 @@ async function fetchItems() {
   try {
     items.value = await $fetch<CreditCardTransactionResponse[]>('/api/credit-card-transactions', {
       query: {
-        spaceId: spaceStore.activeSpace.id,
         creditCardId: props.creditCardId,
         referenceMonth: props.referenceMonth,
       },

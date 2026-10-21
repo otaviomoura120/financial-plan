@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.infrastructure.security.SecurityService;
 import com.devhouse.financial_plan.application.creditcardtransaction.CreateCreditCardTransactionRecurringService;
 import com.devhouse.financial_plan.application.creditcardtransaction.DeleteCreditCardTransactionRecurringService;
 import com.devhouse.financial_plan.application.creditcardtransaction.ListCreditCardTransactionRecurringsService;
@@ -36,29 +37,30 @@ public class CreditCardTransactionRecurringController {
 
     @GetMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<CreditCardTransactionRecurringResponse> list(@RequestParam Long spaceId, Authentication authentication, HttpServletRequest request) {
+    public List<CreditCardTransactionRecurringResponse> list(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, Authentication authentication, HttpServletRequest request) {
         return listCreditCardTransactionRecurringsService.execute(spaceId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CreditCardTransactionRecurringResponse create(@RequestBody CreateCreditCardTransactionRecurringRequest body,
+    public CreditCardTransactionRecurringResponse create(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody CreateCreditCardTransactionRecurringRequest body,
                                                           Authentication authentication, HttpServletRequest request) {
-        return createCreditCardTransactionRecurringService.execute(body);
+        return createCreditCardTransactionRecurringService.execute(spaceId, authentication.getName(), body);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CreditCardTransactionRecurringResponse update(@PathVariable Long id, @RequestBody UpdateCreditCardTransactionRecurringRequest body,
+    public CreditCardTransactionRecurringResponse update(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id,
+                                                          @RequestBody UpdateCreditCardTransactionRecurringRequest body,
                                                           Authentication authentication, HttpServletRequest request) {
-        return updateCreditCardTransactionRecurringService.execute(id, body);
+        return updateCreditCardTransactionRecurringService.execute(spaceId, id, body);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deleteCreditCardTransactionRecurringService.execute(id);
+    public void delete(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        deleteCreditCardTransactionRecurringService.execute(spaceId, id);
     }
 }

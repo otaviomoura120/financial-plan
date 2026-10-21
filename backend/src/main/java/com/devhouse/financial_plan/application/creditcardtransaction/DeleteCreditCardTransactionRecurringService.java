@@ -28,9 +28,9 @@ public class DeleteCreditCardTransactionRecurringService {
     }
 
     @Transactional
-    public void execute(Long id) {
+    public void execute(Long spaceId, Long id) {
         CreditCardTransactionRecurring recurring = creditCardTransactionRecurringRepository.findById(id);
-        if (recurring == null) {
+        if (recurring == null || !recurring.belongsToSpace(spaceId)) {
             throw new DomainException("Credit card transaction recurring not found");
         }
         removeFutureAndDetachPastTransactions(id);

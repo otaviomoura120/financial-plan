@@ -326,4 +326,13 @@ class CreditCardTransactionSpec extends Specification {
         transaction.getCreditCardTransactionRecurring() == null
         transaction.getUpdatedDate() != null
     }
+
+    def "belongsToSpace follows the space of the credit card"() {
+        given:
+        CreditCardTransaction transaction = buildTransaction("group-1", 1, 1)
+
+        expect:
+        transaction.belongsToSpace(1L)
+        !transaction.belongsToSpace(2L)
+    }
 }

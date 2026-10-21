@@ -32,14 +32,14 @@ class UpdateBillServiceSpec extends Specification {
     def "execute updates name, category, amount and dueDate when pending"() {
         given:
         billRepository.findById(1L) >> buildInstance(BillInstanceStatus.PENDING)
-        Category category = new Category(20L, 0, null, "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
         categoryRepository.findById(20L) >> category
         billRepository.update(_) >> { Bill b -> b }
         UpdateBillInstanceRequest request = new UpdateBillInstanceRequest(0, "Power Bill", 20L, null,
                 new BigDecimal("180.00"), LocalDate.of(2026, 4, 5))
 
         when:
-        def response = service.execute(1L, request)
+        def response = service.execute(1L, 1L, request)
 
         then:
         response.name() == "Power Bill"
@@ -55,7 +55,7 @@ class UpdateBillServiceSpec extends Specification {
                 new BigDecimal("180.00"), LocalDate.of(2026, 4, 5))
 
         when:
-        service.execute(99L, request)
+        service.execute(1L, 99L, request)
 
         then:
         thrown(DomainException)
@@ -69,7 +69,7 @@ class UpdateBillServiceSpec extends Specification {
                 new BigDecimal("180.00"), LocalDate.of(2026, 4, 5))
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         thrown(DomainException)
@@ -83,10 +83,25 @@ class UpdateBillServiceSpec extends Specification {
                 new BigDecimal("180.00"), LocalDate.of(2026, 4, 5))
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         thrown(org.springframework.orm.ObjectOptimisticLockingFailureException)
+        0 * billRepository.update(_)
+    }
+
+    def "execute rejects a bill that belongs to another space"() {
+        given:
+        billRepository.findById(1L) >> buildInstance(BillInstanceStatus.PENDING)
+        UpdateBillInstanceRequest request = new UpdateBillInstanceRequest(0, "Energy Bill", 20L, null,
+                new BigDecimal("150.00"), LocalDate.of(2026, 3, 10))
+
+        when:
+        service.execute(2L, 1L, request)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Bill not found"
         0 * billRepository.update(_)
     }
 }

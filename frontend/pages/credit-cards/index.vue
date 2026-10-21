@@ -71,9 +71,7 @@ async function fetchCreditCards() {
   clearError()
 
   try {
-    creditCards.value = await $fetch<CreditCardResponse[]>('/api/credit-cards', {
-      query: { spaceId: spaceStore.activeSpace.id },
-    })
+    creditCards.value = await $fetch<CreditCardResponse[]>('/api/credit-cards')
   }
   catch (e) {
     setError(e)

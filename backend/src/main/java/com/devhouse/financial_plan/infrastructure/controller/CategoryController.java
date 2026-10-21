@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.infrastructure.security.SecurityService;
 import com.devhouse.financial_plan.application.category.*;
 import com.devhouse.financial_plan.application.category.dto.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,59 +43,65 @@ public class CategoryController {
 
     @GetMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<CategoryResponse> list(@RequestParam Long spaceId, Authentication authentication, HttpServletRequest request) {
+    public List<CategoryResponse> list(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, Authentication authentication, HttpServletRequest request) {
         return listCategoriesService.execute(spaceId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CategoryResponse create(@RequestBody CreateCategoryRequest body, Authentication authentication, HttpServletRequest request) {
-        return createCategoryService.execute(body);
+    public CategoryResponse create(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody CreateCategoryRequest body,
+                                   Authentication authentication, HttpServletRequest request) {
+        return createCategoryService.execute(spaceId, body);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CategoryResponse update(@PathVariable Long id, @RequestBody UpdateCategoryRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateCategoryService.execute(id, body);
+    public CategoryResponse update(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateCategoryRequest body,
+            Authentication authentication, HttpServletRequest request) {
+        return updateCategoryService.execute(spaceId, id, body);
     }
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CategoryResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateCategoryStatusService.execute(id, Boolean.TRUE.equals(body.active()));
+    public CategoryResponse updateStatus(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateStatusRequest body,
+            Authentication authentication, HttpServletRequest request) {
+        return updateCategoryStatusService.execute(spaceId, id, Boolean.TRUE.equals(body.active()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deleteCategoryService.execute(id);
+    public void delete(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        deleteCategoryService.execute(spaceId, id);
     }
 
     @PostMapping("/subcategories")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public SubCategoryResponse createSubCategory(@RequestBody CreateSubCategoryRequest body, Authentication authentication, HttpServletRequest request) {
-        return createSubCategoryService.execute(body);
+    public SubCategoryResponse createSubCategory(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody CreateSubCategoryRequest body,
+                                                 Authentication authentication, HttpServletRequest request) {
+        return createSubCategoryService.execute(spaceId, body);
     }
 
     @PutMapping("/subcategories/{id}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public SubCategoryResponse updateSubCategory(@PathVariable Long id, @RequestBody UpdateSubCategoryRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateSubCategoryService.execute(id, body);
+    public SubCategoryResponse updateSubCategory(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateSubCategoryRequest body,
+            Authentication authentication, HttpServletRequest request) {
+        return updateSubCategoryService.execute(spaceId, id, body);
     }
 
     @PatchMapping("/subcategories/{id}/status")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public SubCategoryResponse updateSubCategoryStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateSubCategoryStatusService.execute(id, Boolean.TRUE.equals(body.active()));
+    public SubCategoryResponse updateSubCategoryStatus(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateStatusRequest body,
+            Authentication authentication, HttpServletRequest request) {
+        return updateSubCategoryStatusService.execute(spaceId, id, Boolean.TRUE.equals(body.active()));
     }
 
     @DeleteMapping("/subcategories/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void deleteSubCategory(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deleteSubCategoryService.execute(id);
+    public void deleteSubCategory(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        deleteSubCategoryService.execute(spaceId, id);
     }
 }

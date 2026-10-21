@@ -43,7 +43,7 @@ class UndoCreditCardInvoicePaymentServiceSpec extends Specification {
     private Transaction buildPaymentTransaction(BankAccount bankAccount) {
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
-        Category category = new Category(30L, 0, null, "Cartão", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(30L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Cartão", CategoryKind.EXPENSE, true, Instant.now(), null)
         new Transaction(99L, 0, TransactionType.EXPENSE, user, bankAccount, null, category, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), "Pagamento de fatura - Nubank", Instant.now(), null,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, 10L)
@@ -63,7 +63,7 @@ class UndoCreditCardInvoicePaymentServiceSpec extends Specification {
         bankAccountRepository.findById(2L) >> account
 
         when:
-        service.execute(10L, LocalDate.of(2026, 3, 1))
+        service.execute(1L, 10L, LocalDate.of(2026, 3, 1))
 
         then:
         account.getBalance() == new BigDecimal("500.00")
@@ -77,10 +77,24 @@ class UndoCreditCardInvoicePaymentServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> null
 
         when:
-        service.execute(10L, LocalDate.of(2026, 3, 1))
+        service.execute(1L, 10L, LocalDate.of(2026, 3, 1))
 
         then:
         thrown(DomainException)
+        0 * transactionRepository.delete(_)
+        0 * creditCardInvoicePaymentRepository.deleteById(_)
+    }
+
+    def "execute rejects an invoice payment whose credit card belongs to another space"() {
+        given:
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> buildPayment()
+
+        when:
+        service.execute(2L, 10L, LocalDate.of(2026, 3, 1))
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Credit card invoice payment not found"
         0 * transactionRepository.delete(_)
         0 * creditCardInvoicePaymentRepository.deleteById(_)
     }

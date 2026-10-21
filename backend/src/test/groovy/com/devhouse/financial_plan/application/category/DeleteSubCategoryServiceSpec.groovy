@@ -28,7 +28,7 @@ class DeleteSubCategoryServiceSpec extends Specification {
         transactionRepository.existsBySubCategoryId(10L) >> false
 
         when:
-        service.execute(10L)
+        service.execute(1L, 10L)
 
         then:
         1 * subCategoryRepository.delete(10L)
@@ -39,7 +39,7 @@ class DeleteSubCategoryServiceSpec extends Specification {
         transactionRepository.existsBySubCategoryId(10L) >> true
 
         when:
-        service.execute(10L)
+        service.execute(1L, 10L)
 
         then:
         thrown(DomainException)
@@ -54,7 +54,7 @@ class DeleteSubCategoryServiceSpec extends Specification {
         subCategoryRepository.findById(20L) >> new SubCategory(20L, 0, systemCategory, "Fatura de Cartão", true, Instant.now(), null)
 
         when:
-        service.execute(20L)
+        service.execute(1L, 20L)
 
         then:
         thrown(DomainException)

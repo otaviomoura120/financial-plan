@@ -24,7 +24,7 @@ class UpdateBankAccountStatusServiceSpec extends Specification {
         bankAccountRepository.findById(10L) >> account
 
         when:
-        BankAccountResponse response = service.execute(10L, true)
+        BankAccountResponse response = service.execute(1L, 10L, true)
 
         then:
         response.active()
@@ -37,7 +37,7 @@ class UpdateBankAccountStatusServiceSpec extends Specification {
         bankAccountRepository.findById(10L) >> account
 
         when:
-        BankAccountResponse response = service.execute(10L, false)
+        BankAccountResponse response = service.execute(1L, 10L, false)
 
         then:
         !response.active()

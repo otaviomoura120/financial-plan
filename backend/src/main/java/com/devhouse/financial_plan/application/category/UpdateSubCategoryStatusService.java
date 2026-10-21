@@ -15,9 +15,9 @@ public class UpdateSubCategoryStatusService {
         this.subCategoryRepository = subCategoryRepository;
     }
 
-    public SubCategoryResponse execute(Long id, boolean active) {
+    public SubCategoryResponse execute(Long spaceId, Long id, boolean active) {
         SubCategory subCategory = subCategoryRepository.findById(id);
-        if (subCategory == null) {
+        if (subCategory == null || !subCategory.belongsToSpace(spaceId)) {
             throw new DomainException("Sub category not found");
         }
         if (subCategory.isSystem()) {

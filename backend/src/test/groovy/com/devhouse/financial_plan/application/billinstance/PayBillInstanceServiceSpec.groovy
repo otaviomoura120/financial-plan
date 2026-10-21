@@ -53,19 +53,21 @@ class PayBillInstanceServiceSpec extends Specification {
                 20L, 30L, new BigDecimal("150.00"), LocalDate.of(2026, 3, 9), "Pagamento de conta - Energy Bill", Instant.now(),
                 null, null, null)
         CreateTransactionRequest capturedRequest = null
-        createTransactionService.execute(_, TransactionSourceType.BILL_INSTANCE_PAYMENT, 1L) >> { CreateTransactionRequest req, srcType, srcId ->
+        User capturedPayer = null
+        createTransactionService.execute(1L, _, _, TransactionSourceType.BILL_INSTANCE_PAYMENT, 1L) >> { Long spaceId, User payer, CreateTransactionRequest req, srcType, srcId ->
             capturedRequest = req
+            capturedPayer = payer
             transactionResponse
         }
         billRepository.update(_) >> { Bill i -> i }
         PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
-        def response = service.execute(1L, request, "auth0|1")
+        def response = service.execute(1L, 1L, request, "auth0|1")
 
         then:
         capturedRequest.type() == TransactionType.EXPENSE
-        capturedRequest.userId() == 1L
+        capturedPayer.getId() == 1L
         capturedRequest.bankAccountId() == 2L
         capturedRequest.categoryId() == 20L
         capturedRequest.subCategoryId() == 30L
@@ -81,7 +83,7 @@ class PayBillInstanceServiceSpec extends Specification {
         PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
-        service.execute(99L, request, "auth0|1")
+        service.execute(1L, 99L, request, "auth0|1")
 
         then:
         thrown(DomainException)
@@ -95,7 +97,7 @@ class PayBillInstanceServiceSpec extends Specification {
         PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
-        service.execute(1L, request, "auth0|1")
+        service.execute(1L, 1L, request, "auth0|1")
 
         then:
         thrown(DomainException)
@@ -110,7 +112,7 @@ class PayBillInstanceServiceSpec extends Specification {
         PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
-        service.execute(1L, request, "auth0|unknown")
+        service.execute(1L, 1L, request, "auth0|unknown")
 
         then:
         thrown(DomainException)
@@ -124,10 +126,26 @@ class PayBillInstanceServiceSpec extends Specification {
         PayBillInstanceRequest request = new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9))
 
         when:
-        service.execute(1L, request, "auth0|1")
+        service.execute(1L, 1L, request, "auth0|1")
 
         then:
         thrown(DomainException)
         0 * createTransactionService.execute(*_)
+    }
+
+    def "execute rejects a bill that belongs to another space and creates no payment transaction"() {
+        given:
+        Category category = new Category(20L, 0, buildSpace(), "Utilities", CategoryKind.EXPENSE, true, Instant.now(), null)
+        billRepository.findById(1L) >> buildInstance(category, BillInstanceStatus.PENDING)
+        userRepository.findByAuth0Sub("auth0|1") >> buildUser()
+
+        when:
+        service.execute(2L, 1L, new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9)), "auth0|1")
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Bill instance not found"
+        0 * createTransactionService.execute(*_)
+        0 * billRepository.update(_)
     }
 }

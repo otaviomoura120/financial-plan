@@ -1,5 +1,7 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import org.springframework.web.bind.annotation.RequestHeader;
+import com.devhouse.financial_plan.infrastructure.security.SecurityService;
 import com.devhouse.financial_plan.application.billinstance.CreateBillInstanceService;
 import com.devhouse.financial_plan.application.billinstance.DeleteBillService;
 import com.devhouse.financial_plan.application.billinstance.ListBillInstancesService;
@@ -53,7 +55,7 @@ public class BillInstanceController {
 
     @GetMapping("/instances")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<BillInstanceResponse> list(@RequestParam Long spaceId,
+    public List<BillInstanceResponse> list(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId,
                                             @RequestParam(required = false) LocalDate from,
                                             @RequestParam(required = false) LocalDate to,
                                             Authentication authentication, HttpServletRequest request) {
@@ -63,35 +65,35 @@ public class BillInstanceController {
     @PostMapping("/instances")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BillInstanceResponse create(@RequestBody CreateBillInstanceRequest body, Authentication authentication, HttpServletRequest request) {
-        return createBillInstanceService.execute(body);
+    public BillInstanceResponse create(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody CreateBillInstanceRequest body, Authentication authentication, HttpServletRequest request) {
+        return createBillInstanceService.execute(spaceId, body);
     }
 
     @PutMapping("/instances/{id}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BillInstanceResponse update(@PathVariable Long id, @RequestBody UpdateBillInstanceRequest body,
+    public BillInstanceResponse update(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateBillInstanceRequest body,
                                         Authentication authentication, HttpServletRequest request) {
-        return updateBillService.execute(id, body);
+        return updateBillService.execute(spaceId, id, body);
     }
 
     @DeleteMapping("/instances/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deleteBillService.execute(id);
+    public void delete(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        deleteBillService.execute(spaceId, id);
     }
 
     @PostMapping("/instances/{id}/pay")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BillInstanceResponse pay(@PathVariable Long id, @RequestBody PayBillInstanceRequest body,
+    public BillInstanceResponse pay(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody PayBillInstanceRequest body,
                                      Authentication authentication, HttpServletRequest request) {
-        return payBillInstanceService.execute(id, body, authentication.getName());
+        return payBillInstanceService.execute(spaceId, id, body, authentication.getName());
     }
 
     @PostMapping("/instances/{id}/undo-payment")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void undoPayment(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        undoBillInstancePaymentService.execute(id);
+    public void undoPayment(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        undoBillInstancePaymentService.execute(spaceId, id);
     }
 }

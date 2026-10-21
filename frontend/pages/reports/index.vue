@@ -189,7 +189,6 @@ async function fetchInvoiceItems(transaction: TransactionResponse) {
   try {
     const items = await $fetch<CreditCardTransactionResponse[]>('/api/credit-card-transactions', {
       query: {
-        spaceId: spaceStore.activeSpace.id,
         creditCardId: transaction.sourceId,
         referenceMonth: transaction.creditCardInvoiceReferenceMonth,
       },
@@ -264,11 +263,9 @@ async function fetchFilterData() {
   isLoadingFilters.value = true
 
   try {
-    const spaceId = spaceStore.activeSpace.id
-
     const [bankAccountsResult, categoriesResult] = await Promise.all([
-      $fetch<BankAccountResponse[]>('/api/bank-accounts', { query: { spaceId } }),
-      $fetch<CategoryResponse[]>('/api/categories', { query: { spaceId } }),
+      $fetch<BankAccountResponse[]>('/api/bank-accounts'),
+      $fetch<CategoryResponse[]>('/api/categories'),
     ])
 
     bankAccounts.value = bankAccountsResult
@@ -302,7 +299,6 @@ async function generateReport() {
     report.value = await $fetch<ReportResponse>('/api/reports', {
       method: 'POST',
       body: {
-        spaceId: spaceStore.activeSpace.id,
         from: selectedMonth.value,
         to: lastDayOfMonthOf(selectedMonth.value),
         bankAccountId: bankAccountId.value,

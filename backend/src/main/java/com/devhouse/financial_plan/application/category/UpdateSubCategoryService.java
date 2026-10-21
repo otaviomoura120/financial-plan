@@ -18,9 +18,9 @@ public class UpdateSubCategoryService {
         this.categoryNameValidator = categoryNameValidator;
     }
 
-    public SubCategoryResponse execute(Long id, UpdateSubCategoryRequest request) {
+    public SubCategoryResponse execute(Long spaceId, Long id, UpdateSubCategoryRequest request) {
         SubCategory subCategory = subCategoryRepository.findById(id);
-        if (subCategory == null) {
+        if (subCategory == null || !subCategory.belongsToSpace(spaceId)) {
             throw new DomainException("Sub category not found");
         }
         if (subCategory.isSystem()) {

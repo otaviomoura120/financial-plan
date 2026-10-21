@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.infrastructure.security.SecurityService;
 import com.devhouse.financial_plan.application.creditcardtransaction.AnticipateCreditCardInstallmentsService;
 import com.devhouse.financial_plan.application.creditcardtransaction.CreateCreditCardTransactionService;
 import com.devhouse.financial_plan.application.creditcardtransaction.DeleteCreditCardTransactionService;
@@ -46,7 +47,7 @@ public class CreditCardTransactionController {
 
     @GetMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<CreditCardTransactionResponse> list(@RequestParam Long spaceId,
+    public List<CreditCardTransactionResponse> list(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId,
                                                       @RequestParam(required = false) Long creditCardId,
                                                       @RequestParam(required = false) Long categoryId,
                                                       @RequestParam(required = false) Long subCategoryId,
@@ -60,37 +61,39 @@ public class CreditCardTransactionController {
 
     @GetMapping("/installment-groups/{installmentGroupId}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<CreditCardTransactionResponse> listInstallmentGroup(@PathVariable String installmentGroupId,
+    public List<CreditCardTransactionResponse> listInstallmentGroup(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable String installmentGroupId,
                                                                       Authentication authentication, HttpServletRequest request) {
-        return listInstallmentGroupService.execute(installmentGroupId);
+        return listInstallmentGroupService.execute(spaceId, installmentGroupId);
     }
 
     @PostMapping("/installment-groups/{installmentGroupId}/anticipate")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<CreditCardTransactionResponse> anticipate(@PathVariable String installmentGroupId,
+    public List<CreditCardTransactionResponse> anticipate(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable String installmentGroupId,
                                                             @RequestBody AnticipateCreditCardInstallmentsRequest body,
                                                             Authentication authentication, HttpServletRequest request) {
-        return anticipateCreditCardInstallmentsService.execute(installmentGroupId, body.targetReferenceMonth(), body.installmentsToAnticipate());
+        return anticipateCreditCardInstallmentsService.execute(spaceId, installmentGroupId, body.targetReferenceMonth(), body.installmentsToAnticipate());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CreditCardTransactionResponse create(@RequestBody CreateCreditCardTransactionRequest body, Authentication authentication, HttpServletRequest request) {
-        return createCreditCardTransactionService.execute(body);
+    public CreditCardTransactionResponse create(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody CreateCreditCardTransactionRequest body,
+                                                Authentication authentication, HttpServletRequest request) {
+        return createCreditCardTransactionService.execute(spaceId, authentication.getName(), body);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CreditCardTransactionResponse update(@PathVariable Long id, @RequestBody UpdateCreditCardTransactionRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateCreditCardTransactionService.execute(id, body);
+    public CreditCardTransactionResponse update(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateCreditCardTransactionRequest body,
+                                                Authentication authentication, HttpServletRequest request) {
+        return updateCreditCardTransactionService.execute(spaceId, id, body);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void delete(@PathVariable Long id, @RequestParam(required = false, defaultValue = "false") boolean includeFuture,
+    public void delete(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestParam(required = false, defaultValue = "false") boolean includeFuture,
                         Authentication authentication, HttpServletRequest request) {
-        deleteCreditCardTransactionService.execute(id, includeFuture);
+        deleteCreditCardTransactionService.execute(spaceId, id, includeFuture);
     }
 }

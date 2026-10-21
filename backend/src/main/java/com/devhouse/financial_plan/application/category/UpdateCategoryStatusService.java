@@ -17,9 +17,9 @@ public class UpdateCategoryStatusService {
         this.categoryRepository = categoryRepository;
     }
 
-    public CategoryResponse execute(Long id, boolean active) {
+    public CategoryResponse execute(Long spaceId, Long id, boolean active) {
         Category category = categoryRepository.findById(id);
-        if (category == null) {
+        if (category == null || !category.belongsToSpace(spaceId)) {
             throw new DomainException("Category not found");
         }
         if (category.isSystem()) {

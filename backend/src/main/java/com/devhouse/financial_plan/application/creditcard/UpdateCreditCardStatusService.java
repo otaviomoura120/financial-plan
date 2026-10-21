@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcard;
 
+import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.application.creditcard.dto.CreditCardResponse;
 import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.CreditCard;
@@ -15,8 +16,8 @@ public class UpdateCreditCardStatusService {
         this.creditCardRepository = creditCardRepository;
     }
 
-    public CreditCardResponse execute(Long id, boolean active) {
-        CreditCard creditCard = creditCardRepository.findById(id);
+    public CreditCardResponse execute(Long spaceId, Long id, boolean active) {
+        CreditCard creditCard = resolveCreditCard(id, spaceId);
         if (active) {
             creditCard.activate();
         } else {
@@ -29,5 +30,13 @@ public class UpdateCreditCardStatusService {
                 updated.isActive(), updated.getCreatedDate(),
                 bankAccount != null ? bankAccount.getId() : null,
                 bankAccount != null ? bankAccount.getName() : null);
+    }
+
+    private CreditCard resolveCreditCard(Long id, Long spaceId) {
+        CreditCard creditCard = creditCardRepository.findById(id);
+        if (creditCard == null || !creditCard.belongsToSpace(spaceId)) {
+            throw new DomainException("Credit card not found");
+        }
+        return creditCard;
     }
 }

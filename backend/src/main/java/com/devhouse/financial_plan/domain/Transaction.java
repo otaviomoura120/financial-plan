@@ -127,6 +127,10 @@ public class Transaction {
         return sourceType != null;
     }
 
+    public boolean belongsToSpace(Long spaceId) {
+        return bankAccount != null && bankAccount.belongsToSpace(spaceId);
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

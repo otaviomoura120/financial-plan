@@ -52,7 +52,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emit>()
 
-const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
 function toLocalDateString(date: Date) {
@@ -190,7 +189,6 @@ async function onSubmit() {
       await $fetch<BillResponse>('/api/bills', {
         method: 'POST',
         body: {
-          spaceId: spaceStore.activeSpace!.id,
           name: name.value,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
@@ -204,7 +202,6 @@ async function onSubmit() {
       await $fetch('/api/bills/instances', {
         method: 'POST',
         body: {
-          spaceId: spaceStore.activeSpace!.id,
           name: name.value,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,

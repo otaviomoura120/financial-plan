@@ -17,8 +17,8 @@ public class CreateUserService {
         this.userRepository = userRepository;
     }
 
-    public UserResponse execute(CreateUserRequest request) {
-        User user = new User(null, 0, request.auth0Sub(), request.name(), request.nickname(),
+    public UserResponse execute(String auth0Sub, CreateUserRequest request) {
+        User user = new User(null, 0, auth0Sub, request.name(), request.nickname(),
                 request.profilePhoto(), request.observation(), request.birthdate(), request.email(),
                 request.phoneNumber(), true, request.genre(), request.maritalStatus(), Instant.now(), null, false);
         user.validate();

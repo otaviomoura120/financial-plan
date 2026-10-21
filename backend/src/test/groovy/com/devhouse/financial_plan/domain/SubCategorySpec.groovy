@@ -79,4 +79,21 @@ class SubCategorySpec extends Specification {
         !new SubCategory(11L, 0, normalCategory, "Restaurantes", true, Instant.now(), null).isSystem()
         !new SubCategory(12L, 0, null, "Órfã", true, Instant.now(), null).isSystem()
     }
+
+    def "belongsToSpace follows the space of the parent category"() {
+        given:
+        SubCategory subCategory = new SubCategory(10L, 0, buildCategory(), "Groceries", true, Instant.now(), null)
+
+        expect:
+        subCategory.belongsToSpace(1L)
+        !subCategory.belongsToSpace(2L)
+    }
+
+    def "belongsToSpace is false when the subcategory has no category"() {
+        given:
+        SubCategory subCategory = new SubCategory(10L, 0, null, "Groceries", true, Instant.now(), null)
+
+        expect:
+        !subCategory.belongsToSpace(1L)
+    }
 }

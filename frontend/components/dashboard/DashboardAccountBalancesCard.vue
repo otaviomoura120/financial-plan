@@ -35,9 +35,7 @@ async function fetchAccounts() {
   clearError()
 
   try {
-    accounts.value = await $fetch<BankAccountResponse[]>('/api/bank-accounts', {
-      query: { spaceId: props.spaceId },
-    })
+    accounts.value = await $fetch<BankAccountResponse[]>('/api/bank-accounts')
   }
   catch (e) {
     setError(e)

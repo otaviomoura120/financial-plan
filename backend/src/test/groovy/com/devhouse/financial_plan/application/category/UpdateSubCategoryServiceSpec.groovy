@@ -36,7 +36,7 @@ class UpdateSubCategoryServiceSpec extends Specification {
         subCategoryRepository.update(_) >> updated
 
         when:
-        SubCategoryResponse response = service.execute(10L, request)
+        SubCategoryResponse response = service.execute(1L, 10L, request)
 
         then:
         response.name() == "Supermarket"
@@ -52,7 +52,7 @@ class UpdateSubCategoryServiceSpec extends Specification {
         subCategoryRepository.findByCategoryId(1L) >> [subCategory]
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -70,7 +70,7 @@ class UpdateSubCategoryServiceSpec extends Specification {
         UpdateSubCategoryRequest request = new UpdateSubCategoryRequest(0, "restaurants")
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)
@@ -85,7 +85,7 @@ class UpdateSubCategoryServiceSpec extends Specification {
         UpdateSubCategoryRequest request = new UpdateSubCategoryRequest(0, "Outro nome")
 
         when:
-        service.execute(10L, request)
+        service.execute(1L, 10L, request)
 
         then:
         thrown(DomainException)

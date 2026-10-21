@@ -40,7 +40,7 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
     }
 
     private CreditCardTransaction buildExisting() {
-        Category category = new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), category, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 3, 1),
                 "group-1", 1, 1, false, null, Instant.now(), null)
@@ -52,13 +52,13 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         existing.setReferenceMonth(LocalDate.of(2026, 4, 1))
         creditCardTransactionRepository.findById(1L) >> existing
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
-        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(21L) >> new Category(21L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
         UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 5), "new desc", LocalDate.of(2026, 4, 1))
 
         when:
-        CreditCardTransactionResponse response = service.execute(1L, request)
+        CreditCardTransactionResponse response = service.execute(1L, 1L, request)
 
         then:
         response.referenceMonth() == LocalDate.of(2026, 4, 1)
@@ -69,13 +69,13 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         CreditCardTransaction existing = buildExisting()
         creditCardTransactionRepository.findById(1L) >> existing
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
-        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(21L) >> new Category(21L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
         UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 5), "new desc", LocalDate.of(2026, 4, 1))
 
         when:
-        CreditCardTransactionResponse response = service.execute(1L, request)
+        CreditCardTransactionResponse response = service.execute(1L, 1L, request)
 
         then:
         response.referenceMonth() == LocalDate.of(2026, 4, 1)
@@ -83,20 +83,20 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
 
     def "execute keeps a later installment on its own invoice when its reference month is sent back"() {
         given:
-        Category category = new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         CreditCardTransaction existing = new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), category, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 5, 1),
                 "group-1", 3, 12, false, null, Instant.now(), null)
         creditCardTransactionRepository.findById(1L) >> existing
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
-        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(21L) >> new Category(21L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> [existing]
         UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 5), "new desc", LocalDate.of(2026, 5, 1))
 
         when:
-        CreditCardTransactionResponse response = service.execute(1L, request)
+        CreditCardTransactionResponse response = service.execute(1L, 1L, request)
 
         then:
         response.referenceMonth() == LocalDate.of(2026, 5, 1)
@@ -107,12 +107,12 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         CreditCardTransaction existing = buildExisting()
         creditCardTransactionRepository.findById(1L) >> existing
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
-        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(21L) >> new Category(21L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 5), "new desc", LocalDate.of(2026, 9, 1))
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         DomainException exception = thrown(DomainException)
@@ -125,13 +125,13 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         CreditCardTransaction existing = buildExisting()
         creditCardTransactionRepository.findById(1L) >> existing
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> null
-        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(21L) >> new Category(21L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
         UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), "new desc", null)
 
         when:
-        CreditCardTransactionResponse response = service.execute(1L, request)
+        CreditCardTransactionResponse response = service.execute(1L, 1L, request)
 
         then:
         response.categoryId() == 21L
@@ -148,13 +148,13 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         CreditCardTransaction existing = buildExisting()
         creditCardTransactionRepository.findById(1L) >> existing
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> null
-        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(21L) >> new Category(21L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
         UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 4, 15), "new desc", null)
 
         when:
-        CreditCardTransactionResponse response = service.execute(1L, request)
+        CreditCardTransactionResponse response = service.execute(1L, 1L, request)
 
         then:
         response.purchaseDate() == LocalDate.of(2026, 4, 15)
@@ -164,13 +164,13 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
 
     def "execute computes totalAmount by summing the group when the installment belongs to a parceled purchase"() {
         given:
-        Category category = new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         CreditCardTransaction existing = new CreditCardTransaction(2L, 0, buildCreditCard(), null, buildUser(), category, null,
                 new BigDecimal("33.33"), false, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 4, 1),
                 "group-2", 2, 3, false, null, Instant.now(), null)
         creditCardTransactionRepository.findById(2L) >> existing
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 4, 1)) >> null
-        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(21L) >> new Category(21L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
         creditCardTransactionRepository.findByInstallmentGroupId("group-2") >> [
                 new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), category, null,
@@ -185,7 +185,7 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
                 new BigDecimal("33.33"), LocalDate.of(2026, 3, 10), "new desc", null)
 
         when:
-        CreditCardTransactionResponse response = service.execute(2L, request)
+        CreditCardTransactionResponse response = service.execute(1L, 2L, request)
 
         then:
         response.totalAmount() == new BigDecimal("100.00")
@@ -198,7 +198,7 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), "new desc", null)
 
         when:
-        service.execute(99L, request)
+        service.execute(1L, 99L, request)
 
         then:
         thrown(DomainException)
@@ -211,12 +211,12 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         creditCardTransactionRepository.findById(1L) >> existing
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> null
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 4, 1)) >> Mock(CreditCardInvoicePayment)
-        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(21L) >> new Category(21L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), "new desc", null)
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         thrown(DomainException)
@@ -225,19 +225,19 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
 
     def "execute keeps the reference month untouched for an anticipated transaction even when purchaseDate changes"() {
         given:
-        Category category = new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         CreditCardTransaction existing = new CreditCardTransaction(1L, 0, buildCreditCard(), null, buildUser(), category, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", LocalDate.of(2026, 5, 1),
                 "group-1", 1, 1, true, LocalDate.of(2026, 3, 1), Instant.now(), null)
         creditCardTransactionRepository.findById(1L) >> existing
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 5, 1)) >> null
-        categoryRepository.findById(21L) >> new Category(21L, 0, null, "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(21L) >> new Category(21L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Travel", CategoryKind.EXPENSE, true, Instant.now(), null)
         creditCardTransactionRepository.update(_) >> { CreditCardTransaction t -> t }
         UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 21L, null,
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), "new desc", null)
 
         when:
-        CreditCardTransactionResponse response = service.execute(1L, request)
+        CreditCardTransactionResponse response = service.execute(1L, 1L, request)
 
         then:
         response.purchaseDate() == LocalDate.of(2026, 3, 10)
@@ -253,7 +253,7 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), "new desc", null)
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         thrown(DomainException)
@@ -270,7 +270,7 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), "new desc", null)
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         thrown(DomainException)
@@ -286,10 +286,25 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
                 new BigDecimal("150.00"), LocalDate.of(2026, 3, 10), "new desc", null)
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         thrown(org.springframework.orm.ObjectOptimisticLockingFailureException)
+        0 * creditCardTransactionRepository.update(_)
+    }
+
+    def "execute rejects a credit card transaction that belongs to another space"() {
+        given:
+        creditCardTransactionRepository.findById(1L) >> buildExisting()
+        UpdateCreditCardTransactionRequest request = new UpdateCreditCardTransactionRequest(0, 20L, null,
+                new BigDecimal("80.00"), LocalDate.of(2026, 3, 5), "desc", null)
+
+        when:
+        service.execute(2L, 1L, request)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Credit card transaction not found"
         0 * creditCardTransactionRepository.update(_)
     }
 }

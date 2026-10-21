@@ -165,30 +165,33 @@ POST /categories     → add categories (and subcategories)
 ### 2. Recording a Transaction
 ```
 POST /transactions
-  body: { type, userId, bankAccountId, destinationBankAccountId, categoryId, subCategoryId, amount, transactionDate, description }
-  → CreateTransactionService validates that every referenced FK exists (userId, bankAccountId always;
-    destinationBankAccountId only for TRANSFER; categoryId only for INCOME/EXPENSE;
-    subCategoryId only when informed) → 422 DomainException if any is missing
+  header: X-Space-Id
+  body: { type, bankAccountId, destinationBankAccountId, categoryId, subCategoryId, amount, transactionDate, description }
+  → the author is the authenticated user (resolved from the Auth0 sub), never a userId from the body
+  → CreateTransactionService validates that every referenced FK exists and belongs to the X-Space-Id Space
+    (bankAccountId always; destinationBankAccountId only for TRANSFER; categoryId only for INCOME/EXPENSE;
+    subCategoryId only when informed) → 422 DomainException if any is missing or from another Space
   → Transaction.validate() checks required fields per type and amount > 0
   → TransactionBalanceEffectService.apply() credits/debits the bank account(s) involved (see transaction-balance-effect.md)
   → stored and returned as TransactionResponse (all inside one @Transactional boundary)
 
 Editing a transaction (PUT /transactions/{id}) reverts the old balance effect and re-applies the new one — same
-service, same rules for FK validation — so changing type/amount/bankAccountId/destinationBankAccountId always
+service, same rules for FK validation (the transaction itself must also belong to the X-Space-Id Space) — so changing type/amount/bankAccountId/destinationBankAccountId always
 leaves the affected bank account(s) with the correct resulting balance.
 ```
 
 ### 3. Financial Report
 ```
 POST /reports
-  body: { spaceId, from, to, userId?, bankAccountId?, categoryId?, subCategoryId?, type? }
-  → spaceId is required (422 DomainException if missing)
+  header: X-Space-Id
+  body: { from, to, userId?, bankAccountId?, categoryId?, subCategoryId?, type? }
+  → the Space comes from the header; a spaceId in the body is overwritten (ReportFilterRequest.scopedTo)
   → queries transactions matching all filters, scoped to bank accounts of that space
   → returns: { transactions[], totalIncome, totalExpense, balance,
                currentBalance, pendingCreditCardInvoices[], pendingCreditCardTotal,
                pendingBillInstances[], pendingBillTotal, projectedBalance }
 ```
-`spaceId` is mandatory and enforces multi-tenant isolation: `Transaction` has no `spaceId` column of its own (only
+The Space is mandatory and enforces multi-tenant isolation: `Transaction` has no `spaceId` column of its own (only
 `bankAccountId`), so `TransactionRepositoryImpl.findByFilter` restricts results with
 `bankAccountId IN (SELECT id FROM bank_accounts WHERE space_id = :spaceId)` — a report for one space can never
 return transactions whose bank account belongs to another space, regardless of the other filters supplied.

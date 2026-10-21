@@ -69,4 +69,22 @@ class BankAccountSpec extends Specification {
         where:
         amount << [BigDecimal.ZERO, new BigDecimal("-10.00"), null]
     }
+
+    def "belongsToSpace is true only for the space the account is associated with"() {
+        given:
+        BankAccount account = buildAccount(true)
+
+        expect:
+        account.belongsToSpace(1L)
+        !account.belongsToSpace(2L)
+        !account.belongsToSpace(null)
+    }
+
+    def "belongsToSpace is false when the account has no space"() {
+        given:
+        BankAccount account = new BankAccount(10L, 0, null, "Main Account", "BankCorp", BigDecimal.ZERO, true, Instant.now(), null)
+
+        expect:
+        !account.belongsToSpace(1L)
+    }
 }

@@ -45,14 +45,15 @@ public class UpdateCreditCardTransactionRecurringService {
     }
 
     @Transactional
-    public CreditCardTransactionRecurringResponse execute(Long id, UpdateCreditCardTransactionRecurringRequest request) {
+    public CreditCardTransactionRecurringResponse execute(Long spaceId, Long id,
+                                                          UpdateCreditCardTransactionRecurringRequest request) {
         CreditCardTransactionRecurring recurring = creditCardTransactionRecurringRepository.findById(id);
-        if (recurring == null) {
+        if (recurring == null || !recurring.belongsToSpace(spaceId)) {
             throw new DomainException("Credit card transaction recurring not found");
         }
         recurring.setVersion(request.version());
-        Category category = resolveCategory(request.categoryId());
-        SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        Category category = resolveCategory(request.categoryId(), spaceId);
+        SubCategory subCategory = resolveSubCategory(request.subCategoryId(), spaceId);
         SystemCategoryPolicy.rejectSystemSelection(category, subCategory);
         CategoryKindPolicy.requireExpense(category);
         recurring.update(category, subCategory, request.defaultAmount(), request.description());
@@ -96,23 +97,23 @@ public class UpdateCreditCardTransactionRecurringService {
         return purchaseMonth.atDay(dayOfMonth);
     }
 
-    private Category resolveCategory(Long categoryId) {
+    private Category resolveCategory(Long categoryId, Long spaceId) {
         if (categoryId == null) {
             return null;
         }
         Category category = categoryRepository.findById(categoryId);
-        if (category == null) {
+        if (category == null || !category.belongsToSpace(spaceId)) {
             throw new DomainException("Category not found");
         }
         return category;
     }
 
-    private SubCategory resolveSubCategory(Long subCategoryId) {
+    private SubCategory resolveSubCategory(Long subCategoryId, Long spaceId) {
         if (subCategoryId == null) {
             return null;
         }
         SubCategory subCategory = subCategoryRepository.findById(subCategoryId);
-        if (subCategory == null) {
+        if (subCategory == null || !subCategory.belongsToSpace(spaceId)) {
             throw new DomainException("Sub category not found");
         }
         return subCategory;

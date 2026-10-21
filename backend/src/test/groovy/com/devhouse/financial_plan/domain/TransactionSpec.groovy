@@ -192,4 +192,16 @@ class TransactionSpec extends Specification {
         transaction.getSourceType() == TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT
         transaction.getSourceId() == 99L
     }
+
+    def "belongsToSpace follows the space of the transaction bank account"() {
+        given:
+        Space space = new Space(1L, 0, "My Space", null, Instant.now(), null)
+        BankAccount account = new BankAccount(5L, 0, space, "Account", null, BigDecimal.ZERO, true, Instant.now(), null)
+        Transaction transaction = new Transaction(1L, 0, TransactionType.EXPENSE, buildUser(1L), account, null,
+                buildCategory(10L), null, new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
+
+        expect:
+        transaction.belongsToSpace(1L)
+        !transaction.belongsToSpace(2L)
+    }
 }

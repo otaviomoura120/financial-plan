@@ -29,7 +29,7 @@ class TransactionBalanceEffectServiceSpec extends Specification {
     }
 
     private Category buildCategoryObj(Long id) {
-        id == null ? null : new Category(id, 0, null, "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
+        id == null ? null : new Category(id, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private Transaction buildTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId) {

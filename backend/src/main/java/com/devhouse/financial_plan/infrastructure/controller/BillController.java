@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.infrastructure.security.SecurityService;
 import com.devhouse.financial_plan.application.bill.CreateBillService;
 import com.devhouse.financial_plan.application.bill.DeleteBillRecurringService;
 import com.devhouse.financial_plan.application.bill.ListBillsService;
@@ -34,27 +35,27 @@ public class BillController {
 
     @GetMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<BillResponse> list(@RequestParam Long spaceId, Authentication authentication, HttpServletRequest request) {
+    public List<BillResponse> list(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, Authentication authentication, HttpServletRequest request) {
         return listBillsService.execute(spaceId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BillResponse create(@RequestBody CreateBillRequest body, Authentication authentication, HttpServletRequest request) {
-        return createBillService.execute(body);
+    public BillResponse create(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody CreateBillRequest body, Authentication authentication, HttpServletRequest request) {
+        return createBillService.execute(spaceId, body);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BillResponse update(@PathVariable Long id, @RequestBody UpdateBillRecurringRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateBillRecurringService.execute(id, body);
+    public BillResponse update(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateBillRecurringRequest body, Authentication authentication, HttpServletRequest request) {
+        return updateBillRecurringService.execute(spaceId, id, body);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deleteBillRecurringService.execute(id);
+    public void delete(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        deleteBillRecurringService.execute(spaceId, id);
     }
 }

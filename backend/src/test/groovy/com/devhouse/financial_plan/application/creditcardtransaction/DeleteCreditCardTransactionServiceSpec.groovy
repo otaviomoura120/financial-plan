@@ -29,7 +29,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
         CreditCard creditCard = new CreditCard(10L, 0, space, null, "Nubank", new BigDecimal("5000.00"), 10, 17, true, Instant.now(), null)
         User user = new User(1L, 0, "auth0|1", "User 1", null, null, null, null, "user1@test.com", null, true,
                 null, null, Instant.now(), null, false)
-        Category category = new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+        Category category = new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
         new CreditCardTransaction(id, 0, creditCard, null, user, category, null,
                 new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", referenceMonth,
                 groupId, installmentNumber, totalInstallments, false, null, Instant.now(), null)
@@ -41,7 +41,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> null
 
         when:
-        service.execute(1L, false)
+        service.execute(1L, 1L, false)
 
         then:
         1 * creditCardTransactionRepository.delete(1L)
@@ -52,7 +52,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
         creditCardTransactionRepository.findById(99L) >> null
 
         when:
-        service.execute(99L, false)
+        service.execute(1L, 99L, false)
 
         then:
         thrown(DomainException)
@@ -65,7 +65,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> Mock(CreditCardInvoicePayment)
 
         when:
-        service.execute(1L, false)
+        service.execute(1L, 1L, false)
 
         then:
         thrown(DomainException)
@@ -78,7 +78,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> null
 
         when:
-        service.execute(1L, true)
+        service.execute(1L, 1L, true)
 
         then:
         0 * creditCardTransactionRepository.findByInstallmentGroupId(_)
@@ -98,7 +98,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 4, 1)) >> null
 
         when:
-        service.execute(2L, true)
+        service.execute(1L, 2L, true)
 
         then:
         0 * creditCardTransactionRepository.delete(1L)
@@ -119,7 +119,7 @@ class DeleteCreditCardTransactionServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 3, 1)) >> Mock(CreditCardInvoicePayment)
 
         when:
-        service.execute(1L, true)
+        service.execute(1L, 1L, true)
 
         then:
         thrown(DomainException)

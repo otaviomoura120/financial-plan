@@ -25,7 +25,7 @@ class UpdateCategoryStatusServiceSpec extends Specification {
         categoryRepository.findById(10L) >> category
 
         when:
-        CategoryResponse response = service.execute(10L, true)
+        CategoryResponse response = service.execute(1L, 10L, true)
 
         then:
         response.active()
@@ -38,7 +38,7 @@ class UpdateCategoryStatusServiceSpec extends Specification {
         categoryRepository.findById(10L) >> category
 
         when:
-        CategoryResponse response = service.execute(10L, false)
+        CategoryResponse response = service.execute(1L, 10L, false)
 
         then:
         !response.active()

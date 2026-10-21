@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.infrastructure.security.SecurityService;
 import com.devhouse.financial_plan.application.report.GenerateCategoryReportService;
 import com.devhouse.financial_plan.application.report.GenerateReportService;
 import com.devhouse.financial_plan.application.report.dto.CategoryReportFilterRequest;
@@ -25,13 +26,13 @@ public class ReportController {
 
     @PostMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public ReportResponse generate(@RequestBody ReportFilterRequest body, Authentication authentication, HttpServletRequest request) {
-        return generateReportService.execute(body);
+    public ReportResponse generate(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody ReportFilterRequest body, Authentication authentication, HttpServletRequest request) {
+        return generateReportService.execute(spaceId, body);
     }
 
     @PostMapping("/by-category")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CategoryReportResponse generateByCategory(@RequestBody CategoryReportFilterRequest body, Authentication authentication, HttpServletRequest request) {
-        return generateCategoryReportService.execute(body);
+    public CategoryReportResponse generateByCategory(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody CategoryReportFilterRequest body, Authentication authentication, HttpServletRequest request) {
+        return generateCategoryReportService.execute(spaceId, body);
     }
 }

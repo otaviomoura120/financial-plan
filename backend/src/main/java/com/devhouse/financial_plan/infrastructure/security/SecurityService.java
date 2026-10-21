@@ -20,6 +20,8 @@ import java.util.Set;
 @Service("securityService")
 public class SecurityService {
 
+    public static final String SPACE_HEADER = "X-Space-Id";
+
     private final UserRepository userRepository;
     private final SpaceMemberRepository spaceMemberRepository;
     private final RoleEndpointPermissionRepository roleEndpointPermissionRepository;
@@ -50,12 +52,11 @@ public class SecurityService {
             return user.isMasterAdmin();
         }
 
-        String spaceIdHeader = request.getHeader("X-Space-Id");
-        if (spaceIdHeader == null) {
+        Long spaceId = parseSpaceHeader(request.getHeader(SPACE_HEADER));
+        if (spaceId == null) {
             return false;
         }
 
-        Long spaceId = Long.parseLong(spaceIdHeader);
         SpaceMember membership = spaceMemberRepository.findBySpaceIdAndUserId(spaceId, user.getId());
         if (membership == null) {
             return false;
@@ -111,6 +112,17 @@ public class SecurityService {
         User user = userRepository.findByAuth0Sub(authentication.getName());
 
         return user != null && user.getId().equals(userId);
+    }
+
+    private Long parseSpaceHeader(String spaceIdHeader) {
+        if (spaceIdHeader == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(spaceIdHeader.trim());
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 
     private boolean isInternalManagementRequest(String method, String path) {

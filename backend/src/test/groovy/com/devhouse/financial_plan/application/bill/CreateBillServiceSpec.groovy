@@ -38,11 +38,11 @@ class CreateBillServiceSpec extends Specification {
         spaceRepository.findById(1L) >> buildSpace()
         billRecurringRepository.save(_) >> { BillRecurring b -> new BillRecurring(10L, 0, b.space, b.name, b.category,
                 b.subCategory, b.defaultAmount, b.startDate, b.endDate, b.installments, b.active, b.createdDate, b.updatedDate) }
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, null, new BigDecimal("150.00"),
+        CreateBillRequest request = new CreateBillRequest("Energy Bill", null, null, new BigDecimal("150.00"),
                 LocalDate.of(2026, 3, 10), null, null)
 
         when:
-        BillResponse response = service.execute(request)
+        BillResponse response = service.execute(1L, request)
 
         then:
         response.id() == 10L
@@ -55,11 +55,11 @@ class CreateBillServiceSpec extends Specification {
         BillRecurring saved = null
         billRecurringRepository.save(_) >> { BillRecurring b -> saved = new BillRecurring(10L, 0, b.space, b.name, b.category,
                 b.subCategory, b.defaultAmount, b.startDate, b.endDate, b.installments, b.active, b.createdDate, b.updatedDate) }
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, null, new BigDecimal("150.00"),
+        CreateBillRequest request = new CreateBillRequest("Energy Bill", null, null, new BigDecimal("150.00"),
                 LocalDate.of(2026, 3, 10), null, 6)
 
         when:
-        BillResponse response = service.execute(request)
+        BillResponse response = service.execute(1L, request)
 
         then:
         1 * ensureRecurringBillsGeneratedService.executeForRecurring({ BillRecurring it -> it.id == 10L && it.installments == 6 })
@@ -69,11 +69,11 @@ class CreateBillServiceSpec extends Specification {
     def "execute rejects a recurrence defining both end date and installments"() {
         given:
         spaceRepository.findById(1L) >> buildSpace()
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, null, new BigDecimal("150.00"),
+        CreateBillRequest request = new CreateBillRequest("Energy Bill", null, null, new BigDecimal("150.00"),
                 LocalDate.of(2026, 3, 10), LocalDate.of(2026, 12, 10), 6)
 
         when:
-        service.execute(request)
+        service.execute(1L, request)
 
         then:
         thrown(DomainException)
@@ -89,11 +89,11 @@ class CreateBillServiceSpec extends Specification {
         subCategoryRepository.findById(30L) >> subCategory
         billRecurringRepository.save(_) >> { BillRecurring b -> new BillRecurring(10L, 0, b.space, b.name, b.category,
                 b.subCategory, b.defaultAmount, b.startDate, b.endDate, b.installments, b.active, b.createdDate, b.updatedDate) }
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", 20L, 30L, new BigDecimal("150.00"),
+        CreateBillRequest request = new CreateBillRequest("Energy Bill", 20L, 30L, new BigDecimal("150.00"),
                 LocalDate.of(2026, 3, 10), null, null)
 
         when:
-        BillResponse response = service.execute(request)
+        BillResponse response = service.execute(1L, request)
 
         then:
         response.categoryId() == 20L
@@ -103,11 +103,11 @@ class CreateBillServiceSpec extends Specification {
     def "execute throws DomainException when space does not exist"() {
         given:
         spaceRepository.findById(1L) >> null
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, null, new BigDecimal("150.00"),
+        CreateBillRequest request = new CreateBillRequest("Energy Bill", null, null, new BigDecimal("150.00"),
                 LocalDate.of(2026, 3, 10), null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, request)
 
         then:
         thrown(DomainException)
@@ -118,11 +118,11 @@ class CreateBillServiceSpec extends Specification {
         given:
         spaceRepository.findById(1L) >> buildSpace()
         categoryRepository.findById(20L) >> null
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", 20L, null, new BigDecimal("150.00"),
+        CreateBillRequest request = new CreateBillRequest("Energy Bill", 20L, null, new BigDecimal("150.00"),
                 LocalDate.of(2026, 3, 10), null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, request)
 
         then:
         thrown(DomainException)
@@ -133,11 +133,11 @@ class CreateBillServiceSpec extends Specification {
         given:
         spaceRepository.findById(1L) >> buildSpace()
         subCategoryRepository.findById(30L) >> null
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", null, 30L, new BigDecimal("150.00"),
+        CreateBillRequest request = new CreateBillRequest("Energy Bill", null, 30L, new BigDecimal("150.00"),
                 LocalDate.of(2026, 3, 10), null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, request)
 
         then:
         thrown(DomainException)
@@ -149,11 +149,11 @@ class CreateBillServiceSpec extends Specification {
         spaceRepository.findById(1L) >> buildSpace()
         categoryRepository.findById(21L) >> new Category(21L, 0, buildSpace(), "Salário", CategoryKind.INCOME, true,
                 Instant.now(), null)
-        CreateBillRequest request = new CreateBillRequest(1L, "Energy Bill", 21L, null, new BigDecimal("150.00"),
+        CreateBillRequest request = new CreateBillRequest("Energy Bill", 21L, null, new BigDecimal("150.00"),
                 LocalDate.of(2026, 3, 10), null, null)
 
         when:
-        service.execute(request)
+        service.execute(1L, request)
 
         then:
         DomainException exception = thrown()

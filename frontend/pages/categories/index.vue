@@ -103,9 +103,7 @@ async function fetchCategories() {
   clearError()
 
   try {
-    categories.value = await $fetch<CategoryResponse[]>('/api/categories', {
-      query: { spaceId: spaceStore.activeSpace.id },
-    })
+    categories.value = await $fetch<CategoryResponse[]>('/api/categories')
   }
   catch (e) {
     setError(e)

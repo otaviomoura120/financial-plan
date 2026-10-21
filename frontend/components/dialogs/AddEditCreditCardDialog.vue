@@ -78,9 +78,7 @@ async function fetchBankAccounts() {
   isLoadingBankAccounts.value = true
 
   try {
-    bankAccounts.value = await $fetch<BankAccountResponse[]>('/api/bank-accounts', {
-      query: { spaceId: spaceStore.activeSpace.id },
-    })
+    bankAccounts.value = await $fetch<BankAccountResponse[]>('/api/bank-accounts')
   }
   finally {
     isLoadingBankAccounts.value = false
@@ -136,7 +134,6 @@ async function onSubmit() {
       saved = await $fetch<CreditCardResponse>('/api/credit-cards', {
         method: 'POST',
         body: {
-          spaceId: spaceStore.activeSpace!.id,
           ...commonBody,
         },
       })

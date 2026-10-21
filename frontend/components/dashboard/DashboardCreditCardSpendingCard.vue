@@ -122,9 +122,9 @@ async function fetchCards() {
     const to = toLocalDateString(new Date(now.getFullYear(), now.getMonth() + 2, 0))
 
     const [cardsResult, invoicesResult] = await Promise.all([
-      $fetch<CreditCardResponse[]>('/api/credit-cards', { query: { spaceId: props.spaceId } }),
+      $fetch<CreditCardResponse[]>('/api/credit-cards'),
       $fetch<CreditCardInvoiceResponse[]>('/api/credit-cards/invoices', {
-        query: { spaceId: props.spaceId, from, to },
+        query: { from, to },
       }),
     ])
 

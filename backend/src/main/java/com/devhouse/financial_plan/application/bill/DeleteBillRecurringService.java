@@ -23,9 +23,9 @@ public class DeleteBillRecurringService {
     }
 
     @Transactional
-    public void execute(Long id) {
+    public void execute(Long spaceId, Long id) {
         BillRecurring billRecurring = billRecurringRepository.findById(id);
-        if (billRecurring == null) {
+        if (billRecurring == null || !billRecurring.belongsToSpace(spaceId)) {
             throw new DomainException("Bill recurring not found");
         }
         removeFutureAndDetachPastBills(id);

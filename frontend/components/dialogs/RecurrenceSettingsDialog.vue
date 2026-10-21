@@ -79,9 +79,7 @@ async function fetchBillRecurrings() {
   clearError()
 
   try {
-    billRecurrings.value = await $fetch<BillResponse[]>('/api/bills', {
-      query: { spaceId: spaceStore.activeSpace.id },
-    })
+    billRecurrings.value = await $fetch<BillResponse[]>('/api/bills')
   }
   catch (e) {
     setError(e)

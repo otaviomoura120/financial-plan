@@ -26,15 +26,15 @@ public class CreateCategoryService {
         this.categoryNameValidator = categoryNameValidator;
     }
 
-    public CategoryResponse execute(CreateCategoryRequest request) {
-        Space space = spaceRepository.findById(request.spaceId());
+    public CategoryResponse execute(Long spaceId, CreateCategoryRequest request) {
+        Space space = spaceRepository.findById(spaceId);
         if (space == null) {
             throw new DomainException("Space not found");
         }
         Category category = new Category(null, 0, space, request.name(), request.kind(), true, Instant.now(), null);
         category.validate();
         categoryNameValidator.rejectReservedName(request.name());
-        categoryNameValidator.rejectDuplicatedCategoryName(request.spaceId(), request.name(), null);
+        categoryNameValidator.rejectDuplicatedCategoryName(spaceId, request.name(), null);
         Category saved = categoryRepository.save(category);
         return new CategoryResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.getKind(),
                 saved.isActive(), saved.isSystem(), List.of());

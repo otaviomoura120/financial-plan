@@ -35,7 +35,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
     }
 
     private Category buildCategory() {
-        new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+        new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private CreditCardTransaction buildInstallment(Integer number, Integer total, LocalDate referenceMonth,
@@ -57,7 +57,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 1, 1)) >> null
 
         when:
-        List<CreditCardTransactionResponse> responses = service.execute("group-1", LocalDate.of(2026, 1, 1), 2)
+        List<CreditCardTransactionResponse> responses = service.execute(1L, "group-1", LocalDate.of(2026, 1, 1), 2)
 
         then:
         2 * creditCardTransactionRepository.update(_)
@@ -84,7 +84,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("missing") >> []
 
         when:
-        service.execute("missing", LocalDate.of(2026, 1, 1), 1)
+        service.execute(1L, "missing", LocalDate.of(2026, 1, 1), 1)
 
         then:
         thrown(DomainException)
@@ -101,7 +101,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 1, 1)) >> Mock(CreditCardInvoicePayment)
 
         when:
-        service.execute("group-1", LocalDate.of(2026, 1, 1), 1)
+        service.execute(1L, "group-1", LocalDate.of(2026, 1, 1), 1)
 
         then:
         thrown(DomainException)
@@ -118,7 +118,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 1, 1)) >> null
 
         when:
-        service.execute("group-1", LocalDate.of(2026, 1, 1), 5)
+        service.execute(1L, "group-1", LocalDate.of(2026, 1, 1), 5)
 
         then:
         thrown(DomainException)
@@ -131,7 +131,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> group
 
         when:
-        service.execute("group-1", LocalDate.of(2026, 1, 1), installmentsToAnticipate)
+        service.execute(1L, "group-1", LocalDate.of(2026, 1, 1), installmentsToAnticipate)
 
         then:
         thrown(DomainException)
@@ -152,7 +152,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(10L, LocalDate.of(2026, 1, 1)) >> null
 
         when:
-        List<CreditCardTransactionResponse> responses = service.execute("group-1", LocalDate.of(2026, 1, 1), 1)
+        List<CreditCardTransactionResponse> responses = service.execute(1L, "group-1", LocalDate.of(2026, 1, 1), 1)
 
         then:
         1 * creditCardTransactionRepository.update(_)
@@ -161,5 +161,20 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         responses[2].originalReferenceMonth() == LocalDate.of(2026, 3, 1)
         responses[1].referenceMonth() == LocalDate.of(2026, 2, 1)
         !responses[1].anticipated()
+    }
+
+    def "execute rejects an installment group whose credit card belongs to another space"() {
+        given:
+        creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> [
+                buildInstallment(1, 2, LocalDate.of(2026, 1, 1)),
+                buildInstallment(2, 2, LocalDate.of(2026, 2, 1))]
+
+        when:
+        service.execute(2L, "group-1", LocalDate.of(2026, 1, 1), 1)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Installment group not found"
+        0 * creditCardTransactionRepository.update(_)
     }
 }

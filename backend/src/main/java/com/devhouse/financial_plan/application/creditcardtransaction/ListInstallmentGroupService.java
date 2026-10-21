@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcardtransaction;
 
+import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse;
 import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
@@ -20,8 +21,11 @@ public class ListInstallmentGroupService {
         this.creditCardTransactionRepository = creditCardTransactionRepository;
     }
 
-    public List<CreditCardTransactionResponse> execute(String installmentGroupId) {
+    public List<CreditCardTransactionResponse> execute(Long spaceId, String installmentGroupId) {
         List<CreditCardTransaction> group = creditCardTransactionRepository.findByInstallmentGroupId(installmentGroupId);
+        if (!group.isEmpty() && !group.get(0).belongsToSpace(spaceId)) {
+            throw new DomainException("Installment group not found");
+        }
         BigDecimal totalAmount = group.stream().map(CreditCardTransaction::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
         return group.stream()
                 .sorted(Comparator.comparing(CreditCardTransaction::getInstallmentNumber))

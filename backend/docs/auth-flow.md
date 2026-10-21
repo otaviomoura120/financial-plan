@@ -96,7 +96,17 @@ allowedPermissions.anyMatch(p -> p.matchesRequest(method, path))
         └─ match found  →  allow (true)
 ```
 
-**Important:** only the role the user holds in the space indicated by `X-Space-Id` is considered. A role the user holds in a different space does not grant access here.
+**Important:** only the role the user holds in the space indicated by `X-Space-Id` is considered. A role the user holds in a different space does not grant access here. A header that is missing or not a number denies access (`false`) instead of raising an error.
+
+### The header is the only source of the Space for data endpoints
+
+Validating membership of the `X-Space-Id` Space is only half of the guarantee: the use case must then operate **on that same Space**. Data controllers (bank accounts, categories/subcategories, credit cards, credit card transactions and recurrings, invoices, bills and bill instances, transactions, reports) therefore receive the Space with `@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId` and pass it to the service; they no longer accept `spaceId` as a query param or in a request body (report filters keep the field, but `scopedTo(spaceId)` overwrites it with the header value).
+
+Every service that receives an entity id (path variable or body reference such as `bankAccountId`, `categoryId`, `subCategoryId`, `creditCardId`, `installmentGroupId`) loads the entity and checks `belongsToSpace(spaceId)` on the domain model. An entity of another Space is reported exactly like a missing one (`DomainException` "... not found", 422), so ids from other Spaces cannot be probed. Ownership is resolved through the aggregate: `SubCategory` → `Category`, `Transaction` → `BankAccount`, `CreditCardTransaction`/`CreditCardTransactionRecurring`/`CreditCardInvoicePayment` → `CreditCard`.
+
+The author of a transaction, credit card transaction or recurring is always the authenticated user (`authentication.getName()` → `UserRepository.findByAuth0Sub`), never a `userId` from the body. `POST /users` likewise takes `auth0Sub` from the JWT.
+
+Endpoints that still receive a `spaceId` directly (`/roles?spaceId=`, `/roles/{id}/assign-user/{userId}?spaceId=`, `/spaces/{id}/...`, `/menu-structure`, `/dashboard-widgets`) validate membership of that same id (`userHasPermissionInSpace(#spaceId)` or a membership lookup in the service), so they are not affected.
 
 ---
 
@@ -189,12 +199,13 @@ Access is granted or denied via **`RoleEndpointPermission`** — a join entity b
 
 ## Frontend → Backend: X-Space-Id Header
 
-All frontend requests to the backend include the `X-Space-Id` header set to the ID of the space the user is currently working in. This is managed in two places:
+All frontend requests to the backend include the `X-Space-Id` header set to the ID of the space the user is currently working in. This is managed in three places:
 
-- **`utils/api.ts`** (`$api` fetch instance) — reads `activeSpaceId` from the cookie and adds the header for legacy client-side calls.
-- **`server/utils/backendHeaders.ts`** (`buildBackendHeaders`) — Nitro utility that reads `activeSpaceId` from the cookie server-side and returns the headers object used by all Nitro server routes.
+- **`plugins/space-header.client.ts`** — wraps the global `$fetch` so every client call to `/api/*` carries `X-Space-Id` from `useSpaceStore().activeSpace`, i.e. the Space **this tab** is showing.
+- **`server/utils/backendHeaders.ts`** (`buildBackendHeaders`) — Nitro utility used by all server routes. It forwards the `X-Space-Id` sent by the tab and falls back to the `activeSpaceId` cookie only when the request has none (SSR). Non-numeric values are dropped.
+- **`utils/api.ts`** (`$api` fetch instance) — legacy client-side helper that reads `activeSpaceId` from the cookie.
 
-The active space ID is persisted in the `activeSpaceId` cookie by `useSpaceStore.setActiveSpace()` whenever the user switches spaces.
+The active space ID is persisted in the `activeSpaceId` cookie by `useSpaceStore.setActiveSpace()` whenever the user switches spaces. The cookie is shared by every tab, which is why the per-tab header takes precedence: otherwise a tab still showing Space A would read and write Space B after another tab switched to it. Since the backend takes the Space exclusively from this header, the frontend no longer sends `spaceId` in query params or bodies of data endpoints.
 
 ---
 

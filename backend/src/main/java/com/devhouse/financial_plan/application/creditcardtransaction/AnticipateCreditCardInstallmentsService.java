@@ -27,9 +27,10 @@ public class AnticipateCreditCardInstallmentsService {
     }
 
     @Transactional
-    public List<CreditCardTransactionResponse> execute(String installmentGroupId, LocalDate targetReferenceMonth, Integer installmentsToAnticipate) {
+    public List<CreditCardTransactionResponse> execute(Long spaceId, String installmentGroupId, LocalDate targetReferenceMonth,
+                                                       Integer installmentsToAnticipate) {
         List<CreditCardTransaction> group = creditCardTransactionRepository.findByInstallmentGroupId(installmentGroupId);
-        if (group.isEmpty()) {
+        if (group.isEmpty() || !group.get(0).belongsToSpace(spaceId)) {
             throw new DomainException("Installment group not found");
         }
         if (installmentsToAnticipate == null || installmentsToAnticipate <= 0) {

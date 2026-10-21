@@ -29,7 +29,7 @@ class DeleteCategoryServiceSpec extends Specification {
         transactionRepository.existsByCategoryId(10L) >> false
 
         when:
-        service.execute(10L)
+        service.execute(1L, 10L)
 
         then:
         1 * categoryRepository.delete(10L)
@@ -40,7 +40,7 @@ class DeleteCategoryServiceSpec extends Specification {
         subCategoryRepository.existsByCategoryId(10L) >> true
 
         when:
-        service.execute(10L)
+        service.execute(1L, 10L)
 
         then:
         thrown(DomainException)
@@ -54,7 +54,7 @@ class DeleteCategoryServiceSpec extends Specification {
         transactionRepository.existsByCategoryId(10L) >> true
 
         when:
-        service.execute(10L)
+        service.execute(1L, 10L)
 
         then:
         thrown(DomainException)
@@ -68,7 +68,7 @@ class DeleteCategoryServiceSpec extends Specification {
         categoryRepository.findById(20L) >> new Category(20L, 0, space, "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
 
         when:
-        service.execute(20L)
+        service.execute(1L, 20L)
 
         then:
         thrown(DomainException)

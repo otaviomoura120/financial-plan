@@ -17,9 +17,9 @@ public class DeleteSubCategoryService {
         this.transactionRepository = transactionRepository;
     }
 
-    public void execute(Long id) {
+    public void execute(Long spaceId, Long id) {
         SubCategory subCategory = subCategoryRepository.findById(id);
-        if (subCategory == null) {
+        if (subCategory == null || !subCategory.belongsToSpace(spaceId)) {
             throw new DomainException("Sub category not found");
         }
         if (subCategory.isSystem()) {

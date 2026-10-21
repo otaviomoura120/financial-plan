@@ -59,7 +59,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emit>()
 
-const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
 function toLocalDateString(date: Date) {
@@ -216,7 +215,6 @@ async function onSubmit() {
       saved = await $fetch<TransactionResponse>('/api/transactions', {
         method: 'POST',
         body: {
-          userId: spaceStore.dbUser!.id,
           ...commonBody,
         },
       })

@@ -61,7 +61,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emit>()
 
-const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
 function toLocalDateString(date: Date) {
@@ -294,7 +293,6 @@ async function onSubmit() {
         method: 'POST',
         body: {
           creditCardId: props.creditCardId,
-          userId: spaceStore.dbUser!.id,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
           description: description.value || undefined,
@@ -330,7 +328,6 @@ async function onSubmit() {
         method: 'POST',
         body: {
           creditCardId: props.creditCardId,
-          userId: spaceStore.dbUser!.id,
           categoryId: categoryId.value,
           subCategoryId: subCategoryId.value,
           amount: amount.value,

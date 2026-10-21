@@ -22,9 +22,9 @@ public class DeleteCreditCardTransactionService {
     }
 
     @Transactional
-    public void execute(Long id, boolean includeFuture) {
+    public void execute(Long spaceId, Long id, boolean includeFuture) {
         CreditCardTransaction transaction = creditCardTransactionRepository.findById(id);
-        if (transaction == null) {
+        if (transaction == null || !transaction.belongsToSpace(spaceId)) {
             throw new DomainException("Credit card transaction not found");
         }
 

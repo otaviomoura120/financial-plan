@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.infrastructure.security.SecurityService;
 import com.devhouse.financial_plan.application.creditcard.CreateCreditCardService;
 import com.devhouse.financial_plan.application.creditcard.DeleteCreditCardService;
 import com.devhouse.financial_plan.application.creditcard.ListCreditCardsService;
@@ -39,33 +40,36 @@ public class CreditCardController {
 
     @GetMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<CreditCardResponse> list(@RequestParam Long spaceId, Authentication authentication, HttpServletRequest request) {
+    public List<CreditCardResponse> list(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, Authentication authentication, HttpServletRequest request) {
         return listCreditCardsService.execute(spaceId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CreditCardResponse create(@RequestBody CreateCreditCardRequest body, Authentication authentication, HttpServletRequest request) {
-        return createCreditCardService.execute(body);
+    public CreditCardResponse create(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody CreateCreditCardRequest body,
+                                     Authentication authentication, HttpServletRequest request) {
+        return createCreditCardService.execute(spaceId, body);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CreditCardResponse update(@PathVariable Long id, @RequestBody UpdateCreditCardRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateCreditCardService.execute(id, body);
+    public CreditCardResponse update(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateCreditCardRequest body,
+                                     Authentication authentication, HttpServletRequest request) {
+        return updateCreditCardService.execute(spaceId, id, body);
     }
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public CreditCardResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateCreditCardStatusService.execute(id, Boolean.TRUE.equals(body.active()));
+    public CreditCardResponse updateStatus(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateStatusRequest body,
+                                           Authentication authentication, HttpServletRequest request) {
+        return updateCreditCardStatusService.execute(spaceId, id, Boolean.TRUE.equals(body.active()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deleteCreditCardService.execute(id);
+    public void delete(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        deleteCreditCardService.execute(spaceId, id);
     }
 }

@@ -28,7 +28,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emit>()
 
-const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
@@ -82,7 +81,6 @@ async function onSubmit() {
       saved = await $fetch<BankAccountResponse>('/api/bank-accounts', {
         method: 'POST',
         body: {
-          spaceId: spaceStore.activeSpace!.id,
           name: name.value,
           bankName: bankName.value,
           initialBalance: initialBalance.value,

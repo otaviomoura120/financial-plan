@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.controller;
 
+import com.devhouse.financial_plan.infrastructure.security.SecurityService;
 import com.devhouse.financial_plan.application.bankaccount.CreateBankAccountService;
 import com.devhouse.financial_plan.application.bankaccount.DeleteBankAccountService;
 import com.devhouse.financial_plan.application.bankaccount.ListBankAccountsService;
@@ -39,33 +40,36 @@ public class BankAccountController {
 
     @GetMapping
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public List<BankAccountResponse> list(@RequestParam Long spaceId, Authentication authentication, HttpServletRequest request) {
+    public List<BankAccountResponse> list(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, Authentication authentication, HttpServletRequest request) {
         return listBankAccountsService.execute(spaceId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BankAccountResponse create(@RequestBody CreateBankAccountRequest body, Authentication authentication, HttpServletRequest request) {
-        return createBankAccountService.execute(body);
+    public BankAccountResponse create(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @RequestBody CreateBankAccountRequest body,
+                                      Authentication authentication, HttpServletRequest request) {
+        return createBankAccountService.execute(spaceId, body);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BankAccountResponse update(@PathVariable Long id, @RequestBody UpdateBankAccountRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateBankAccountService.execute(id, body);
+    public BankAccountResponse update(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateBankAccountRequest body,
+                                      Authentication authentication, HttpServletRequest request) {
+        return updateBankAccountService.execute(spaceId, id, body);
     }
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public BankAccountResponse updateStatus(@PathVariable Long id, @RequestBody UpdateStatusRequest body, Authentication authentication, HttpServletRequest request) {
-        return updateBankAccountStatusService.execute(id, Boolean.TRUE.equals(body.active()));
+    public BankAccountResponse updateStatus(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, @RequestBody UpdateStatusRequest body,
+                                            Authentication authentication, HttpServletRequest request) {
+        return updateBankAccountStatusService.execute(spaceId, id, Boolean.TRUE.equals(body.active()));
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("@securityService.userHasPermissionForURL(authentication, #request)")
-    public void delete(@PathVariable Long id, Authentication authentication, HttpServletRequest request) {
-        deleteBankAccountService.execute(id);
+    public void delete(@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId, @PathVariable Long id, Authentication authentication, HttpServletRequest request) {
+        deleteBankAccountService.execute(spaceId, id);
     }
 }

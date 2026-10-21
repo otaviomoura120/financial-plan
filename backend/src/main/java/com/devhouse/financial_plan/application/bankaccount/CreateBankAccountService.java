@@ -22,8 +22,8 @@ public class CreateBankAccountService {
         this.spaceRepository = spaceRepository;
     }
 
-    public BankAccountResponse execute(CreateBankAccountRequest request) {
-        Space space = spaceRepository.findById(request.spaceId());
+    public BankAccountResponse execute(Long spaceId, CreateBankAccountRequest request) {
+        Space space = spaceRepository.findById(spaceId);
         if (space == null) {
             throw new DomainException("Space not found");
         }

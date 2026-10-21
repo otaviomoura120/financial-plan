@@ -34,28 +34,28 @@ public class DeleteTransactionService {
     }
 
     @Transactional
-    public void execute(Long id) {
+    public void execute(Long spaceId, Long id) {
         Transaction transaction = transactionRepository.findById(id);
-        if (transaction == null) {
+        if (transaction == null || !transaction.belongsToSpace(spaceId)) {
             throw new DomainException("Transaction not found");
         }
         if (transaction.isLinkedToSource()) {
-            undoLinkedPayment(transaction);
+            undoLinkedPayment(spaceId, transaction);
             return;
         }
         balanceEffectService.revert(transaction);
         transactionRepository.delete(id);
     }
 
-    private void undoLinkedPayment(Transaction transaction) {
+    private void undoLinkedPayment(Long spaceId, Transaction transaction) {
         if (transaction.getSourceType() == TransactionSourceType.BILL_INSTANCE_PAYMENT) {
-            undoBillInstancePaymentService.execute(transaction.getSourceId());
+            undoBillInstancePaymentService.execute(spaceId, transaction.getSourceId());
             return;
         }
         List<CreditCardInvoicePayment> payments = creditCardInvoicePaymentRepository.findByPaymentTransactionIdIn(List.of(transaction.getId()));
         if (payments.isEmpty()) {
             throw new DomainException("Credit card invoice payment not found for this transaction");
         }
-        undoCreditCardInvoicePaymentService.execute(transaction.getSourceId(), payments.get(0).getReferenceMonth());
+        undoCreditCardInvoicePaymentService.execute(spaceId, transaction.getSourceId(), payments.get(0).getReferenceMonth());
     }
 }

@@ -32,8 +32,8 @@ public class PayBillInstanceService {
     }
 
     @Transactional
-    public BillInstanceResponse execute(Long id, PayBillInstanceRequest request, String auth0Sub) {
-        Bill bill = resolveBill(id);
+    public BillInstanceResponse execute(Long spaceId, Long id, PayBillInstanceRequest request, String auth0Sub) {
+        Bill bill = resolveBill(id, spaceId);
         if (!bill.isPending()) {
             throw new DomainException("Bill instance is already paid");
         }
@@ -41,10 +41,10 @@ public class PayBillInstanceService {
         Category category = resolveCategory(bill);
         SubCategory subCategory = bill.getSubCategory();
 
-        CreateTransactionRequest transactionRequest = new CreateTransactionRequest(TransactionType.EXPENSE, user.getId(),
+        CreateTransactionRequest transactionRequest = new CreateTransactionRequest(TransactionType.EXPENSE,
                 request.bankAccountId(), null, category.getId(), subCategory != null ? subCategory.getId() : null,
                 bill.getAmount(), request.paidDate(), "Pagamento de conta - " + bill.getName());
-        TransactionResponse paymentTransaction = createTransactionService.execute(transactionRequest,
+        TransactionResponse paymentTransaction = createTransactionService.execute(spaceId, user, transactionRequest,
                 TransactionSourceType.BILL_INSTANCE_PAYMENT, bill.getId());
 
         bill.markAsPaid(request.paidDate(), paymentTransaction.id(), request.bankAccountId());
@@ -52,9 +52,9 @@ public class PayBillInstanceService {
         return toResponse(updated);
     }
 
-    private Bill resolveBill(Long id) {
+    private Bill resolveBill(Long id, Long spaceId) {
         Bill bill = billRepository.findById(id);
-        if (bill == null) {
+        if (bill == null || !bill.belongsToSpace(spaceId)) {
             throw new DomainException("Bill instance not found");
         }
         return bill;

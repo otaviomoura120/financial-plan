@@ -31,7 +31,7 @@ class ListCreditCardTransactionsServiceSpec extends Specification {
     }
 
     private Category category() {
-        new Category(20L, 0, null, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+        new Category(20L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     def "execute returns the credit card transactions matching the filter"() {

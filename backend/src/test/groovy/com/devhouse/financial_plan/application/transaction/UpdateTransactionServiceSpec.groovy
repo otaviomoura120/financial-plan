@@ -38,7 +38,7 @@ class UpdateTransactionServiceSpec extends Specification {
 
     def setup() {
         resolveSystemCategoryService.execute(_, SystemCategory.TRANSFER) >> new SystemCategoryPair(90L, null)
-        categoryRepository.findById(90L) >> new Category(90L, 0, null, "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(90L) >> new Category(90L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private BankAccount buildAccount(Long id, BigDecimal balance) {
@@ -52,7 +52,7 @@ class UpdateTransactionServiceSpec extends Specification {
     }
 
     private Category buildCategoryObj(Long id) {
-        id == null ? null : new Category(id, 0, null, "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
+        id == null ? null : new Category(id, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Category " + id, CategoryKind.EXPENSE, true, Instant.now(), null)
     }
 
     private Transaction buildExistingTransaction(TransactionType type, Long bankAccountId, Long destinationBankAccountId,
@@ -71,12 +71,12 @@ class UpdateTransactionServiceSpec extends Specification {
         transactionRepository.update(_) >> { Transaction t -> t }
         BankAccount account = buildAccount(1L, new BigDecimal("400.00"))
         bankAccountRepository.findById(1L) >> account
-        categoryRepository.findById(10L) >> Mock(Category)
+        categoryRepository.findById(10L) >> Mock(Category) { belongsToSpace(_) >> true }
         UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null,
                 new BigDecimal("150.00"), LocalDate.now(), "desc")
 
         when:
-        TransactionResponse response = service.execute(1L, request)
+        TransactionResponse response = service.execute(1L, 1L, request)
 
         then:
         response.amount() == new BigDecimal("150.00")
@@ -91,12 +91,12 @@ class UpdateTransactionServiceSpec extends Specification {
         transactionRepository.update(_) >> { Transaction t -> t }
         BankAccount account = buildAccount(1L, new BigDecimal("600.00"))
         bankAccountRepository.findById(1L) >> account
-        categoryRepository.findById(10L) >> Mock(Category)
+        categoryRepository.findById(10L) >> Mock(Category) { belongsToSpace(_) >> true }
         UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 
         when:
-        TransactionResponse response = service.execute(1L, request)
+        TransactionResponse response = service.execute(1L, 1L, request)
 
         then:
         response.type() == TransactionType.EXPENSE
@@ -113,12 +113,12 @@ class UpdateTransactionServiceSpec extends Specification {
         BankAccount destination = buildAccount(2L, new BigDecimal("200.00"))
         bankAccountRepository.findById(1L) >> origin
         bankAccountRepository.findById(2L) >> destination
-        categoryRepository.findById(10L) >> Mock(Category)
+        categoryRepository.findById(10L) >> Mock(Category) { belongsToSpace(_) >> true }
         UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 2L, null, 10L, null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         origin.getBalance() == new BigDecimal("500.00")
@@ -140,7 +140,7 @@ class UpdateTransactionServiceSpec extends Specification {
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         origin.getBalance() == new BigDecimal("400.00")
@@ -157,7 +157,7 @@ class UpdateTransactionServiceSpec extends Specification {
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         thrown(DomainException)
@@ -176,7 +176,7 @@ class UpdateTransactionServiceSpec extends Specification {
                 new BigDecimal("150.00"), LocalDate.now(), "desc")
 
         when:
-        service.execute(1L, request)
+        service.execute(1L, 1L, request)
 
         then:
         thrown(DomainException)
@@ -192,15 +192,50 @@ class UpdateTransactionServiceSpec extends Specification {
                 buildCategoryObj(10L), null, new BigDecimal("100.00"), LocalDate.now(), "desc", Instant.now(), null, null, null)
         transactionRepository.findById(5L) >> existing
         bankAccountRepository.findById(1L) >> account
-        categoryRepository.findById(11L) >> new Category(11L, 0, null, "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
+        categoryRepository.findById(11L) >> new Category(11L, 0, new Space(1L, 0, "Space", null, Instant.now(), null), "Transferência", CategoryKind.EXPENSE, true, Instant.now(), null)
         UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 11L, null,
                 new BigDecimal("100.00"), LocalDate.now(), "desc")
 
         when:
-        service.execute(5L, request)
+        service.execute(1L, 5L, request)
 
         then:
         thrown(DomainException)
         0 * transactionRepository.update(_)
+    }
+
+    def "execute rejects a transaction that belongs to another space without touching balances"() {
+        given:
+        transactionRepository.findById(1L) >> buildExistingTransaction(TransactionType.EXPENSE, 1L, null, new BigDecimal("100.00"))
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 1L, null, 10L, null,
+                new BigDecimal("150.00"), LocalDate.now(), "desc")
+
+        when:
+        service.execute(2L, 1L, request)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Transaction not found"
+        0 * transactionRepository.update(_)
+        0 * bankAccountRepository.update(_)
+    }
+
+    def "execute rejects moving the transaction to a bank account of another space"() {
+        given:
+        transactionRepository.findById(1L) >> buildExistingTransaction(TransactionType.EXPENSE, 1L, null, new BigDecimal("100.00"))
+        Space otherSpace = new Space(2L, 0, "Other Space", null, Instant.now(), null)
+        bankAccountRepository.findById(5L) >> new BankAccount(5L, 0, otherSpace, "Foreign", "BankCorp", BigDecimal.ZERO, true,
+                Instant.now(), null)
+        UpdateTransactionRequest request = new UpdateTransactionRequest(0, TransactionType.EXPENSE, 5L, null, 10L, null,
+                new BigDecimal("150.00"), LocalDate.now(), "desc")
+
+        when:
+        service.execute(1L, 1L, request)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Bank account not found"
+        0 * transactionRepository.update(_)
+        0 * bankAccountRepository.update(_)
     }
 }

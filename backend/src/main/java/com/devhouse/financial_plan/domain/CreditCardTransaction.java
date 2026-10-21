@@ -115,6 +115,10 @@ public class CreditCardTransaction {
         this.updatedDate = Instant.now();
     }
 
+    public boolean belongsToSpace(Long spaceId) {
+        return creditCard != null && creditCard.belongsToSpace(spaceId);
+    }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

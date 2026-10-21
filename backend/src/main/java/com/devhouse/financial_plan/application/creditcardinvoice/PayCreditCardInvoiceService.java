@@ -52,8 +52,9 @@ public class PayCreditCardInvoiceService {
     }
 
     @Transactional
-    public CreditCardInvoicePaymentResponse execute(Long creditCardId, LocalDate referenceMonth, PayCreditCardInvoiceRequest request, String auth0Sub) {
-        CreditCard creditCard = resolveCreditCard(creditCardId);
+    public CreditCardInvoicePaymentResponse execute(Long spaceId, Long creditCardId, LocalDate referenceMonth,
+                                                    PayCreditCardInvoiceRequest request, String auth0Sub) {
+        CreditCard creditCard = resolveCreditCard(creditCardId, spaceId);
         User user = resolveUser(auth0Sub);
         rejectIfAlreadyPaid(creditCardId, referenceMonth);
 
@@ -67,12 +68,12 @@ public class PayCreditCardInvoiceService {
 
         LocalDate dueDate = CreditCardInvoiceCycle.resolveDueDate(referenceMonth, creditCard.getClosingDay(), creditCard.getDueDay());
 
-        SystemCategoryPair systemCategory = resolveSystemCategoryService.execute(creditCard.getSpace().getId(),
+        SystemCategoryPair systemCategory = resolveSystemCategoryService.execute(spaceId,
                 SystemCategory.CREDIT_CARD_INVOICE_PAYMENT);
-        CreateTransactionRequest transactionRequest = new CreateTransactionRequest(TransactionType.EXPENSE, user.getId(),
+        CreateTransactionRequest transactionRequest = new CreateTransactionRequest(TransactionType.EXPENSE,
                 request.bankAccountId(), null, systemCategory.categoryId(), systemCategory.subCategoryId(), totalAmount,
                 request.paidDate(), "Pagamento de fatura - " + creditCard.getName());
-        TransactionResponse paymentTransaction = createTransactionService.execute(transactionRequest,
+        TransactionResponse paymentTransaction = createTransactionService.execute(spaceId, user, transactionRequest,
                 TransactionSourceType.CREDIT_CARD_INVOICE_PAYMENT, creditCard.getId());
 
         CreditCardInvoicePayment payment = new CreditCardInvoicePayment(null, 0, creditCard, referenceMonth, dueDate,
@@ -82,9 +83,9 @@ public class PayCreditCardInvoiceService {
         return toResponse(saved);
     }
 
-    private CreditCard resolveCreditCard(Long creditCardId) {
+    private CreditCard resolveCreditCard(Long creditCardId, Long spaceId) {
         CreditCard creditCard = creditCardId != null ? creditCardRepository.findById(creditCardId) : null;
-        if (creditCard == null) {
+        if (creditCard == null || !creditCard.belongsToSpace(spaceId)) {
             throw new DomainException("Credit card not found");
         }
         return creditCard;

@@ -14,4 +14,10 @@ public record CategoryReportFilterRequest(
         Long subCategoryId,
         TransactionType type,
         Long creditCardId
-) {}
+) {
+
+    public CategoryReportFilterRequest scopedTo(Long spaceId) {
+        return new CategoryReportFilterRequest(spaceId, from, to, userId, bankAccountId, categoryId, subCategoryId, type,
+                creditCardId);
+    }
+}

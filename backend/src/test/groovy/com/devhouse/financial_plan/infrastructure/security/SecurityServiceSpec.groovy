@@ -324,4 +324,21 @@ class SecurityServiceSpec extends Specification {
         then:
         result == false
     }
+
+    def "returns false when X-Space-Id header is not a valid number"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        request.getMethod() >> "GET"
+        request.getRequestURI() >> "/transactions"
+        endpointPermissionRepository.findByGroup(EndpointPermission.INTERNAL_MANAGEMENT_GROUP) >> []
+        request.getHeader("X-Space-Id") >> "abc"
+
+        when:
+        boolean result = securityService.userHasPermissionForURL(authentication, request)
+
+        then:
+        result == false
+        0 * spaceMemberRepository._
+    }
 }

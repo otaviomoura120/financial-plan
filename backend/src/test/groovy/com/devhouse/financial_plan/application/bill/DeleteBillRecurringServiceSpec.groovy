@@ -43,7 +43,7 @@ class DeleteBillRecurringServiceSpec extends Specification {
         billRepository.findByBillRecurringId(10L) >> [pastBill, currentMonthBill, futureBill]
 
         when:
-        service.execute(10L)
+        service.execute(1L, 10L)
 
         then:
         pastBill.getBillRecurring() == null
@@ -64,7 +64,7 @@ class DeleteBillRecurringServiceSpec extends Specification {
         billRepository.findByBillRecurringId(10L) >> [paidBill]
 
         when:
-        service.execute(10L)
+        service.execute(1L, 10L)
 
         then:
         paidBill.getBillRecurring() == null
@@ -79,7 +79,7 @@ class DeleteBillRecurringServiceSpec extends Specification {
         billRepository.findByBillRecurringId(10L) >> []
 
         when:
-        service.execute(10L)
+        service.execute(1L, 10L)
 
         then:
         0 * billRepository.update(_)
@@ -92,7 +92,7 @@ class DeleteBillRecurringServiceSpec extends Specification {
         billRecurringRepository.findById(99L) >> null
 
         when:
-        service.execute(99L)
+        service.execute(1L, 99L)
 
         then:
         thrown(DomainException)

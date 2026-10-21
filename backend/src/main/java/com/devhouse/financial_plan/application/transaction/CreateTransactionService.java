@@ -50,19 +50,20 @@ public class CreateTransactionService {
     }
 
     @Transactional
-    public TransactionResponse execute(CreateTransactionRequest request) {
-        return execute(request, null, null);
+    public TransactionResponse execute(Long spaceId, String auth0Sub, CreateTransactionRequest request) {
+        return execute(spaceId, resolveUser(auth0Sub), request, null, null);
     }
 
     @Transactional
-    public TransactionResponse execute(CreateTransactionRequest request, TransactionSourceType sourceType, Long sourceId) {
-        User user = resolveUser(request.userId());
-        BankAccount bankAccount = resolveBankAccount(request.bankAccountId(), "Bank account not found");
+    public TransactionResponse execute(Long spaceId, User user, CreateTransactionRequest request,
+                                       TransactionSourceType sourceType, Long sourceId) {
+        BankAccount bankAccount = resolveBankAccount(request.bankAccountId(), spaceId, "Bank account not found");
         BankAccount destinationBankAccount = null;
         if (TransactionType.TRANSFER.equals(request.type())) {
-            destinationBankAccount = resolveBankAccount(request.destinationBankAccountId(), "Destination bank account not found");
+            destinationBankAccount = resolveBankAccount(request.destinationBankAccountId(), spaceId,
+                    "Destination bank account not found");
         }
-        CategorySelection selection = resolveCategorySelection(request, bankAccount, sourceType);
+        CategorySelection selection = resolveCategorySelection(request, spaceId, bankAccount, sourceType);
 
         Transaction transaction = new Transaction(null, 0, request.type(), user, bankAccount, destinationBankAccount,
                 selection.category(), selection.subCategory(), request.amount(), request.transactionDate(),
@@ -73,55 +74,56 @@ public class CreateTransactionService {
         return toResponse(saved);
     }
 
-    private CategorySelection resolveCategorySelection(CreateTransactionRequest request, BankAccount bankAccount,
-                                                        TransactionSourceType sourceType) {
+    private CategorySelection resolveCategorySelection(CreateTransactionRequest request, Long spaceId,
+                                                        BankAccount bankAccount, TransactionSourceType sourceType) {
         if (TransactionType.TRANSFER.equals(request.type())) {
             return resolveTransferCategorySelection(bankAccount);
         }
-        Category category = resolveCategory(request.categoryId());
-        SubCategory subCategory = resolveSubCategory(request.subCategoryId());
+        Category category = resolveCategory(request.categoryId(), spaceId);
+        SubCategory subCategory = resolveSubCategory(request.subCategoryId(), spaceId);
         SystemCategoryPolicy.rejectManualSelection(category, subCategory, sourceType);
         return new CategorySelection(category, subCategory);
     }
 
     private CategorySelection resolveTransferCategorySelection(BankAccount bankAccount) {
-        SystemCategoryPair pair = resolveSystemCategoryService.execute(bankAccount.getSpace().getId(),
-                SystemCategory.TRANSFER);
-        return new CategorySelection(resolveCategory(pair.categoryId()), resolveSubCategory(pair.subCategoryId()));
+        Long spaceId = bankAccount.getSpace().getId();
+        SystemCategoryPair pair = resolveSystemCategoryService.execute(spaceId, SystemCategory.TRANSFER);
+        return new CategorySelection(resolveCategory(pair.categoryId(), spaceId),
+                resolveSubCategory(pair.subCategoryId(), spaceId));
     }
 
     private record CategorySelection(Category category, SubCategory subCategory) {}
 
-    private User resolveUser(Long userId) {
-        User user = userRepository.findById(userId);
+    private User resolveUser(String auth0Sub) {
+        User user = userRepository.findByAuth0Sub(auth0Sub);
         if (user == null) {
             throw new DomainException("User not found");
         }
         return user;
     }
 
-    private BankAccount resolveBankAccount(Long bankAccountId, String errorMessage) {
+    private BankAccount resolveBankAccount(Long bankAccountId, Long spaceId, String errorMessage) {
         BankAccount bankAccount = bankAccountId != null ? bankAccountRepository.findById(bankAccountId) : null;
-        if (bankAccount == null) {
+        if (bankAccount == null || !bankAccount.belongsToSpace(spaceId)) {
             throw new DomainException(errorMessage);
         }
         return bankAccount;
     }
 
-    private Category resolveCategory(Long categoryId) {
+    private Category resolveCategory(Long categoryId, Long spaceId) {
         Category category = categoryId != null ? categoryRepository.findById(categoryId) : null;
-        if (category == null) {
+        if (category == null || !category.belongsToSpace(spaceId)) {
             throw new DomainException("Category not found");
         }
         return category;
     }
 
-    private SubCategory resolveSubCategory(Long subCategoryId) {
+    private SubCategory resolveSubCategory(Long subCategoryId, Long spaceId) {
         if (subCategoryId == null) {
             return null;
         }
         SubCategory subCategory = subCategoryRepository.findById(subCategoryId);
-        if (subCategory == null) {
+        if (subCategory == null || !subCategory.belongsToSpace(spaceId)) {
             throw new DomainException("Sub category not found");
         }
         return subCategory;

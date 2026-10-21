@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.bankaccount;
 
+import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.application.bankaccount.dto.BankAccountResponse;
 import com.devhouse.financial_plan.application.bankaccount.dto.UpdateBankAccountRequest;
 import com.devhouse.financial_plan.domain.BankAccount;
@@ -15,13 +16,21 @@ public class UpdateBankAccountService {
         this.bankAccountRepository = bankAccountRepository;
     }
 
-    public BankAccountResponse execute(Long id, UpdateBankAccountRequest request) {
-        BankAccount account = bankAccountRepository.findById(id);
+    public BankAccountResponse execute(Long spaceId, Long id, UpdateBankAccountRequest request) {
+        BankAccount account = resolveBankAccount(id, spaceId);
         account.setVersion(request.version());
         account.update(request.name(), request.bankName());
         account.validate();
         BankAccount updated = bankAccountRepository.update(account);
         return new BankAccountResponse(updated.getId(), updated.getVersion(), updated.getSpace().getId(), updated.getName(),
                 updated.getBankName(), updated.getBalance(), updated.isActive(), updated.getCreatedDate());
+    }
+
+    private BankAccount resolveBankAccount(Long id, Long spaceId) {
+        BankAccount account = bankAccountRepository.findById(id);
+        if (account == null || !account.belongsToSpace(spaceId)) {
+            throw new DomainException("Bank account not found");
+        }
+        return account;
     }
 }

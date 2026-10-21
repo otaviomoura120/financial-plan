@@ -33,7 +33,7 @@ class CreateSubCategoryServiceSpec extends Specification {
         subCategoryRepository.save(_) >> saved
 
         when:
-        SubCategoryResponse response = service.execute(request)
+        SubCategoryResponse response = service.execute(1L, request)
 
         then:
         response.id() == 10L
@@ -48,7 +48,7 @@ class CreateSubCategoryServiceSpec extends Specification {
         categoryRepository.findById(99L) >> null
 
         when:
-        service.execute(request)
+        service.execute(1L, request)
 
         then:
         thrown(DomainException)
@@ -65,7 +65,7 @@ class CreateSubCategoryServiceSpec extends Specification {
         subCategoryRepository.findByCategoryId(1L) >> [new SubCategory(5L, 0, category, "Groceries", true, Instant.now(), null)]
 
         when:
-        service.execute(request)
+        service.execute(1L, request)
 
         then:
         thrown(DomainException)
@@ -79,10 +79,24 @@ class CreateSubCategoryServiceSpec extends Specification {
         categoryRepository.findById(1L) >> new Category(1L, 0, space, "Pagamento de Fatura", CategoryKind.EXPENSE, true, Instant.now(), null)
 
         when:
-        service.execute(request)
+        service.execute(1L, request)
 
         then:
         thrown(DomainException)
+        0 * subCategoryRepository.save(_)
+    }
+
+    def "execute rejects a parent category that belongs to another space"() {
+        given:
+        Space otherSpace = new Space(2L, 0, "Other Space", null, Instant.now(), null)
+        categoryRepository.findById(10L) >> new Category(10L, 0, otherSpace, "Food", CategoryKind.EXPENSE, true, Instant.now(), null)
+
+        when:
+        service.execute(1L, new CreateSubCategoryRequest(10L, "Groceries"))
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Category not found"
         0 * subCategoryRepository.save(_)
     }
 }

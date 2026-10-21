@@ -155,10 +155,10 @@ async function fetchDueEntries() {
 
     const [billsResult, invoicesResult] = await Promise.all([
       $fetch<BillInstanceResponse[]>('/api/bills/instances', {
-        query: { spaceId: props.spaceId, from, to },
+        query: { from, to },
       }),
       $fetch<CreditCardInvoiceResponse[]>('/api/credit-cards/invoices', {
-        query: { spaceId: props.spaceId, from, to },
+        query: { from, to },
       }),
     ])
 

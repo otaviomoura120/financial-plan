@@ -46,7 +46,8 @@ public class GenerateReportService {
         this.creditCardInvoicePaymentResolver = creditCardInvoicePaymentResolver;
     }
 
-    public ReportResponse execute(ReportFilterRequest filter) {
+    public ReportResponse execute(Long spaceId, ReportFilterRequest request) {
+        ReportFilterRequest filter = request.scopedTo(spaceId);
         if (filter.spaceId() == null) {
             throw new DomainException("Space is required");
         }

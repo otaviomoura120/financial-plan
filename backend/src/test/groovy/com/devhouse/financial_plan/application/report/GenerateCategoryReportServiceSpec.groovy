@@ -66,14 +66,25 @@ class GenerateCategoryReportServiceSpec extends Specification {
                 "group-1", 1, 3, false, null, Instant.now(), null)
     }
 
-    def "execute throws DomainException when spaceId is missing"() {
+    def "execute throws DomainException when the authorized space is missing"() {
         when:
-        service.execute(filter(spaceId: null))
+        service.execute(null, filter(spaceId: null))
 
         then:
         thrown(DomainException)
         0 * transactionRepository.findByFilter(*_)
         0 * creditCardTransactionRepository.findByFilter(*_)
+    }
+
+    def "execute ignores the spaceId sent in the filter and queries only the authorized space"() {
+        when:
+        service.execute(1L, filter(spaceId: 2L))
+
+        then:
+        1 * transactionRepository.findByFilter(1L, *_) >> []
+        1 * creditCardTransactionRepository.findByFilter(1L, *_) >> []
+        0 * transactionRepository.findByFilter(2L, *_)
+        0 * creditCardTransactionRepository.findByFilter(2L, *_)
     }
 
     def "execute groups items by category and subcategory with a null-subcategory bucket"() {
@@ -86,7 +97,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
-        CategoryReportResponse response = service.execute(filter())
+        CategoryReportResponse response = service.execute(1L, filter())
 
         then:
         response.groups().size() == 1
@@ -109,7 +120,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         creditCardTransactionRepository.findByFilter(*_) >> []
 
         when:
-        CategoryReportResponse response = service.execute(filter())
+        CategoryReportResponse response = service.execute(1L, filter())
 
         then:
         response.totalExpense() == new BigDecimal("50.00")
@@ -126,7 +137,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
-        CategoryReportResponse response = service.execute(filter())
+        CategoryReportResponse response = service.execute(1L, filter())
 
         then:
         response.groups()[0].subGroups()[0].items().size() == 1
@@ -152,7 +163,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
-        CategoryReportResponse response = service.execute(filter(from: LocalDate.of(2026, 8, 1), to: LocalDate.of(2026, 8, 31)))
+        CategoryReportResponse response = service.execute(1L, filter(from: LocalDate.of(2026, 8, 1), to: LocalDate.of(2026, 8, 31)))
 
         then:
         response.groups()[0].subGroups()[0].items().size() == 1
@@ -165,7 +176,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         creditCardTransactionRepository.findByFilter(*_) >> []
 
         when:
-        CategoryReportResponse response = service.execute(filter())
+        CategoryReportResponse response = service.execute(1L, filter())
 
         then:
         response.groups()[0].subGroups()[0].items()[0].referenceMonth() == null
@@ -180,7 +191,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
                  purchase(id: 201L, amount: new BigDecimal("33.33"), category: food, subCategory: restaurants)]
 
         when:
-        CategoryReportResponse response = service.execute(filter())
+        CategoryReportResponse response = service.execute(1L, filter())
 
         then:
         1 * creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> [
@@ -198,7 +209,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
-        CategoryReportResponse response = service.execute(filter(creditCardId: 10L))
+        CategoryReportResponse response = service.execute(1L, filter(creditCardId: 10L))
 
         then:
         0 * transactionRepository.findByFilter(*_)
@@ -211,7 +222,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
                 [transaction(id: 100L, type: TransactionType.INCOME, category: salary, amount: new BigDecimal("1000.00"))]
 
         when:
-        CategoryReportResponse response = service.execute(filter(type: TransactionType.INCOME))
+        CategoryReportResponse response = service.execute(1L, filter(type: TransactionType.INCOME))
 
         then:
         0 * creditCardTransactionRepository.findByFilter(*_)
@@ -229,7 +240,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
-        CategoryReportResponse response = service.execute(filter(bankAccountId: 5L))
+        CategoryReportResponse response = service.execute(1L, filter(bankAccountId: 5L))
 
         then:
         response.groups()[0].subGroups()[0].items().size() == 1
@@ -242,7 +253,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         transactionRepository.findByFilter(1L, 1L, null, null, null, null, _, _) >> []
 
         when:
-        service.execute(filter(userId: 1L))
+        service.execute(1L, filter(userId: 1L))
 
         then:
         1 * creditCardTransactionRepository.findByFilter(1L, null, null, null, 1L, null) >> []
@@ -257,7 +268,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         creditCardTransactionRepository.findByInstallmentGroupId("group-1") >> []
 
         when:
-        CategoryReportResponse response = service.execute(filter())
+        CategoryReportResponse response = service.execute(1L, filter())
 
         then:
         response.totalIncome() == new BigDecimal("1000.00")
@@ -279,7 +290,7 @@ class GenerateCategoryReportServiceSpec extends Specification {
         creditCardTransactionRepository.findByFilter(*_) >> []
 
         when:
-        CategoryReportResponse response = service.execute(filter())
+        CategoryReportResponse response = service.execute(1L, filter())
 
         then:
         response.totalIncome() == BigDecimal.ZERO
