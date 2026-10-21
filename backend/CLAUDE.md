@@ -3,7 +3,7 @@
 - **Stack:** Java + Spring Boot 4.0.6, Spring Data JPA, MySQL 8, Gradle, Groovy/Spock for tests
 - **Root package:** `com.devhouse.financial_plan`
 - **Database:** MySQL, schema `financial_plan`, port 3306 (configured in `application.properties`)
-- **DDL:** `spring.jpa.hibernate.ddl-auto=update` (schema managed automatically)
+- **DDL:** versioned by Flyway in `src/main/resources/db/migration`; Hibernate runs with `ddl-auto=validate` (overridable with `JPA_DDL_AUTO`). How it works and how to write migrations: `docs/database-migrations.md`
 
 ## Layer structure
 ```
@@ -55,6 +55,7 @@ src/main/java/com/devhouse/financial_plan/
 - All the app is divided in application / domain / infrasctructure
 - always provide unit tests, write it using spock with groovy. Create tests that really test the flow, don't create dummy tests
 - always run all tests before finish the work in progress
+- any change to a JPA entity (new table, column, index or type) needs a new Flyway migration `V<next>__<description>.sql`; never edit a migration that was already applied
 
 ## JAVA following pattern
 - Dont use 'var' for object declaration, use the right Object reference

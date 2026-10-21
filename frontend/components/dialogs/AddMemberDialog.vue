@@ -1,8 +1,8 @@
 <script setup lang="ts">
 interface UserSearchResponse {
-  id: number
+
+  // Masked by the backend (e.g. "Joã* S****") so the search never exposes the user's full name, id or e-mail
   name: string
-  email: string
 }
 
 interface RoleOption {
@@ -71,7 +71,7 @@ async function loadRoles() {
 }
 
 async function searchUser() {
-  if (!email.value.trim()) {
+  if (!email.value.trim() || !spaceStore.activeSpace) {
     return
   }
 
@@ -79,7 +79,7 @@ async function searchUser() {
   clearError()
 
   try {
-    foundUser.value = await $fetch<UserSearchResponse>('/api/users/search', {
+    foundUser.value = await $fetch<UserSearchResponse>(`/api/spaces/${spaceStore.activeSpace.id}/members/search`, {
       query: { email: email.value.trim() },
     })
     step.value = 'found'
@@ -200,7 +200,7 @@ function onClose() {
                   {{ foundUser?.name }}
                 </p>
                 <p class="text-body-2 text-disabled mb-0">
-                  {{ foundUser?.email }}
+                  {{ email }}
                 </p>
               </div>
             </div>

@@ -8,6 +8,8 @@ import java.util.Objects;
 
 public class User {
 
+    private static final int FIRST_WORD_VISIBLE_CHARS = 3;
+
     private Long id;
     private Integer version;
     private String auth0Sub;
@@ -78,6 +80,30 @@ public class User {
 
     public void activate() {
         this.active = true;
+    }
+
+    /**
+     * Name that can be shown to someone who only knows this user's e-mail: the first word keeps up to three
+     * leading letters and every other word keeps its initial, e.g. "João Silva" becomes "Joã* S****".
+     */
+    public String maskedName() {
+        if (name == null || name.isBlank()) {
+            return "";
+        }
+        String[] words = name.trim().split("\\s+");
+        StringBuilder masked = new StringBuilder(maskWord(words[0], FIRST_WORD_VISIBLE_CHARS));
+        for (int i = 1; i < words.length; i++) {
+            masked.append(' ').append(maskWord(words[i], 1));
+        }
+        return masked.toString();
+    }
+
+    private static String maskWord(String word, int maxVisibleChars) {
+        if (word.length() <= 1) {
+            return word;
+        }
+        int visibleChars = Math.max(1, Math.min(maxVisibleChars, word.length() - 1));
+        return word.substring(0, visibleChars) + "*".repeat(word.length() - visibleChars);
     }
 
     public Long getId() { return id; }

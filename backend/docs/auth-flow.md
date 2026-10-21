@@ -132,6 +132,14 @@ allowedPermissions.anyMatch(p -> p.matchesRequest(method, path))
 
 ---
 
+## How `userCanInviteToSpace` Works
+
+Used by `GET /spaces/{id}/members/search?email=` (the "add member" dialog). It has no `endpoint_permissions` row of its own: it runs the same check as `userHasPermissionInSpace`, but against `POST /spaces/{id}/invites`, so only roles allowed to send invites in that Space can look up an e-mail. The response is `{ "name": "Joã* S****" }` (`User.maskedName()`), with no id or e-mail, and `404` when nobody has that e-mail. This replaced the former `GET /users/search`, which any logged user could call and which returned id, name and e-mail.
+
+**This check is a business rule, not a protection against e-mail enumeration.** Every user creates their own Space during onboarding and becomes its OWNER, with permission to invite, so anyone can sign up and use the search against their own Space. What limits the exposure is the masked response; the `200`/`404` answer still tells whether an e-mail has an account, and only rate limiting (or removing the search) addresses that.
+
+---
+
 ## How `userHasPermissionForRole` Works
 
 Used on role management endpoints (e.g. `PUT /roles/{id}`, `DELETE /roles/{id}`) where the URL only carries a role ID but the space must be known to authorize the caller.

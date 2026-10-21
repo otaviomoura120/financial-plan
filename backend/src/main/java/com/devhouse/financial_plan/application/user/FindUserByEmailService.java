@@ -17,6 +17,6 @@ public class FindUserByEmailService {
 
     public Optional<UserSearchResponse> execute(String email) {
         return userRepository.findByEmail(email)
-                .map(u -> new UserSearchResponse(u.getId(), u.getName(), u.getEmail()));
+                .map(user -> new UserSearchResponse(user.maskedName()));
     }
 }

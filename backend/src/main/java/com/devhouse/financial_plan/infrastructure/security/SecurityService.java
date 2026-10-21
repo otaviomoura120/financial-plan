@@ -75,6 +75,19 @@ public class SecurityService {
      * the user belongs to.
      */
     public boolean userHasPermissionInSpace(Authentication authentication, HttpServletRequest request, Long spaceId) {
+        return hasApiPermissionInSpace(authentication, spaceId, request.getMethod(), request.getRequestURI());
+    }
+
+    /**
+     * Grants an endpoint to whoever may send invites in the Space, without a permission row of its own:
+     * the user's role in that Space must be allowed to call POST /spaces/{spaceId}/invites.
+     * This is a business rule, not an anti-enumeration measure: every user owns the Space created at onboarding.
+     */
+    public boolean userCanInviteToSpace(Authentication authentication, Long spaceId) {
+        return hasApiPermissionInSpace(authentication, spaceId, "POST", "/spaces/" + spaceId + "/invites");
+    }
+
+    private boolean hasApiPermissionInSpace(Authentication authentication, Long spaceId, String method, String path) {
         if (spaceId == null) {
             return false;
         }
@@ -88,9 +101,6 @@ public class SecurityService {
         if (membership == null) {
             return false;
         }
-
-        String method = request.getMethod();
-        String path = request.getRequestURI();
 
         List<EndpointPermission> allowedPermissions = roleEndpointPermissionRepository
                 .findAllowedEndpointPermissionsByRoleIdsAndType(Set.of(membership.getRole().getId()), EndpointPermissionType.API);

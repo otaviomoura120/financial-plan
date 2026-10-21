@@ -341,4 +341,42 @@ class SecurityServiceSpec extends Specification {
         result == false
         0 * spaceMemberRepository._
     }
+
+    def "userCanInviteToSpace is true when the role in that space may POST invites of that same space"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "ADMIN")
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.API) >> [buildPermission("/spaces/[0-9]+/invites", "POST")]
+
+        expect:
+        securityService.userCanInviteToSpace(authentication, 1L)
+    }
+
+    def "userCanInviteToSpace is false when the role may only list invites"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 1L) >> buildMemberWithRole(10L, "MEMBER")
+        roleEndpointPermissionRepository.findAllowedEndpointPermissionsByRoleIdsAndType(
+                [10L] as Set, EndpointPermissionType.API) >> [buildPermission("/spaces/[0-9]+/invites", "GET")]
+
+        expect:
+        !securityService.userCanInviteToSpace(authentication, 1L)
+    }
+
+    def "userCanInviteToSpace is false when the user is not a member of that space"() {
+        given:
+        authentication.getName() >> "auth0|abc"
+        userRepository.findByAuth0Sub("auth0|abc") >> buildUser()
+        spaceMemberRepository.findBySpaceIdAndUserId(2L, 1L) >> null
+
+        when:
+        boolean result = securityService.userCanInviteToSpace(authentication, 2L)
+
+        then:
+        !result
+        0 * roleEndpointPermissionRepository._
+    }
 }

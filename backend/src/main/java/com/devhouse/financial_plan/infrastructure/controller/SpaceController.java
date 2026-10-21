@@ -17,8 +17,11 @@ import com.devhouse.financial_plan.application.space.dto.SpaceMemberResponse;
 import com.devhouse.financial_plan.application.space.dto.SpaceResponse;
 import com.devhouse.financial_plan.application.space.dto.UpdateSpaceMemberRequest;
 import com.devhouse.financial_plan.application.space.dto.UpdateSpaceRequest;
+import com.devhouse.financial_plan.application.user.FindUserByEmailService;
+import com.devhouse.financial_plan.application.user.dto.UserSearchResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +42,7 @@ public class SpaceController {
     private final InviteSpaceMemberService inviteSpaceMemberService;
     private final ListSpaceInvitesService listSpaceInvitesService;
     private final CancelSpaceInviteService cancelSpaceInviteService;
+    private final FindUserByEmailService findUserByEmailService;
 
     public SpaceController(CreateSpaceService createSpaceService, UpdateSpaceService updateSpaceService,
                            DeleteSpaceService deleteSpaceService,
@@ -47,7 +51,8 @@ public class SpaceController {
                            UpdateSpaceMemberRoleService updateSpaceMemberRoleService,
                            InviteSpaceMemberService inviteSpaceMemberService,
                            ListSpaceInvitesService listSpaceInvitesService,
-                           CancelSpaceInviteService cancelSpaceInviteService) {
+                           CancelSpaceInviteService cancelSpaceInviteService,
+                           FindUserByEmailService findUserByEmailService) {
         this.createSpaceService = createSpaceService;
         this.updateSpaceService = updateSpaceService;
         this.deleteSpaceService = deleteSpaceService;
@@ -58,6 +63,7 @@ public class SpaceController {
         this.inviteSpaceMemberService = inviteSpaceMemberService;
         this.listSpaceInvitesService = listSpaceInvitesService;
         this.cancelSpaceInviteService = cancelSpaceInviteService;
+        this.findUserByEmailService = findUserByEmailService;
     }
 
     @PostMapping
@@ -115,6 +121,15 @@ public class SpaceController {
     public void inviteMember(@PathVariable Long id, @RequestBody InviteRequest body,
                              Authentication authentication, HttpServletRequest request) {
         inviteSpaceMemberService.execute(id, body);
+    }
+
+    @GetMapping("/{id}/members/search")
+    @PreAuthorize("@securityService.userCanInviteToSpace(authentication, #id)")
+    public ResponseEntity<UserSearchResponse> searchUserToInvite(@PathVariable Long id, @RequestParam String email,
+                                                                 Authentication authentication) {
+        return findUserByEmailService.execute(email)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{id}/invites")
