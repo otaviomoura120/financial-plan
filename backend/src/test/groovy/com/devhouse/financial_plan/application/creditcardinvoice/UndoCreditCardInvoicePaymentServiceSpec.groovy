@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcardinvoice
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.transaction.TransactionBalanceEffectService
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.BankAccount
@@ -93,7 +94,7 @@ class UndoCreditCardInvoicePaymentServiceSpec extends Specification {
         service.execute(2L, 10L, LocalDate.of(2026, 3, 1))
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Credit card invoice payment not found"
         0 * transactionRepository.delete(_)
         0 * creditCardInvoicePaymentRepository.deleteById(_)

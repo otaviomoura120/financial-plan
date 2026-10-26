@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.bankaccount
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.bankaccount.dto.BankAccountResponse
 import com.devhouse.financial_plan.application.bankaccount.dto.UpdateBankAccountRequest
 import com.devhouse.financial_plan.domain.BankAccount
@@ -72,7 +73,7 @@ class UpdateBankAccountServiceSpec extends Specification {
         service.execute(2L, 10L, new UpdateBankAccountRequest(0, "Renamed", "BankCorp"))
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Bank account not found"
         0 * bankAccountRepository.update(_)
     }

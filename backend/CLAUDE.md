@@ -38,7 +38,8 @@ src/main/java/com/devhouse/financial_plan/
 ## Exception handling (GlobalHandlerException)
 | Exception | HTTP Status |
 |---|---|
-| `DomainException` | 422 Unprocessable Entity |
+| `NotFoundException` (subclass of `DomainException`) — the resource addressed by the URL does not exist or is in another Space | 404 Not Found |
+| `DomainException` — business rule violated, or an invalid/foreign id inside the request body | 422 Unprocessable Entity |
 | `ObjectOptimisticLockingFailureException` | 423 Locked |
 | `Exception` (generic) | 500 Internal Server Error |
 

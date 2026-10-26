@@ -4,6 +4,7 @@ import com.devhouse.financial_plan.application.transaction.TransactionBalanceEff
 import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.BillRepository;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class UndoBillInstancePaymentService {
     public void execute(Long spaceId, Long billId) {
         Bill bill = billRepository.findById(billId);
         if (bill == null || !bill.belongsToSpace(spaceId)) {
-            throw new DomainException("Bill instance not found");
+            throw new NotFoundException("Bill instance not found");
         }
         if (!bill.isPaid()) {
             throw new DomainException("Bill instance is not paid");

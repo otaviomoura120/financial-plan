@@ -12,6 +12,7 @@ import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.BillRepository;
 import com.devhouse.financial_plan.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -55,7 +56,7 @@ public class PayBillInstanceService {
     private Bill resolveBill(Long id, Long spaceId) {
         Bill bill = billRepository.findById(id);
         if (bill == null || !bill.belongsToSpace(spaceId)) {
-            throw new DomainException("Bill instance not found");
+            throw new NotFoundException("Bill instance not found");
         }
         return bill;
     }

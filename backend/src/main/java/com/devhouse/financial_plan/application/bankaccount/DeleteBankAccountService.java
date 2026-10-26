@@ -2,6 +2,7 @@ package com.devhouse.financial_plan.application.bankaccount;
 
 import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,7 @@ public class DeleteBankAccountService {
     private BankAccount resolveBankAccount(Long id, Long spaceId) {
         BankAccount account = bankAccountRepository.findById(id);
         if (account == null || !account.belongsToSpace(spaceId)) {
-            throw new DomainException("Bank account not found");
+            throw new NotFoundException("Bank account not found");
         }
         return account;
     }

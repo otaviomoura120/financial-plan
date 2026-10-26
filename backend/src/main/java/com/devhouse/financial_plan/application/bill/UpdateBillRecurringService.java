@@ -10,6 +10,7 @@ import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.CategoryKindPolicy;
 import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.BillRecurringRepository;
 import com.devhouse.financial_plan.domain.repository.BillRepository;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
@@ -43,7 +44,7 @@ public class UpdateBillRecurringService {
     public BillResponse execute(Long spaceId, Long id, UpdateBillRecurringRequest request) {
         BillRecurring billRecurring = billRecurringRepository.findById(id);
         if (billRecurring == null || !billRecurring.belongsToSpace(spaceId)) {
-            throw new DomainException("Bill recurring not found");
+            throw new NotFoundException("Bill recurring not found");
         }
         billRecurring.setVersion(request.version());
         Category category = resolveCategory(request.categoryId(), spaceId);

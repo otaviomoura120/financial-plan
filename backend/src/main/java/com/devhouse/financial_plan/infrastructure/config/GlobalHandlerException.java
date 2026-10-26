@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.infrastructure.config;
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -22,6 +23,12 @@ public class GlobalHandlerException extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(exception.getMessage());
     }
 
+    // NotFoundException extends DomainException; Spring picks this handler because it is the closest match
+    @ExceptionHandler({NotFoundException.class})
+    public ResponseEntity<?> handleNotFoundException(NotFoundException exception, WebRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
+    }
+
     @ExceptionHandler({ObjectOptimisticLockingFailureException.class})
     public ResponseEntity<?> handleLockException(ObjectOptimisticLockingFailureException exception, WebRequest request) {
         logger.error(exception);
@@ -35,8 +42,7 @@ public class GlobalHandlerException extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({Exception.class})
     public ResponseEntity<?> handleGenericException(Exception exception, WebRequest request) {
-        logger.error(exception);
-        exception.printStackTrace();
+        logger.error("Unexpected error while handling the request", exception);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error. Consult logs");
     }
 }

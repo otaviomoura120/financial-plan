@@ -2,6 +2,7 @@ package com.devhouse.financial_plan.application.billinstance;
 
 import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.BillRepository;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +18,7 @@ public class DeleteBillService {
     public void execute(Long spaceId, Long id) {
         Bill bill = billRepository.findById(id);
         if (bill == null || !bill.belongsToSpace(spaceId)) {
-            throw new DomainException("Bill not found");
+            throw new NotFoundException("Bill not found");
         }
         if (!bill.isPending()) {
             throw new DomainException("Cannot delete a bill that is already paid");

@@ -10,6 +10,7 @@ import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.CategoryKindPolicy;
 import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRecurringRepository;
@@ -49,7 +50,7 @@ public class UpdateCreditCardTransactionRecurringService {
                                                           UpdateCreditCardTransactionRecurringRequest request) {
         CreditCardTransactionRecurring recurring = creditCardTransactionRecurringRepository.findById(id);
         if (recurring == null || !recurring.belongsToSpace(spaceId)) {
-            throw new DomainException("Credit card transaction recurring not found");
+            throw new NotFoundException("Credit card transaction recurring not found");
         }
         recurring.setVersion(request.version());
         Category category = resolveCategory(request.categoryId(), spaceId);

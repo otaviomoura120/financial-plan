@@ -2,7 +2,7 @@ package com.devhouse.financial_plan.application.creditcardtransaction;
 
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.CreditCardTransactionRecurring;
-import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRecurringRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository;
@@ -31,7 +31,7 @@ public class DeleteCreditCardTransactionRecurringService {
     public void execute(Long spaceId, Long id) {
         CreditCardTransactionRecurring recurring = creditCardTransactionRecurringRepository.findById(id);
         if (recurring == null || !recurring.belongsToSpace(spaceId)) {
-            throw new DomainException("Credit card transaction recurring not found");
+            throw new NotFoundException("Credit card transaction recurring not found");
         }
         removeFutureAndDetachPastTransactions(id);
         creditCardTransactionRecurringRepository.delete(id);

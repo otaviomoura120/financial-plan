@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.billinstance
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.billinstance.dto.UpdateBillInstanceRequest
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Bill
@@ -100,7 +101,7 @@ class UpdateBillServiceSpec extends Specification {
         service.execute(2L, 1L, request)
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Bill not found"
         0 * billRepository.update(_)
     }

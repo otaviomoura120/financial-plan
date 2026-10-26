@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.bill
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.bill.dto.BillResponse
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.bill.dto.UpdateBillRecurringRequest
@@ -261,7 +262,7 @@ class UpdateBillRecurringServiceSpec extends Specification {
         service.execute(2L, 10L, request)
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Bill recurring not found"
         0 * billRecurringRepository.update(_)
     }

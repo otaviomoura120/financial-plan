@@ -8,6 +8,7 @@ import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.CategoryKindPolicy;
 import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.BillRepository;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
@@ -30,7 +31,7 @@ public class UpdateBillService {
     public BillInstanceResponse execute(Long spaceId, Long id, UpdateBillInstanceRequest request) {
         Bill bill = billRepository.findById(id);
         if (bill == null || !bill.belongsToSpace(spaceId)) {
-            throw new DomainException("Bill not found");
+            throw new NotFoundException("Bill not found");
         }
         bill.setVersion(request.version());
         Category category = resolveCategory(request.categoryId(), spaceId);

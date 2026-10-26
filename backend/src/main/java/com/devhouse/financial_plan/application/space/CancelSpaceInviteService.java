@@ -1,7 +1,7 @@
 package com.devhouse.financial_plan.application.space;
 
 import com.devhouse.financial_plan.domain.SpaceInvite;
-import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.SpaceInviteRepository;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +19,7 @@ public class CancelSpaceInviteService {
                 .stream()
                 .filter(i -> i.getId().equals(inviteId))
                 .findFirst()
-                .orElseThrow(() -> new DomainException("Invite not found for this space"));
+                .orElseThrow(() -> new NotFoundException("Invite not found for this space"));
 
         invite.cancel();
         spaceInviteRepository.update(invite);

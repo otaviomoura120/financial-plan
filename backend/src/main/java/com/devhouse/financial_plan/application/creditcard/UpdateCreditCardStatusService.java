@@ -1,6 +1,6 @@
 package com.devhouse.financial_plan.application.creditcard;
 
-import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.application.creditcard.dto.CreditCardResponse;
 import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.CreditCard;
@@ -35,7 +35,7 @@ public class UpdateCreditCardStatusService {
     private CreditCard resolveCreditCard(Long id, Long spaceId) {
         CreditCard creditCard = creditCardRepository.findById(id);
         if (creditCard == null || !creditCard.belongsToSpace(spaceId)) {
-            throw new DomainException("Credit card not found");
+            throw new NotFoundException("Credit card not found");
         }
         return creditCard;
     }

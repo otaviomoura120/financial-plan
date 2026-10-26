@@ -5,6 +5,7 @@ import com.devhouse.financial_plan.application.role.dto.UpdateRolePermissionAcce
 import com.devhouse.financial_plan.domain.RoleEndpointPermission;
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionAccess;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +23,7 @@ public class UpdateRolePermissionAccessService {
                 .findByRoleIdAndEndpointPermissionId(roleId, endpointPermissionId);
 
         if (relation == null) {
-            throw new DomainException("Permission relation not found for role " + roleId + " and endpoint permission " + endpointPermissionId);
+            throw new NotFoundException("Permission relation not found for role " + roleId + " and endpoint permission " + endpointPermissionId);
         }
 
         if (relation.getEndpointPermission().isInternalManagement()) {

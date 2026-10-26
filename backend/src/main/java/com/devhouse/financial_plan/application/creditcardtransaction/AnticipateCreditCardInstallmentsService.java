@@ -4,6 +4,7 @@ import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditC
 import com.devhouse.financial_plan.domain.CreditCardInvoiceCycle;
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ public class AnticipateCreditCardInstallmentsService {
                                                        Integer installmentsToAnticipate) {
         List<CreditCardTransaction> group = creditCardTransactionRepository.findByInstallmentGroupId(installmentGroupId);
         if (group.isEmpty() || !group.get(0).belongsToSpace(spaceId)) {
-            throw new DomainException("Installment group not found");
+            throw new NotFoundException("Installment group not found");
         }
         if (installmentsToAnticipate == null || installmentsToAnticipate <= 0) {
             throw new DomainException("Installments to anticipate must be greater than zero");

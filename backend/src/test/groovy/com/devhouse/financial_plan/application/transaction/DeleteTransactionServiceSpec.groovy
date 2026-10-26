@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.transaction
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.billinstance.UndoBillInstancePaymentService
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.creditcardinvoice.UndoCreditCardInvoicePaymentService
@@ -165,7 +166,7 @@ class DeleteTransactionServiceSpec extends Specification {
         service.execute(2L, 1L)
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Transaction not found"
         0 * transactionRepository.delete(_)
         0 * bankAccountRepository.update(_)

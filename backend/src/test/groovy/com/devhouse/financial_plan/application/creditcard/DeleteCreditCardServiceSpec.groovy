@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcard
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.domain.CreditCard
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.exception.DomainException
@@ -69,7 +70,7 @@ class DeleteCreditCardServiceSpec extends Specification {
         service.execute(2L, 10L)
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Credit card not found"
         0 * creditCardRepository.delete(_)
     }

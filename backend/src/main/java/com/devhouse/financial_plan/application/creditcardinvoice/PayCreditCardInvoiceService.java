@@ -16,6 +16,7 @@ import com.devhouse.financial_plan.domain.enums.SystemCategory;
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository;
@@ -86,7 +87,7 @@ public class PayCreditCardInvoiceService {
     private CreditCard resolveCreditCard(Long creditCardId, Long spaceId) {
         CreditCard creditCard = creditCardId != null ? creditCardRepository.findById(creditCardId) : null;
         if (creditCard == null || !creditCard.belongsToSpace(spaceId)) {
-            throw new DomainException("Credit card not found");
+            throw new NotFoundException("Credit card not found");
         }
         return creditCard;
     }

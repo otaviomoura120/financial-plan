@@ -3,6 +3,7 @@ package com.devhouse.financial_plan.application.category;
 import com.devhouse.financial_plan.application.category.dto.CategoryResponse;
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +21,7 @@ public class UpdateCategoryStatusService {
     public CategoryResponse execute(Long spaceId, Long id, boolean active) {
         Category category = categoryRepository.findById(id);
         if (category == null || !category.belongsToSpace(spaceId)) {
-            throw new DomainException("Category not found");
+            throw new NotFoundException("Category not found");
         }
         if (category.isSystem()) {
             throw new DomainException("System categories cannot be modified");

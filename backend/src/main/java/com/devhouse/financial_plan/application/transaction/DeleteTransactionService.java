@@ -6,6 +6,7 @@ import com.devhouse.financial_plan.domain.CreditCardInvoicePayment;
 import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.enums.TransactionSourceType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ public class DeleteTransactionService {
     public void execute(Long spaceId, Long id) {
         Transaction transaction = transactionRepository.findById(id);
         if (transaction == null || !transaction.belongsToSpace(spaceId)) {
-            throw new DomainException("Transaction not found");
+            throw new NotFoundException("Transaction not found");
         }
         if (transaction.isLinkedToSource()) {
             undoLinkedPayment(spaceId, transaction);

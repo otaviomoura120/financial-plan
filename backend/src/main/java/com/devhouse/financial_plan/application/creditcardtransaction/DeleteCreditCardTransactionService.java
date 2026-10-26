@@ -2,6 +2,7 @@ package com.devhouse.financial_plan.application.creditcardtransaction;
 
 import com.devhouse.financial_plan.domain.CreditCardTransaction;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,7 @@ public class DeleteCreditCardTransactionService {
     public void execute(Long spaceId, Long id, boolean includeFuture) {
         CreditCardTransaction transaction = creditCardTransactionRepository.findById(id);
         if (transaction == null || !transaction.belongsToSpace(spaceId)) {
-            throw new DomainException("Credit card transaction not found");
+            throw new NotFoundException("Credit card transaction not found");
         }
 
         List<CreditCardTransaction> toDelete = resolveTransactionsToDelete(transaction, includeFuture);

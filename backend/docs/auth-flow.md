@@ -19,18 +19,23 @@ Controller / Use Case
 
 ---
 
-## Step 1 — Authentication (Auth0 JWT Filter)
+## Step 1 — Authentication (Spring Security OAuth2 Resource Server)
 
-Every request must carry a valid **Bearer token** in the `Authorization` header. The `Auth0AuthenticationFilter` (provided by `com.auth0:auth0-springboot-api`) intercepts all requests before they reach Spring MVC.
+Every request must carry a valid **Bearer token** in the `Authorization` header. Auth0 access tokens are standard JWTs, validated by Spring Security's resource server (`spring-boot-starter-security-oauth2-resource-server`, enabled in `SecurityConfig` with `.oauth2ResourceServer(oauth2 -> oauth2.jwt(...))`) before the request reaches Spring MVC.
 
-What it does:
-- Validates the JWT signature against the Auth0 public keys
-- Extracts the `sub` claim from the token (e.g. `auth0|abc123`)
-- Populates the Spring `SecurityContext` with an `Authentication` object
+What it validates, from `application.properties`:
+- **Signature:** against the keys published at the issuer's JWKS (`https://financial-plan.us.auth0.com/.well-known/jwks.json`, discovered from the issuer on the first request)
+- **Expiry** (`exp`/`nbf`)
+- **Issuer:** `spring.security.oauth2.resourceserver.jwt.issuer-uri` = `${AUTH0_ISSUER_URI:https://financial-plan.us.auth0.com/}` (the trailing slash is part of Auth0's issuer)
+- **Audience:** `spring.security.oauth2.resourceserver.jwt.audiences` = `${AUTH0_AUDIENCE:https://financial-plan-api}`, so tokens issued for other APIs of the same tenant are rejected
+
+The resulting `Authentication` is a `JwtAuthenticationToken` whose `getName()` is the `sub` claim (e.g. `auth0|abc123`). `JwtValidationSpec` covers these rules (valid token, wrong audience, wrong issuer, expired, unknown key) against the real properties.
+
+DPoP-bound tokens are not supported: the Nuxt proxy sends plain `Authorization: Bearer` tokens.
 
 The `sub` claim is the unique identifier that Auth0 assigns to each user. It is used throughout the system to link an Auth0 identity to a local `User` record.
 
-> If the token is missing, expired, or tampered with, the filter rejects the request with **401 Unauthorized** before it reaches any controller.
+> If the token is missing, expired, tampered with, or issued for another issuer/audience, the resource server rejects the request with **401 Unauthorized** before it reaches any controller.
 
 All routes require authentication — configured in `SecurityConfig`:
 
@@ -102,7 +107,7 @@ allowedPermissions.anyMatch(p -> p.matchesRequest(method, path))
 
 Validating membership of the `X-Space-Id` Space is only half of the guarantee: the use case must then operate **on that same Space**. Data controllers (bank accounts, categories/subcategories, credit cards, credit card transactions and recurrings, invoices, bills and bill instances, transactions, reports) therefore receive the Space with `@RequestHeader(SecurityService.SPACE_HEADER) Long spaceId` and pass it to the service; they no longer accept `spaceId` as a query param or in a request body (report filters keep the field, but `scopedTo(spaceId)` overwrites it with the header value).
 
-Every service that receives an entity id (path variable or body reference such as `bankAccountId`, `categoryId`, `subCategoryId`, `creditCardId`, `installmentGroupId`) loads the entity and checks `belongsToSpace(spaceId)` on the domain model. An entity of another Space is reported exactly like a missing one (`DomainException` "... not found", 422), so ids from other Spaces cannot be probed. Ownership is resolved through the aggregate: `SubCategory` → `Category`, `Transaction` → `BankAccount`, `CreditCardTransaction`/`CreditCardTransactionRecurring`/`CreditCardInvoicePayment` → `CreditCard`.
+Every service that receives an entity id (path variable or body reference such as `bankAccountId`, `categoryId`, `subCategoryId`, `creditCardId`, `installmentGroupId`) loads the entity and checks `belongsToSpace(spaceId)` on the domain model. An entity of another Space is reported exactly like a missing one, so ids from other Spaces cannot be probed: `NotFoundException` (404) when it is the resource addressed by the URL, plain `DomainException` (422) when it is a reference inside the request body. Ownership is resolved through the aggregate: `SubCategory` → `Category`, `Transaction` → `BankAccount`, `CreditCardTransaction`/`CreditCardTransactionRecurring`/`CreditCardInvoicePayment` → `CreditCard`.
 
 The author of a transaction, credit card transaction or recurring is always the authenticated user (`authentication.getName()` → `UserRepository.findByAuth0Sub`), never a `userId` from the body. `POST /users` likewise takes `auth0Sub` from the JWT.
 
@@ -256,9 +261,10 @@ Return filtered GroupMenuStructureDto list
 
 | Situation | HTTP Status | Handled by |
 |---|---|---|
-| Missing or invalid JWT | 401 Unauthorized | Auth0AuthenticationFilter |
+| Missing or invalid JWT | 401 Unauthorized | Spring Security resource server |
 | Missing `X-Space-Id` header / not a member / rule denies | 403 Forbidden | GlobalHandlerException |
-| Business rule violated | 422 Unprocessable Entity | GlobalHandlerException |
+| Resource addressed by the URL does not exist or belongs to another Space (`NotFoundException`) | 404 Not Found | GlobalHandlerException |
+| Business rule violated, or an id in the body is invalid / from another Space | 422 Unprocessable Entity | GlobalHandlerException |
 | Concurrent edit conflict | 423 Locked | GlobalHandlerException |
 
 ---

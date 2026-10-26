@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcard
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.creditcard.dto.CreditCardResponse
 import com.devhouse.financial_plan.application.creditcard.dto.UpdateCreditCardRequest
 import com.devhouse.financial_plan.domain.BankAccount
@@ -126,7 +127,7 @@ class UpdateCreditCardServiceSpec extends Specification {
         service.execute(2L, 10L, new UpdateCreditCardRequest(0, "Renamed", new BigDecimal("1000.00"), 10, 17, null))
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Credit card not found"
         0 * creditCardRepository.update(_)
     }

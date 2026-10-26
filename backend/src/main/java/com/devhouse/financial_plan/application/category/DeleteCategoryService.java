@@ -2,6 +2,7 @@ package com.devhouse.financial_plan.application.category;
 
 import com.devhouse.financial_plan.domain.Category;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
@@ -24,7 +25,7 @@ public class DeleteCategoryService {
     public void execute(Long spaceId, Long id) {
         Category category = categoryRepository.findById(id);
         if (category == null || !category.belongsToSpace(spaceId)) {
-            throw new DomainException("Category not found");
+            throw new NotFoundException("Category not found");
         }
         if (category.isSystem()) {
             throw new DomainException("System categories cannot be deleted");

@@ -2,7 +2,7 @@ package com.devhouse.financial_plan.application.bill;
 
 import com.devhouse.financial_plan.domain.Bill;
 import com.devhouse.financial_plan.domain.BillRecurring;
-import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.BillRecurringRepository;
 import com.devhouse.financial_plan.domain.repository.BillRepository;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class DeleteBillRecurringService {
     public void execute(Long spaceId, Long id) {
         BillRecurring billRecurring = billRecurringRepository.findById(id);
         if (billRecurring == null || !billRecurring.belongsToSpace(spaceId)) {
-            throw new DomainException("Bill recurring not found");
+            throw new NotFoundException("Bill recurring not found");
         }
         removeFutureAndDetachPastBills(id);
         billRecurringRepository.delete(id);

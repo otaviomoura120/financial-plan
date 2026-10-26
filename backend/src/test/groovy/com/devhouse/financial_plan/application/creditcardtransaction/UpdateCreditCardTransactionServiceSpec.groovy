@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.UpdateCreditCardTransactionRequest
@@ -303,7 +304,7 @@ class UpdateCreditCardTransactionServiceSpec extends Specification {
         service.execute(2L, 1L, request)
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Credit card transaction not found"
         0 * creditCardTransactionRepository.update(_)
     }

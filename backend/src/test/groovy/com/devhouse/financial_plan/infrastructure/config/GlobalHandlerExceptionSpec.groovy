@@ -1,10 +1,12 @@
 package com.devhouse.financial_plan.infrastructure.config
 
 import com.devhouse.financial_plan.domain.exception.DomainException
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.security.authorization.AuthorizationDeniedException
+import org.springframework.web.method.annotation.ExceptionHandlerMethodResolver
 import spock.lang.Specification
 
 class GlobalHandlerExceptionSpec extends Specification {
@@ -55,5 +57,23 @@ class GlobalHandlerExceptionSpec extends Specification {
 
         then:
         response.statusCode == HttpStatus.INTERNAL_SERVER_ERROR
+    }
+
+    def "returns 404 with the message when NotFoundException is thrown"() {
+        when:
+        ResponseEntity<?> response = handler.handleNotFoundException(new NotFoundException("Transaction not found"), null)
+
+        then:
+        response.statusCode == HttpStatus.NOT_FOUND
+        response.body == "Transaction not found"
+    }
+
+    def "Spring routes NotFoundException to the 404 handler and other DomainExceptions to the 422 handler"() {
+        given:
+        ExceptionHandlerMethodResolver resolver = new ExceptionHandlerMethodResolver(GlobalHandlerException)
+
+        expect:
+        resolver.resolveMethodByThrowable(new NotFoundException("Transaction not found")).name == "handleNotFoundException"
+        resolver.resolveMethodByThrowable(new DomainException("Category not found")).name == "handleDomainException"
     }
 }

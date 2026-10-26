@@ -4,6 +4,7 @@ import com.devhouse.financial_plan.domain.SpaceInvite;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.enums.InviteStatus;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.SpaceInviteRepository;
 import com.devhouse.financial_plan.domain.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,7 @@ public class DeclineInviteService {
 
     public void execute(String token, String auth0Sub) {
         SpaceInvite invite = spaceInviteRepository.findByToken(token)
-                .orElseThrow(() -> new DomainException("Invite not found"));
+                .orElseThrow(() -> new NotFoundException("Invite not found"));
 
         if (invite.getStatus() == InviteStatus.CANCELLED) {
             throw new DomainException("invite_cancelled");

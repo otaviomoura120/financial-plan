@@ -2,6 +2,7 @@ package com.devhouse.financial_plan.application.creditcard;
 
 import com.devhouse.financial_plan.domain.CreditCard;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository;
@@ -35,7 +36,7 @@ public class DeleteCreditCardService {
     private CreditCard resolveCreditCard(Long id, Long spaceId) {
         CreditCard creditCard = creditCardRepository.findById(id);
         if (creditCard == null || !creditCard.belongsToSpace(spaceId)) {
-            throw new DomainException("Credit card not found");
+            throw new NotFoundException("Credit card not found");
         }
         return creditCard;
     }

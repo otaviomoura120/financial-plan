@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse
 import com.devhouse.financial_plan.domain.enums.CategoryKind
@@ -65,7 +66,7 @@ class ListInstallmentGroupServiceSpec extends Specification {
         service.execute(2L, "group-1")
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Installment group not found"
     }
 }

@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.billinstance
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.billinstance.dto.PayBillInstanceRequest
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.transaction.CreateTransactionService
@@ -143,7 +144,7 @@ class PayBillInstanceServiceSpec extends Specification {
         service.execute(2L, 1L, new PayBillInstanceRequest(2L, LocalDate.of(2026, 3, 9)), "auth0|1")
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Bill instance not found"
         0 * createTransactionService.execute(*_)
         0 * billRepository.update(_)

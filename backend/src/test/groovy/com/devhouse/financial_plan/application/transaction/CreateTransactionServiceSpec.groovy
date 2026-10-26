@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.transaction
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.category.ResolveSystemCategoryService
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair
@@ -312,6 +313,7 @@ class CreateTransactionServiceSpec extends Specification {
         then:
         DomainException exception = thrown()
         exception.message == "Bank account not found"
+        !(exception instanceof NotFoundException)
         0 * transactionRepository.save(_)
         0 * bankAccountRepository.update(_)
     }

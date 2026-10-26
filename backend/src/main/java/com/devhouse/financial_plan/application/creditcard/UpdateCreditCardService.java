@@ -5,6 +5,7 @@ import com.devhouse.financial_plan.application.creditcard.dto.UpdateCreditCardRe
 import com.devhouse.financial_plan.domain.BankAccount;
 import com.devhouse.financial_plan.domain.CreditCard;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardRepository;
 import org.springframework.stereotype.Service;
@@ -56,7 +57,7 @@ public class UpdateCreditCardService {
     private CreditCard resolveCreditCard(Long id, Long spaceId) {
         CreditCard creditCard = creditCardRepository.findById(id);
         if (creditCard == null || !creditCard.belongsToSpace(spaceId)) {
-            throw new DomainException("Credit card not found");
+            throw new NotFoundException("Credit card not found");
         }
         return creditCard;
     }

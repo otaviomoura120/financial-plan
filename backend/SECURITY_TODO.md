@@ -19,6 +19,12 @@ Detalhes em `docs/auth-flow.md`, seção "The header is the only source of the S
 - **4. Busca de usuário:** `GET /users/search` foi substituído por `GET /spaces/{id}/members/search`, liberado só para quem pode convidar naquele Space (`SecurityService.userCanInviteToSpace`). A resposta traz apenas o nome mascarado (`"Joã* S****"`), sem id nem e-mail.
   - **Limitação:** a checagem de permissão é regra de negócio, não proteção. Todo usuário vira OWNER do próprio Space no onboarding e pode convidar nele, então qualquer pessoa que crie uma conta consegue usar a busca. O endpoint continua revelando se um e-mail tem conta (200/404). A proteção real é a máscara mais o **rate limit** (ver Infraestrutura), que segue pendente. Para eliminar a descoberta por completo, seria preciso remover a busca e convidar sempre pelo e-mail digitado.
 
+
+### ✅ Corrigido em 2026-10-21 (itens 6 a 8 abaixo)
+
+- **6. Lib do Auth0:** `auth0-springboot-api:1.0.0-beta.1` foi substituída por `spring-boot-starter-security-oauth2-resource-server`. O token é validado por assinatura (JWKS do tenant), expiração, issuer (`AUTH0_ISSUER_URI`) e audience (`AUTH0_AUDIENCE`). O `JwtValidationSpec` cobre os casos válidos e inválidos usando as properties reais.
+- **7. Stack trace:** o `printStackTrace()` saiu. O erro genérico é logado uma vez só, pelo logger, com o stack trace.
+- **8. Não encontrado:** `NotFoundException` → 404 quando o recurso da URL não existe ou é de outro Space. Um ID inválido no body continua 422.
 ---
 
 ## 🟠 Alto
@@ -99,4 +105,4 @@ Detalhes em `docs/auth-flow.md`, seção "The header is the only source of the S
 ## Observações
 
 - No frontend há um erro de TypeScript pré-existente em `frontend/server/utils/backendFetch.ts` (TS2322). Não é de segurança, mas faz o `pnpm build` falhar se o build rodar o `vue-tsc`.
-- Os itens 1 a 4 já foram corrigidos. Os itens 5 a 8 e a parte de infraestrutura devem ser feitos antes de liberar para usuários reais.
+- Os itens 1 a 4 e 6 a 8 já foram corrigidos. Faltam o item 5 (SMTP, aguardando a contratação do serviço de e-mail) e a parte de infraestrutura, que devem ser feitos antes de liberar para usuários reais.

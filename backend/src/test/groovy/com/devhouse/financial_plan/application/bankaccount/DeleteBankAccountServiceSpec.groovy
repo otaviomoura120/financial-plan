@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.bankaccount
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.domain.BankAccount
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.exception.DomainException
@@ -52,7 +53,7 @@ class DeleteBankAccountServiceSpec extends Specification {
         service.execute(2L, 10L)
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Bank account not found"
         0 * bankAccountRepository.delete(_)
     }

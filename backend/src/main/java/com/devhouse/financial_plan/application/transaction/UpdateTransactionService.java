@@ -12,6 +12,7 @@ import com.devhouse.financial_plan.domain.Transaction;
 import com.devhouse.financial_plan.domain.enums.SystemCategory;
 import com.devhouse.financial_plan.domain.enums.TransactionType;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.BankAccountRepository;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.SubCategoryRepository;
@@ -94,7 +95,7 @@ public class UpdateTransactionService {
     private Transaction resolveTransaction(Long id, Long spaceId) {
         Transaction transaction = transactionRepository.findById(id);
         if (transaction == null || !transaction.belongsToSpace(spaceId)) {
-            throw new DomainException("Transaction not found");
+            throw new NotFoundException("Transaction not found");
         }
         return transaction;
     }

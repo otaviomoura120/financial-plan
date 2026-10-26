@@ -3,7 +3,7 @@ package com.devhouse.financial_plan.application.creditcardinvoice;
 import com.devhouse.financial_plan.application.transaction.TransactionBalanceEffectService;
 import com.devhouse.financial_plan.domain.CreditCardInvoicePayment;
 import com.devhouse.financial_plan.domain.Transaction;
-import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
 import com.devhouse.financial_plan.domain.repository.TransactionRepository;
 import org.springframework.stereotype.Service;
@@ -30,7 +30,7 @@ public class UndoCreditCardInvoicePaymentService {
     public void execute(Long spaceId, Long creditCardId, LocalDate referenceMonth) {
         CreditCardInvoicePayment payment = creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(creditCardId, referenceMonth);
         if (payment == null || !payment.getCreditCard().belongsToSpace(spaceId)) {
-            throw new DomainException("Credit card invoice payment not found");
+            throw new NotFoundException("Credit card invoice payment not found");
         }
         Transaction transaction = transactionRepository.findById(payment.getPaymentTransactionId());
         transactionBalanceEffectService.revert(transaction);

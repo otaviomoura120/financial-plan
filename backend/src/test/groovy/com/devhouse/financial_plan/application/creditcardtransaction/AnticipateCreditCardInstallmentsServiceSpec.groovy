@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcardtransaction
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.creditcardtransaction.dto.CreditCardTransactionResponse
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.domain.Category
@@ -173,7 +174,7 @@ class AnticipateCreditCardInstallmentsServiceSpec extends Specification {
         service.execute(2L, "group-1", LocalDate.of(2026, 1, 1), 1)
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Installment group not found"
         0 * creditCardTransactionRepository.update(_)
     }

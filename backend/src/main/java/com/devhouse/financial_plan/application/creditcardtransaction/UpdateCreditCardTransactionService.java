@@ -9,6 +9,7 @@ import com.devhouse.financial_plan.domain.SubCategory;
 import com.devhouse.financial_plan.domain.CategoryKindPolicy;
 import com.devhouse.financial_plan.domain.SystemCategoryPolicy;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.CategoryRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardInvoicePaymentRepository;
 import com.devhouse.financial_plan.domain.repository.CreditCardTransactionRepository;
@@ -41,7 +42,7 @@ public class UpdateCreditCardTransactionService {
     public CreditCardTransactionResponse execute(Long spaceId, Long id, UpdateCreditCardTransactionRequest request) {
         CreditCardTransaction transaction = creditCardTransactionRepository.findById(id);
         if (transaction == null || !transaction.belongsToSpace(spaceId)) {
-            throw new DomainException("Credit card transaction not found");
+            throw new NotFoundException("Credit card transaction not found");
         }
         rejectIfMonthAlreadyPaid(transaction.getCreditCard().getId(), transaction.getReferenceMonth());
         transaction.setVersion(request.version());

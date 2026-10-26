@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.category
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.category.dto.CategoryResponse
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.category.dto.UpdateCategoryRequest
@@ -224,7 +225,7 @@ class UpdateCategoryServiceSpec extends Specification {
         service.execute(2L, 10L, new UpdateCategoryRequest(0, "Groceries", CategoryKind.EXPENSE))
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Category not found"
         0 * categoryRepository.update(_)
     }

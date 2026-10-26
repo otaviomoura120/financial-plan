@@ -1,5 +1,6 @@
 package com.devhouse.financial_plan.application.creditcardinvoice
 
+import com.devhouse.financial_plan.domain.exception.NotFoundException
 import com.devhouse.financial_plan.application.category.ResolveSystemCategoryService
 import com.devhouse.financial_plan.domain.enums.CategoryKind
 import com.devhouse.financial_plan.application.category.dto.SystemCategoryPair
@@ -199,7 +200,7 @@ class PayCreditCardInvoiceServiceSpec extends Specification {
         service.execute(2L, 10L, LocalDate.of(2026, 3, 1), new PayCreditCardInvoiceRequest(2L, LocalDate.of(2026, 4, 5)), "auth0|1")
 
         then:
-        DomainException exception = thrown()
+        NotFoundException exception = thrown()
         exception.message == "Credit card not found"
         0 * createTransactionService.execute(*_)
         0 * creditCardInvoicePaymentRepository.save(_)
