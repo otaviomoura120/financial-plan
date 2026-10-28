@@ -89,6 +89,7 @@ class CreditCardInvoiceCycleSpec extends Specification {
 
     def "resolveReferenceMonth and resolveDueDate together reproduce the reported cycle: purchase on 2026-06-26 with closingDay 25 and dueDay 5 belongs to the invoice due 2026-08-05"() {
         given:
+
         int closingDay = 25
         int dueDay = 5
 
