@@ -25,6 +25,11 @@ const emit = defineEmits<Emit>()
 const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
+// Backend codes from InviteSpaceMemberService (the limit is Space.MAX_MEMBERS, pending invites included)
+const INVITE_ERROR_MESSAGES: Record<string, string> = {
+  space_member_limit_reached: 'Este espaço já atingiu o máximo de 5 usuários, contando os convites pendentes. Cancele um convite pendente ou remova um membro para convidar outra pessoa.',
+}
+
 type Step = 'search' | 'found' | 'not-found'
 
 const step = shallowRef<Step>('search')
@@ -118,7 +123,7 @@ async function sendInvite() {
     emit('update:isDialogVisible', false)
   }
   catch (e) {
-    setError(e)
+    setError(e, INVITE_ERROR_MESSAGES)
   }
   finally {
     isSubmitting.value = false

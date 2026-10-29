@@ -8,6 +8,7 @@ import com.devhouse.financial_plan.domain.enums.InviteStatus;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.RoleRepository;
 import com.devhouse.financial_plan.domain.repository.SpaceInviteRepository;
+import com.devhouse.financial_plan.domain.repository.SpaceMemberRepository;
 import com.devhouse.financial_plan.domain.repository.SpaceRepository;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +32,7 @@ public class InviteSpaceMemberService {
     private final SpaceRepository spaceRepository;
     private final RoleRepository roleRepository;
     private final SpaceInviteRepository spaceInviteRepository;
+    private final SpaceMemberRepository spaceMemberRepository;
     private final JavaMailSender mailSender;
 
     @Value("${app.frontend-url}")
@@ -39,10 +41,12 @@ public class InviteSpaceMemberService {
     public InviteSpaceMemberService(SpaceRepository spaceRepository,
                                     RoleRepository roleRepository,
                                     SpaceInviteRepository spaceInviteRepository,
+                                    SpaceMemberRepository spaceMemberRepository,
                                     JavaMailSender mailSender) {
         this.spaceRepository = spaceRepository;
         this.roleRepository = roleRepository;
         this.spaceInviteRepository = spaceInviteRepository;
+        this.spaceMemberRepository = spaceMemberRepository;
         this.mailSender = mailSender;
     }
 
@@ -55,6 +59,8 @@ public class InviteSpaceMemberService {
         spaceInviteRepository.findBySpaceIdAndEmail(spaceId, request.email())
                 .filter(i -> i.getStatus() == InviteStatus.PENDING)
                 .ifPresent(i -> { throw new DomainException("A pending invite already exists for this email"); });
+        SpaceInvite.requireRoomForNewInvite(spaceMemberRepository.findBySpaceId(spaceId).size(),
+                spaceInviteRepository.findBySpaceId(spaceId));
 
         String token = UUID.randomUUID().toString();
         Instant now = Instant.now();

@@ -48,10 +48,25 @@ Detalhes em `docs/auth-flow.md`, seção "The header is the only source of the S
 - **🔵 Proxy:** `GET /api/spaces` aceita só `userId` numérico.
 
 
+### ✅ Rate limit no backend (2026-10-29)
+
+- **Por usuário:** `infrastructure/ratelimit` (Bucket4j em memória), chave = `sub` do JWT, porque o backend só enxerga o IP do proxy Nitro. Acima do limite responde **429** com `Retry-After`; o front mostra uma mensagem em pt-BR (`useApiError`).
+- **Configuração:** `app.rate-limit.*` no `application.properties`, cada limite sobrescrevível por variável de ambiente (`RATE_LIMIT_DEFAULT`, `RATE_LIMIT_MEMBER_SEARCH`, `RATE_LIMIT_INVITES`, `RATE_LIMIT_SPACE_CREATION`, `RATE_LIMIT_USER_CREATION`, `RATE_LIMIT_REPORTS`; `RATE_LIMIT_ENABLED=false` desliga). Limite mal escrito impede o backend de subir.
+  | Endpoint | Limite |
+  |---|---|
+  | `GET /spaces/{id}/members/search` | 10/min e 50/dia |
+  | `POST /spaces/{id}/invites` | 10/hora e 30/dia |
+  | `POST /spaces` | 10/dia |
+  | `POST /users` | 5/hora |
+  | `POST /reports/**` | 30/min |
+  | demais endpoints | 300/min |
+- **Usuários por Space:** no máximo 5, contando o dono (`Space.MAX_MEMBERS`). Cada convite pendente reserva uma vaga (membros + convites pendentes ≤ 5), e o aceite confere de novo. Convites expirados não contam. A tela de membros mostra o limite e o uso.
+- **Limitação:** contadores em memória zeram ao reiniciar e não são compartilhados entre instâncias. Com mais de uma instância, mover para Redis.
+- **Ainda falta:** a camada por IP no proxy reverso (ver Infraestrutura).
+
 ### ⏳ Pendências da segunda revisão
 
 - **🔵 CSP para scripts:** exige nonce por requisição (módulo `nuxt-security`) e teste completo das telas.
-- **🔵 Envio de convites para qualquer e-mail:** quem pode convidar consegue disparar e-mails para endereços arbitrários. Entra no rate limit abaixo.
 ---
 
 ## 🟠 Alto
@@ -119,7 +134,7 @@ Detalhes em `docs/auth-flow.md`, seção "The header is the only source of the S
 ## 🔧 Infraestrutura (fora do código)
 
 - **HTTPS obrigatório** no proxy reverso (Nginx/Caddy/ALB), com redirect de HTTP.
-- **Rate limiting**, principalmente em `POST /users`, `GET /spaces/{id}/members/search`, `POST /spaces/{id}/invites` e `/invites/{token}/accept`.
+- **Rate limiting por IP** no proxy reverso (Nginx/Caddy ou recurso da plataforma), principalmente em `/auth/`. O limite por usuário já está no backend.
 - **MySQL sem porta exposta** para a internet: só acessível pela rede interna do backend.
 - **Backups** automáticos do banco, com teste de restauração.
 - **Backend sem exposição direta:** se todo acesso passa pelo proxy Nitro, deixar a API acessível só pela rede interna. Desde 2026-10-29 o access token não chega mais ao navegador, então fechar a rede passa a ser a última camada.

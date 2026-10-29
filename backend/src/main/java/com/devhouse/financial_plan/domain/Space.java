@@ -8,6 +8,9 @@ import java.util.Objects;
 
 public class Space {
 
+    /** Users a Space may have, the owner included. Each pending invite holds one of these seats. */
+    public static final int MAX_MEMBERS = 5;
+
     private Long id;
     private Integer version;
     private String name;
@@ -27,6 +30,12 @@ public class Space {
     public void validate() {
         if (name == null || name.isBlank()) {
             throw new DomainException("Space name cannot be empty");
+        }
+    }
+
+    public static void requireRoomForNewMember(int memberCount) {
+        if (memberCount >= MAX_MEMBERS) {
+            throw new DomainException("space_member_limit_reached");
         }
     }
 

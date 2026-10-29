@@ -28,6 +28,9 @@ dependencies {
 	implementation("jakarta.annotation:jakarta.annotation-api")
 	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	// Per-user rate limiting (infrastructure/ratelimit); Caffeine evicts idle buckets
+	implementation 'com.bucket4j:bucket4j_jdk17-core:8.21.0'
+	implementation 'com.github.ben-manes.caffeine:caffeine'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 	testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")

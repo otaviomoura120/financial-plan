@@ -50,6 +50,8 @@ public class AcceptInviteService {
         if (existing != null) {
             throw new DomainException("already_member");
         }
+        // Invites already reserve a seat, but ones sent before the cap existed may not fit
+        Space.requireRoomForNewMember(spaceMemberRepository.findBySpaceId(invite.getSpace().getId()).size());
 
         Space space = invite.getSpace();
         Role role = invite.getRole();

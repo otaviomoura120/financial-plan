@@ -32,6 +32,7 @@ const errorMessageMap: Record<string, string> = {
   invite_already_declined: 'Este convite já foi recusado anteriormente.',
   invite_expired: 'Este convite expirou. Solicite um novo convite ao administrador do espaço.',
   invite_email_mismatch: 'Este convite foi enviado para outro endereço de e-mail.',
+  space_member_limit_reached: 'Este espaço já atingiu o máximo de 5 usuários. Peça ao administrador do espaço para liberar uma vaga.',
   complete_onboarding: 'Finalize seu cadastro antes de responder a este convite.',
 }
 

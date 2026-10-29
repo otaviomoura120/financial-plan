@@ -67,4 +67,70 @@ class SpaceInviteSpec extends Specification {
         DomainException exception = thrown()
         exception.message == "invite_already_declined"
     }
+
+    def "#members members and #pending pending invites leave room for another invite"() {
+        given:
+        List<SpaceInvite> invites = (0..<pending).collect { buildInvite(InviteStatus.PENDING, Instant.now().plus(1, ChronoUnit.DAYS)) }
+
+        when:
+        SpaceInvite.requireRoomForNewInvite(members, invites)
+
+        then:
+        noExceptionThrown()
+
+        where:
+        members | pending
+        1       | 0
+        1       | 3
+        4       | 0
+        2       | 2
+    }
+
+    def "#members members and #pending pending invites fill the Space"() {
+        given:
+        List<SpaceInvite> invites = (0..<pending).collect { buildInvite(InviteStatus.PENDING, Instant.now().plus(1, ChronoUnit.DAYS)) }
+
+        when:
+        SpaceInvite.requireRoomForNewInvite(members, invites)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "space_member_limit_reached"
+
+        where:
+        members | pending
+        1       | 4
+        5       | 0
+        3       | 2
+        6       | 0
+    }
+
+    def "expired and answered invites do not hold a seat"() {
+        given:
+        List<SpaceInvite> invites = [
+                buildInvite(InviteStatus.PENDING, Instant.now().minus(1, ChronoUnit.DAYS)),
+                buildInvite(InviteStatus.ACCEPTED, Instant.now().plus(1, ChronoUnit.DAYS)),
+                buildInvite(InviteStatus.CANCELLED, Instant.now().plus(1, ChronoUnit.DAYS)),
+                buildInvite(InviteStatus.DECLINED, Instant.now().plus(1, ChronoUnit.DAYS))
+        ]
+
+        when:
+        SpaceInvite.requireRoomForNewInvite(4, invites)
+
+        then:
+        noExceptionThrown()
+    }
+
+    def "only pending invites that have not expired count as pending"() {
+        expect:
+        buildInvite(status, Instant.now().plus(daysUntilExpiry, ChronoUnit.DAYS)).isPending() == pending
+
+        where:
+        status                 | daysUntilExpiry | pending
+        InviteStatus.PENDING   | 1               | true
+        InviteStatus.PENDING   | -1              | false
+        InviteStatus.ACCEPTED  | 1               | false
+        InviteStatus.CANCELLED | 1               | false
+        InviteStatus.DECLINED  | 1               | false
+    }
 }

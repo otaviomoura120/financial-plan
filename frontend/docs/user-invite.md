@@ -107,6 +107,7 @@ JSON). This matters for the frontend — see "Nitro proxy hardening" below. Full
 
 | Code | Thrown by | Meaning |
 |---|---|---|
+| `space_member_limit_reached` | Invite/Accept | members plus pending, unexpired invites already reach `Space.MAX_MEMBERS` (5, owner included) |
 | `invite_cancelled` | Accept/Decline | invite was cancelled by an admin |
 | `invite_already_accepted` | Accept/Decline | invite already used |
 | `invite_already_declined` | Accept/Decline | invite was already declined by the recipient |

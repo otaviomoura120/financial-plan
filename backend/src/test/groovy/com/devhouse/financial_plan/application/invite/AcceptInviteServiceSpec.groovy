@@ -43,6 +43,9 @@ class AcceptInviteServiceSpec extends Specification {
         SpaceInvite invite = givenInvite(InviteStatus.PENDING)
         givenUser("Maria@Example.com")
         spaceMemberRepository.findBySpaceIdAndUserId(1L, 7L) >> null
+        spaceMemberRepository.findBySpaceId(1L) >> (1..Space.MAX_MEMBERS - 1).collect {
+            new SpaceMember(it as Long, 0, space, null, role, Instant.now())
+        }
 
         when:
         AcceptInviteResponse result = service.execute("token", "auth0|maria")
@@ -53,6 +56,25 @@ class AcceptInviteServiceSpec extends Specification {
         result.spaceId() == 1L
         result.roleId() == 2L
         invite.status == InviteStatus.ACCEPTED
+    }
+
+    def "does not accept an invite when the Space already has the maximum of members"() {
+        given:
+        givenInvite(InviteStatus.PENDING)
+        givenUser("maria@example.com")
+        spaceMemberRepository.findBySpaceIdAndUserId(1L, 7L) >> null
+        spaceMemberRepository.findBySpaceId(1L) >> (1..Space.MAX_MEMBERS).collect {
+            new SpaceMember(it as Long, 0, space, null, role, Instant.now())
+        }
+
+        when:
+        service.execute("token", "auth0|maria")
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "space_member_limit_reached"
+        0 * spaceMemberRepository.save(_)
+        0 * spaceInviteRepository.update(_)
     }
 
     def "does not accept an invite the recipient already declined"() {

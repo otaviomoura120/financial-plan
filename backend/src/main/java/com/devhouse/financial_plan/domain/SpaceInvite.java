@@ -5,6 +5,7 @@ import com.devhouse.financial_plan.domain.exception.DomainException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 
 public class SpaceInvite {
@@ -68,6 +69,23 @@ public class SpaceInvite {
         if (isExpired()) {
             throw new DomainException("invite_expired");
         }
+    }
+
+    /**
+     * Each invite that can still be accepted holds a seat, so members plus pending invites never exceed
+     * Space.MAX_MEMBERS. Expired invites do not count: they can no longer be accepted.
+     */
+    public static void requireRoomForNewInvite(int memberCount, List<SpaceInvite> invitesOfSpace) {
+        long pending = invitesOfSpace.stream()
+                .filter(SpaceInvite::isPending)
+                .count();
+        if (memberCount + pending >= Space.MAX_MEMBERS) {
+            throw new DomainException("space_member_limit_reached");
+        }
+    }
+
+    public boolean isPending() {
+        return status == InviteStatus.PENDING && !isExpired();
     }
 
     public boolean isExpired() {

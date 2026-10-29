@@ -71,6 +71,16 @@ const paginatedMembers = computed(() => {
 
 const pendingInvites = computed(() => invites.value.filter(i => i.status === 'PENDING'))
 
+// Mirrors Space.MAX_MEMBERS in the backend: members plus pending invites, the owner included;
+// expired invites no longer hold a seat
+const MAX_MEMBERS = 5
+
+const activePendingInvitesCount = computed(() =>
+  pendingInvites.value.filter(i => new Date(i.expiresAt).getTime() > Date.now()).length,
+)
+
+const usedSeats = computed(() => members.value.length + activePendingInvitesCount.value)
+
 watch(
   () => spaceStore.activeSpace,
   async space => {
@@ -442,6 +452,17 @@ function formatDate(iso: string) {
           {{ pendingInvites.length }}
         </VChip>
       </VCardText>
+
+      <VAlert
+        type="info"
+        variant="tonal"
+        density="compact"
+        class="mx-4 mb-4"
+      >
+        Cada espaço pode ter no máximo {{ MAX_MEMBERS }} usuários, incluindo o dono e os convites pendentes
+        ({{ usedSeats }} de {{ MAX_MEMBERS }} em uso). Convites expirados não contam.
+        Para convidar alguém com o limite atingido, cancele um convite pendente ou remova um membro.
+      </VAlert>
 
       <VDivider />
 
