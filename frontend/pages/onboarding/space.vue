@@ -27,7 +27,6 @@ async function submit() {
       body: {
         name: form.value.name,
         description: form.value.description || null,
-        creatorId: spaceStore.dbUser?.id,
       },
     })
 

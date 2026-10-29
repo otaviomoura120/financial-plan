@@ -254,6 +254,48 @@ class CreateCreditCardTransactionServiceSpec extends Specification {
         saved.collect { it.amount }.sum() == new BigDecimal("100.00")
     }
 
+    def "execute rejects an out-of-range installment count before touching any invoice or saving"() {
+        given:
+        creditCardRepository.findById(10L) >> buildCreditCard()
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
+
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
+                new BigDecimal("100.00"), false, LocalDate.of(2026, 3, 5), "desc", installments, null)
+
+        when:
+        service.execute(1L, "auth0|1", request)
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Total installments must be between 1 and 60"
+        0 * creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _)
+        0 * creditCardTransactionRepository.save(_)
+
+        where:
+        installments << [61, Integer.MAX_VALUE]
+    }
+
+    def "execute accepts the maximum of 60 installments"() {
+        given:
+        creditCardRepository.findById(10L) >> buildCreditCard()
+        userRepository.findByAuth0Sub("auth0|1") >> Mock(User)
+        categoryRepository.findById(20L) >> Mock(Category) { belongsToSpace(_) >> true }
+        creditCardInvoicePaymentRepository.findByCreditCardIdAndReferenceMonth(_, _) >> null
+        List<CreditCardTransaction> saved = []
+        creditCardTransactionRepository.save(_) >> { CreditCardTransaction t -> saved << t; t }
+
+        CreateCreditCardTransactionRequest request = new CreateCreditCardTransactionRequest(10L, 20L, null,
+                new BigDecimal("600.00"), false, LocalDate.of(2026, 3, 5), "desc", 60, null)
+
+        when:
+        service.execute(1L, "auth0|1", request)
+
+        then:
+        saved.size() == 60
+        saved*.totalInstallments.every { it == 60 }
+    }
+
     def "execute throws DomainException when credit card does not exist"() {
         given:
         creditCardRepository.findById(99L) >> null

@@ -32,6 +32,54 @@ class CreditCardTransactionRecurringSpec extends Specification {
                 "Netflix", new BigDecimal("39.90"), LocalDate.of(2026, 3, 10), true, Instant.now(), null)
     }
 
+    private CreditCardTransactionRecurring buildRecurring(Long id, LocalDate startDate) {
+        new CreditCardTransactionRecurring(id, 0, buildCreditCard(), buildUser(), buildCategory(), buildSubCategory(),
+                "Netflix", new BigDecimal("39.90"), startDate, true, Instant.now(), null)
+    }
+
+    def "validate rejects a new subscription starting more than five years ago"() {
+        given:
+        CreditCardTransactionRecurring recurring = buildRecurring(null, LocalDate.of(1, 1, 1))
+
+        when:
+        recurring.validate()
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Start date cannot be more than 5 years in the past"
+    }
+
+    def "validate accepts a new subscription starting exactly five years ago"() {
+        given:
+        CreditCardTransactionRecurring recurring = buildRecurring(null, LocalDate.now().minusYears(5))
+
+        when:
+        recurring.validate()
+
+        then:
+        noExceptionThrown()
+    }
+
+    def "updateSchedule keeps an aged subscription editable but rejects a new start date over the limit"() {
+        given:
+        LocalDate oldStart = LocalDate.now().minusYears(6)
+        CreditCardTransactionRecurring recurring = buildRecurring(10L, oldStart)
+
+        when:
+        recurring.updateSchedule(oldStart)
+        recurring.validate()
+
+        then:
+        noExceptionThrown()
+
+        when:
+        recurring.updateSchedule(oldStart.minusYears(1))
+
+        then:
+        thrown(DomainException)
+        recurring.startDate == oldStart
+    }
+
     def "validate passes for a well-formed recurring"() {
         given:
         CreditCardTransactionRecurring recurring = buildRecurring()

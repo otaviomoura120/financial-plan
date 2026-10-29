@@ -10,6 +10,7 @@ import com.devhouse.financial_plan.domain.Space;
 import com.devhouse.financial_plan.domain.SpaceMember;
 import com.devhouse.financial_plan.domain.User;
 import com.devhouse.financial_plan.domain.enums.EndpointPermissionAccess;
+import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.repository.EndpointPermissionRepository;
 import com.devhouse.financial_plan.domain.repository.RoleEndpointPermissionRepository;
 import com.devhouse.financial_plan.domain.repository.RoleRepository;
@@ -46,14 +47,23 @@ public class CreateSpaceService {
         this.ensureSystemCategoriesService = ensureSystemCategoriesService;
     }
 
-    public SpaceResponse execute(CreateSpaceRequest request) {
-        User creator = userRepository.findById(request.creatorId());
+    // The owner is always the authenticated user; a creator id from the request would let anyone create Spaces for others
+    public SpaceResponse execute(String auth0Sub, CreateSpaceRequest request) {
+        User creator = resolveCreator(auth0Sub);
         Space space = new Space(null, 0, request.name(), request.description(), Instant.now(), null);
         space.validate();
         Space saved = spaceRepository.save(space);
         createOwnerMembership(creator, saved);
         ensureSystemCategoriesService.execute(saved.getId());
         return new SpaceResponse(saved.getId(), saved.getVersion(), saved.getName(), saved.getDescription(), saved.getCreatedDate(), null);
+    }
+
+    private User resolveCreator(String auth0Sub) {
+        User creator = userRepository.findByAuth0Sub(auth0Sub);
+        if (creator == null) {
+            throw new DomainException("complete_onboarding");
+        }
+        return creator;
     }
 
     private void createOwnerMembership(User creator, Space space) {

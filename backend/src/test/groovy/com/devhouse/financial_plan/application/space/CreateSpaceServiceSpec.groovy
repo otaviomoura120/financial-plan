@@ -36,7 +36,7 @@ class CreateSpaceServiceSpec extends Specification {
 
     def "execute creates space, owner role, assigns all non-internal permissions as ALLOW, and saves membership"() {
         given:
-        CreateSpaceRequest request = new CreateSpaceRequest("Smith Family", null, 1L)
+        CreateSpaceRequest request = new CreateSpaceRequest("Smith Family", null)
         User creator = new User(1L, 0, "auth0|abc", "John", null, null, null,
                 null, "john@test.com", null, true, null, null, Instant.now(), null, false)
         Space savedSpace = new Space(10L, 0, "Smith Family", null, Instant.now(), null)
@@ -45,14 +45,14 @@ class CreateSpaceServiceSpec extends Specification {
                 EndpointPermissionType.API, "GET", "Role", Instant.now(), null)
         SpaceMember savedMember = new SpaceMember(30L, 0, savedSpace, creator, savedOwnerRole, Instant.now())
 
-        userRepository.findById(1L) >> creator
+        userRepository.findByAuth0Sub("auth0|abc") >> creator
         spaceRepository.save(_) >> savedSpace
         roleRepository.save({ Role r -> r.getName() == Role.OWNER_ROLE_NAME }) >> savedOwnerRole
         endpointPermissionRepository.findAll() >> [ep]
         spaceMemberRepository.save(_) >> savedMember
 
         when:
-        SpaceResponse response = service.execute(request)
+        SpaceResponse response = service.execute("auth0|abc", request)
 
         then:
         1 * roleEndpointPermissionRepository.saveAll({ List reps ->
@@ -67,7 +67,7 @@ class CreateSpaceServiceSpec extends Specification {
 
     def "execute excludes internal_management permissions when assigning ALLOW to OWNER role"() {
         given:
-        CreateSpaceRequest request = new CreateSpaceRequest("Family", null, 1L)
+        CreateSpaceRequest request = new CreateSpaceRequest("Family", null)
         User creator = new User(1L, 0, "auth0|abc", "John", null, null, null,
                 null, "john@test.com", null, true, null, null, Instant.now(), null, false)
         Space savedSpace = new Space(10L, 0, "Family", null, Instant.now(), null)
@@ -77,14 +77,14 @@ class CreateSpaceServiceSpec extends Specification {
         EndpointPermission internalEp = new EndpointPermission(2L, 0, "/endpoint-permissions", "Permissions", null, 1,
                 EndpointPermissionType.API, "GET", EndpointPermission.INTERNAL_MANAGEMENT_GROUP, Instant.now(), null)
 
-        userRepository.findById(1L) >> creator
+        userRepository.findByAuth0Sub("auth0|abc") >> creator
         spaceRepository.save(_) >> savedSpace
         roleRepository.save(_) >> savedOwnerRole
         endpointPermissionRepository.findAll() >> [normalEp, internalEp]
         spaceMemberRepository.save(_) >> new SpaceMember(30L, 0, savedSpace, creator, savedOwnerRole, Instant.now())
 
         when:
-        service.execute(request)
+        service.execute("auth0|abc", request)
 
         then:
         1 * roleEndpointPermissionRepository.saveAll({ List reps ->
@@ -92,15 +92,47 @@ class CreateSpaceServiceSpec extends Specification {
         })
     }
 
-    def "execute throws DomainException when space name is blank"() {
+    def "execute rejects a caller without a profile and creates nothing"() {
         given:
-        CreateSpaceRequest request = new CreateSpaceRequest("", null, 1L)
-        User creator = new User(1L, 0, "auth0|abc", "John", null, null, null,
-                null, "john@test.com", null, true, null, null, Instant.now(), null, false)
-        userRepository.findById(1L) >> creator
+        userRepository.findByAuth0Sub("auth0|unknown") >> null
 
         when:
-        service.execute(request)
+        service.execute("auth0|unknown", new CreateSpaceRequest("Family", null))
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "complete_onboarding"
+        0 * spaceRepository.save(_)
+        0 * spaceMemberRepository.save(_)
+    }
+
+    def "execute makes the authenticated user the owner, never another user"() {
+        given:
+        User caller = new User(5L, 0, "auth0|caller", "Caller", null, null, null,
+                null, "caller@test.com", null, true, null, null, Instant.now(), null, false)
+        Space savedSpace = new Space(10L, 0, "Family", null, Instant.now(), null)
+        userRepository.findByAuth0Sub("auth0|caller") >> caller
+        spaceRepository.save(_) >> savedSpace
+        roleRepository.save(_) >> new Role(20L, 0, savedSpace, Role.OWNER_ROLE_NAME, "Space owner", Instant.now(), null)
+        endpointPermissionRepository.findAll() >> []
+
+        when:
+        service.execute("auth0|caller", new CreateSpaceRequest("Family", null))
+
+        then:
+        0 * userRepository.findById(_)
+        1 * spaceMemberRepository.save({ SpaceMember m -> m.getUser().getId() == 5L })
+    }
+
+    def "execute throws DomainException when space name is blank"() {
+        given:
+        CreateSpaceRequest request = new CreateSpaceRequest("", null)
+        User creator = new User(1L, 0, "auth0|abc", "John", null, null, null,
+                null, "john@test.com", null, true, null, null, Instant.now(), null, false)
+        userRepository.findByAuth0Sub("auth0|abc") >> creator
+
+        when:
+        service.execute("auth0|abc", request)
 
         then:
         thrown(DomainException)

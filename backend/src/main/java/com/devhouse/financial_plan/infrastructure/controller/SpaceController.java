@@ -68,8 +68,8 @@ public class SpaceController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SpaceResponse create(@RequestBody CreateSpaceRequest request) {
-        return createSpaceService.execute(request);
+    public SpaceResponse create(@RequestBody CreateSpaceRequest request, Authentication authentication) {
+        return createSpaceService.execute(authentication.getName(), request);
     }
 
     @PutMapping("/{id}")

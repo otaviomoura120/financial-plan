@@ -26,7 +26,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emit>()
 
-const spaceStore = useSpaceStore()
 const { error, setError, clearError } = useApiError()
 
 const formRef = useTemplateRef<InstanceType<typeof VForm>>('formRef')
@@ -75,7 +74,6 @@ async function onSubmit() {
         body: {
           name: name.value,
           description: description.value || undefined,
-          creatorId: spaceStore.dbUser!.id,
         },
       })
       saved = { ...saved, currentUserRoleName: 'OWNER' }

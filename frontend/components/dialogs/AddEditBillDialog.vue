@@ -127,6 +127,13 @@ const nameRules = [(v: string) => !!v || 'Nome é obrigatório']
 const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
+// Editing always targets a recurring bill; a one-off bill has no start date limit
+const limitsRecurrenceStart = computed(() => isEditMode.value || recurring.value)
+
+const startDateRules = computed(() =>
+  limitsRecurrenceStart.value ? [...dateRules, recurrenceStartRule(props.bill?.startDate)] : dateRules,
+)
+
 const endDateRules = [
   (v: string) => !!v || 'Data de término é obrigatória',
   (v: string) => !v || !startDate.value || v >= startDate.value || 'Término não pode ser antes do vencimento inicial',
@@ -307,7 +314,8 @@ function onClose() {
               label="Data de Vencimento"
               :hint="isEditMode ? 'Alterar recalcula o vencimento das contas pendentes do mês atual em diante.' : undefined"
               :persistent-hint="isEditMode"
-              :rules="dateRules"
+              :min="limitsRecurrenceStart ? recurrenceMinStartDate() : undefined"
+              :rules="startDateRules"
             />
 
             <VCheckbox

@@ -11,6 +11,8 @@ import java.util.Objects;
 
 public class CreditCardTransaction {
 
+    public static final int MAX_INSTALLMENTS = 60;
+
     private Long id;
     private Integer version;
     private CreditCard creditCard;
@@ -82,11 +84,19 @@ public class CreditCardTransaction {
         if (installmentGroupId == null || installmentGroupId.isBlank()) {
             throw new DomainException("Installment group id is required");
         }
-        if (totalInstallments == null || totalInstallments < 1 || totalInstallments > 60) {
-            throw new DomainException("Total installments must be between 1 and 60");
-        }
+        requireValidInstallmentCount(totalInstallments);
         if (installmentNumber == null || installmentNumber < 1 || installmentNumber > totalInstallments) {
             throw new DomainException("Installment number must be between 1 and the total number of installments");
+        }
+    }
+
+    /**
+     * Checked before building a purchase's installments: the count drives loops and queries, so an unchecked
+     * value from the request could exhaust memory before any installment is validated.
+     */
+    public static void requireValidInstallmentCount(Integer totalInstallments) {
+        if (totalInstallments == null || totalInstallments < 1 || totalInstallments > MAX_INSTALLMENTS) {
+            throw new DomainException("Total installments must be between 1 and " + MAX_INSTALLMENTS);
         }
     }
 

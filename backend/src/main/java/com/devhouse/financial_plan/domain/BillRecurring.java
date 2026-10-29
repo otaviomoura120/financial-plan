@@ -56,6 +56,10 @@ public class BillRecurring {
         if (startDate == null) {
             throw new DomainException("Bill recurring start date is required");
         }
+        // Persisted recurrences are checked in updateSchedule, only when the start date changes
+        if (id == null) {
+            RecurrenceStartPolicy.requireRecentStart(startDate);
+        }
         validateEnd();
     }
 
@@ -98,6 +102,7 @@ public class BillRecurring {
     }
 
     public void updateSchedule(LocalDate startDate, LocalDate endDate, Integer installments) {
+        RecurrenceStartPolicy.requireRecentStartIfChanged(this.startDate, startDate);
         this.startDate = startDate;
         this.endDate = endDate;
         this.installments = installments;

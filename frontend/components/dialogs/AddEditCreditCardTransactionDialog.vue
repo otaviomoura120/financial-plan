@@ -217,6 +217,13 @@ const categoryRules = [(v: number | null) => v !== null || 'Categoria é obrigat
 const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
+// Only a new subscription has a start date limit; a regular purchase can be dated any time
+const limitsRecurrenceStart = computed(() => !isEditMode.value && isRecurringSubscription.value)
+
+const purchaseDateRules = computed(() =>
+  limitsRecurrenceStart.value ? [...dateRules, recurrenceStartRule()] : dateRules,
+)
+
 const installmentsRules = [(v: string) => {
   if (v === '') {
     return true
@@ -504,7 +511,8 @@ function onClose() {
                 v-model="purchaseDate"
                 type="date"
                 :label="purchaseDateLabel"
-                :rules="dateRules"
+                :min="limitsRecurrenceStart ? recurrenceMinStartDate() : undefined"
+                :rules="purchaseDateRules"
               />
             </VCol>
 

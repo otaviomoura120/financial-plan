@@ -159,6 +159,24 @@ export default defineNuxtConfig({
     },
   },
 
+  // Security headers on every response (pages, /api routes and the Auth0 redirects).
+  // The CSP only covers framing, <base> and plugins: a script-src policy needs per-request nonces for
+  // Nuxt's inline payload, which Nitro route rules cannot generate.
+  routeRules: {
+    '/**': {
+      headers: {
+        'Content-Security-Policy': 'frame-ancestors \'none\'; base-uri \'self\'; object-src \'none\'',
+        'X-Frame-Options': 'DENY',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+
+        // Browsers ignore HSTS on plain HTTP, so it is harmless in local development
+        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+      },
+    },
+  },
+
   compatibilityDate: '2025-07-15',
   modules: ['@vueuse/nuxt', '@nuxtjs/i18n', '@nuxtjs/device', '@pinia/nuxt', '@auth0/auth0-nuxt'],
 })

@@ -27,6 +27,61 @@ class BillRecurringSpec extends Specification {
                 LocalDate.of(2026, 3, 10), null, null, true, Instant.now(), null)
     }
 
+    private BillRecurring buildBillRecurring(Long id, LocalDate startDate) {
+        new BillRecurring(id, 0, buildSpace(), "Energy Bill", buildCategory(), buildSubCategory(), new BigDecimal("150.00"),
+                startDate, null, null, true, Instant.now(), null)
+    }
+
+    def "validate rejects a new bill recurring starting more than five years ago"() {
+        given:
+        BillRecurring billRecurring = buildBillRecurring(null, LocalDate.now().minusYears(5).minusDays(1))
+
+        when:
+        billRecurring.validate()
+
+        then:
+        DomainException exception = thrown()
+        exception.message == "Start date cannot be more than 5 years in the past"
+    }
+
+    def "validate keeps accepting a persisted bill recurring whose start date aged past five years"() {
+        given:
+        BillRecurring billRecurring = buildBillRecurring(10L, LocalDate.now().minusYears(6))
+
+        when:
+        billRecurring.validate()
+
+        then:
+        noExceptionThrown()
+    }
+
+    def "updateSchedule allows editing an old recurrence while its start date stays the same"() {
+        given:
+        LocalDate oldStart = LocalDate.now().minusYears(6)
+        BillRecurring billRecurring = buildBillRecurring(10L, oldStart)
+
+        when:
+        billRecurring.updateSchedule(oldStart, null, 12)
+        billRecurring.validate()
+
+        then:
+        noExceptionThrown()
+        billRecurring.installments == 12
+    }
+
+    def "updateSchedule rejects moving the start date more than five years back and keeps the previous one"() {
+        given:
+        LocalDate currentStart = LocalDate.now().minusYears(1)
+        BillRecurring billRecurring = buildBillRecurring(10L, currentStart)
+
+        when:
+        billRecurring.updateSchedule(LocalDate.of(1, 1, 1), null, null)
+
+        then:
+        thrown(DomainException)
+        billRecurring.startDate == currentStart
+    }
+
     def "validate passes for a well-formed bill recurring"() {
         given:
         BillRecurring billRecurring = buildBillRecurring()

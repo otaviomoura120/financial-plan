@@ -75,6 +75,8 @@ const categoryRules = [(v: number | null) => v !== null || 'Categoria é obrigat
 const amountRules = [(v: number | null) => (v !== null && v > 0) || 'Valor deve ser maior que zero']
 const dateRules = [(v: string) => !!v || 'Data é obrigatória']
 
+const startDateRules = computed(() => [...dateRules, recurrenceStartRule(props.recurring?.startDate)])
+
 watch(categoryId, () => {
   if (!subCategoryItems.value.some(sc => sc.id === subCategoryId.value)) {
     subCategoryId.value = null
@@ -214,7 +216,8 @@ function onClose() {
               label="Dia de cobrança"
               hint="Recalcula a data das cobranças pendentes."
               persistent-hint
-              :rules="dateRules"
+              :min="recurrenceMinStartDate()"
+              :rules="startDateRules"
             />
           </div>
 

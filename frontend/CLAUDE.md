@@ -33,14 +33,14 @@ All backend calls go through Nuxt server routes (Nitro proxy) — never call the
 - **Client → Nitro**: use `$fetch('/api/<resource>', { method, body })` for imperative calls (event handlers); use `useFetch('/api/<resource>')` for reactive data fetching in components.
 - **Nitro → backend**: each server route in `server/api/` calls `useAuth0(event).getAccessToken()` to get the token server-side and forwards the request to the real API with `Authorization: Bearer`.
 
-`utils/api.ts` and `composables/useApi.ts` are legacy helpers that injected the token client-side via cookie. They are no longer the primary pattern.
+The access token never reaches the browser: there is no route that returns it, and the legacy client-side helpers (`utils/api.ts`, `composables/useApi.ts`) were removed. Do not add an endpoint that exposes the token — anyone holding it can call the backend directly.
 
 ### Auth flow
 
 Auth0 session is managed **server-side** by Nitro:
 
 1. `server/middleware/auth.server.ts` — redirects all non-public paths to `/auth/login` if no Auth0 session exists.
-2. `server/api/_auth/token.get.ts` — returns the current access token via `useAuth0(event).getAccessToken()`.
+2. Server routes read the access token with `useAuth0(event).getAccessToken()` and keep it server-side.
 3. Client-side: `middleware/auth.ts` guards routes using `useUser()` from `@auth0/auth0-nuxt`.
 
 ### Onboarding flow
@@ -68,7 +68,7 @@ Navigation items for the sidebar/topbar are defined in `navigation/vertical/inde
 
 - **Components**: `@core/components` and `~/components` are both auto-imported without path prefix. `~/components/global` are registered globally. Use **PascalCase** in templates (enforced by ESLint).
 - **Composables**: `@core/composable/`, `composables/`, and `plugins/*/composables/` are all auto-imported.
-- **Utils**: `@core/utils/` and `utils/` are auto-imported — `$api` is available globally without import.
+- **Utils**: `@core/utils/` and `utils/` are auto-imported.
 - **Icons**: use Iconify with the `tabler-`, `mdi-`, or `fa-` prefix in Vuetify's `icon` prop. Do not import `vuetify/components` or `vue3-apexcharts` directly — they are auto-imported.
 - **Path aliases**: use `@images/` instead of `@/assets/images/` and `@styles/` instead of `@/assets/styles/` (ESLint enforces this).
 

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -72,7 +73,7 @@ public class InviteSpaceMemberService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setTo(to);
-            helper.setSubject("Você foi convidado para o espaço \"" + spaceName + "\"");
+            helper.setSubject("Você foi convidado para o espaço \"" + singleLine(spaceName) + "\"");
 
             String loginUrl = frontendUrl + "/";
             String expiryDate = DATE_FORMATTER.format(expiresAt);
@@ -102,12 +103,17 @@ public class InviteSpaceMemberService {
                         Se você não esperava este convite, pode ignorar este e-mail com segurança.
                       </p>
                     </div>
-                    """.formatted(spaceName, roleName, expiryDate, loginUrl);
+                    """.formatted(HtmlUtils.htmlEscape(spaceName), HtmlUtils.htmlEscape(roleName), expiryDate, loginUrl);
 
             helper.setText(html, true);
             mailSender.send(message);
         } catch (Exception e) {
             throw new DomainException("Failed to send invite email: " + e.getMessage());
         }
+    }
+
+    // Space names are user input: line breaks in a mail header could be used to inject extra headers
+    private static String singleLine(String value) {
+        return value.replaceAll("\\p{Cntrl}", " ");
     }
 }

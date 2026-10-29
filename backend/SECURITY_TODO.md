@@ -25,6 +25,24 @@ Detalhes em `docs/auth-flow.md`, seção "The header is the only source of the S
 - **6. Lib do Auth0:** `auth0-springboot-api:1.0.0-beta.1` foi substituída por `spring-boot-starter-security-oauth2-resource-server`. O token é validado por assinatura (JWKS do tenant), expiração, issuer (`AUTH0_ISSUER_URI`) e audience (`AUTH0_AUDIENCE`). O `JwtValidationSpec` cobre os casos válidos e inválidos usando as properties reais.
 - **7. Stack trace:** o `printStackTrace()` saiu. O erro genérico é logado uma vez só, pelo logger, com o stack trace.
 - **8. Não encontrado:** `NotFoundException` → 404 quando o recurso da URL não existe ou é de outro Space. Um ID inválido no body continua 422.
+
+### ✅ Segunda revisão (2026-10-26), corrigido em 2026-10-29
+
+- **🔴 E-mail do usuário vindo do body:** o `POST /users` gravava o e-mail digitado no onboarding, e os convites são ligados ao e-mail. Qualquer pessoa podia se cadastrar com o e-mail de outra, ver os convites dela em `GET /invites` e aceitá-los. Agora o backend busca o e-mail no `/userinfo` do Auth0 (`IdentityProvider` / `Auth0IdentityProvider`), exige `email_verified`, confere o `sub` e recusa e-mail já cadastrado. A migration `V2` cria o índice único em `users.email`. Usuários cadastrados antes disso não foram revalidados.
+- **🟠 `creatorId` no `POST /spaces`:** o dono do Space era o usuário informado no body. Agora é sempre o usuário autenticado.
+- **🟠 Parcelas sem limite:** o limite de 60 só era checado depois do loop que monta os meses, então um `totalInstallments` enorme esgotava a memória. Agora é checado antes (`CreditCardTransaction.requireValidInstallmentCount`).
+- **🟡 HTML no e-mail de convite:** os nomes do Space e da role entravam no HTML sem escape, o que permitia phishing pelo domínio do sistema. Agora são escapados, e o assunto não aceita quebras de linha.
+- **🟡 Access token no navegador:** `/api/_auth/token`, `composables/useApi.ts`, `utils/api.ts` e `NavSearchBar.vue` (sobra do template) foram removidos. O token fica só no servidor Nitro.
+- **🟡 Headers de segurança no frontend:** `routeRules` no `nuxt.config.ts` com `frame-ancestors 'none'`, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` e HSTS. Ainda não há CSP para scripts; ver pendências.
+- **🟡 Data de início das recorrências sem limite no passado:** contas e assinaturas recorrentes geram um registro por mês desde a data de início, então um início em `0001-01-01` criava cerca de 24 mil linhas numa única requisição. Agora a data de início não pode ser anterior a 5 anos atrás (`RecurrenceStartPolicy`). O limite vale na criação e na edição que muda a data; uma recorrência que envelhece além dos 5 anos continua editável.
+- O erro TS2322 em `frontend/server/utils/backendFetch.ts` também foi corrigido.
+
+### ⏳ Pendências da segunda revisão
+
+- **🔵 Convite recusado pode ser aceito:** o `AcceptInviteService` não checa o status `DECLINED`.
+- **🔵 CSP para scripts:** exige nonce por requisição (módulo `nuxt-security`) e teste completo das telas.
+- **🔵 `apiBaseUrl` público:** a URL do backend está em `runtimeConfig.public`, mas só o servidor Nitro a usa. Pode ir para a parte privada da config.
+- **🔵 Envio de convites para qualquer e-mail:** quem pode convidar consegue disparar e-mails para endereços arbitrários. Entra no rate limit abaixo.
 ---
 
 ## 🟠 Alto
@@ -92,10 +110,10 @@ Detalhes em `docs/auth-flow.md`, seção "The header is the only source of the S
 ## 🔧 Infraestrutura (fora do código)
 
 - **HTTPS obrigatório** no proxy reverso (Nginx/Caddy/ALB), com redirect de HTTP.
-- **Rate limiting**, principalmente em `POST /users`, `GET /users/search` e `/invites/{token}/accept`.
+- **Rate limiting**, principalmente em `POST /users`, `GET /spaces/{id}/members/search`, `POST /spaces/{id}/invites` e `/invites/{token}/accept`.
 - **MySQL sem porta exposta** para a internet: só acessível pela rede interna do backend.
 - **Backups** automáticos do banco, com teste de restauração.
-- **Backend sem exposição direta:** se todo acesso passa pelo proxy Nitro, deixar a API acessível só pela rede interna. Observação: hoje `/api/_auth/token` entrega o access token ao navegador, então quem estiver logado consegue chamar a API direto. A autorização do backend já trata isso, mas fechar a rede reduz a superfície de ataque.
+- **Backend sem exposição direta:** se todo acesso passa pelo proxy Nitro, deixar a API acessível só pela rede interna. Desde 2026-10-29 o access token não chega mais ao navegador, então fechar a rede passa a ser a última camada.
 - **Segredos do frontend:** `NUXT_AUTH0_SESSION_SECRET` forte (`openssl rand -hex 64`) e `NUXT_AUTH0_CLIENT_SECRET` fora do repositório.
 - **Frontend em modo produção:** `pnpm build` e `node .output/server/index.mjs`, nunca `pnpm dev`.
 - **Logs:** não logar tokens nem dados pessoais; definir retenção.
@@ -104,5 +122,5 @@ Detalhes em `docs/auth-flow.md`, seção "The header is the only source of the S
 
 ## Observações
 
-- No frontend há um erro de TypeScript pré-existente em `frontend/server/utils/backendFetch.ts` (TS2322). Não é de segurança, mas faz o `pnpm build` falhar se o build rodar o `vue-tsc`.
-- Os itens 1 a 4 e 6 a 8 já foram corrigidos. Faltam o item 5 (SMTP, aguardando a contratação do serviço de e-mail) e a parte de infraestrutura, que devem ser feitos antes de liberar para usuários reais.
+- Os itens 1 a 4 e 6 a 8 e os itens da segunda revisão já foram corrigidos. Faltam o item 5 (SMTP, aguardando a contratação do serviço de e-mail), as pendências da segunda revisão e a parte de infraestrutura, que devem ser feitos antes de liberar para usuários reais.
+- **Auth0:** configurar um provedor de e-mail próprio em Branding → Email Provider. Sem ele, o e-mail de verificação pode não chegar, e o cadastro exige e-mail verificado.

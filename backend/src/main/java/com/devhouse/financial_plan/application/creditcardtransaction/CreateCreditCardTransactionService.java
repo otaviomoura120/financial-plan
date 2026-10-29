@@ -62,6 +62,7 @@ public class CreateCreditCardTransactionService {
         CategoryKindPolicy.requireForCreditCardEntry(category, credit);
         int totalInstallments = credit || request.totalInstallments() == null || request.totalInstallments() <= 1
                 ? 1 : request.totalInstallments();
+        CreditCardTransaction.requireValidInstallmentCount(totalInstallments);
         LocalDate firstReferenceMonth = CreditCardInvoiceCycle.resolveReferenceMonth(request.purchaseDate(),
                 creditCard.getClosingDay(), request.referenceMonth());
         List<LocalDate> referenceMonths = new ArrayList<>();

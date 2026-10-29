@@ -212,11 +212,10 @@ Access is granted or denied via **`RoleEndpointPermission`** — a join entity b
 
 ## Frontend → Backend: X-Space-Id Header
 
-All frontend requests to the backend include the `X-Space-Id` header set to the ID of the space the user is currently working in. This is managed in three places:
+All frontend requests to the backend include the `X-Space-Id` header set to the ID of the space the user is currently working in. This is managed in two places:
 
 - **`plugins/space-header.client.ts`** — wraps the global `$fetch` so every client call to `/api/*` carries `X-Space-Id` from `useSpaceStore().activeSpace`, i.e. the Space **this tab** is showing.
 - **`server/utils/backendHeaders.ts`** (`buildBackendHeaders`) — Nitro utility used by all server routes. It forwards the `X-Space-Id` sent by the tab and falls back to the `activeSpaceId` cookie only when the request has none (SSR). Non-numeric values are dropped.
-- **`utils/api.ts`** (`$api` fetch instance) — legacy client-side helper that reads `activeSpaceId` from the cookie.
 
 The active space ID is persisted in the `activeSpaceId` cookie by `useSpaceStore.setActiveSpace()` whenever the user switches spaces. The cookie is shared by every tab, which is why the per-tab header takes precedence: otherwise a tab still showing Space A would read and write Space B after another tab switched to it. Since the backend takes the Space exclusively from this header, the frontend no longer sends `spaceId` in query params or bodies of data endpoints.
 

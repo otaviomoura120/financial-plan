@@ -56,6 +56,10 @@ public class CreditCardTransactionRecurring {
         if (startDate == null) {
             throw new DomainException("Start date is required");
         }
+        // Persisted recurrences are checked in updateSchedule, only when the start date changes
+        if (id == null) {
+            RecurrenceStartPolicy.requireRecentStart(startDate);
+        }
     }
 
     public void update(Category category, SubCategory subCategory, BigDecimal defaultAmount, String description) {
@@ -67,6 +71,7 @@ public class CreditCardTransactionRecurring {
     }
 
     public void updateSchedule(LocalDate startDate) {
+        RecurrenceStartPolicy.requireRecentStartIfChanged(this.startDate, startDate);
         this.startDate = startDate;
         this.updatedDate = Instant.now();
     }
