@@ -8,7 +8,6 @@ public record CreateUserRequest(
         String profilePhoto,
         String observation,
         Instant birthdate,
-        String email,
         String phoneNumber,
         String genre,
         String maritalStatus

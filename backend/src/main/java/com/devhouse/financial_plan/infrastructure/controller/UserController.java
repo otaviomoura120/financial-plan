@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -47,8 +49,8 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse create(@RequestBody CreateUserRequest request, Authentication authentication) {
-        return createUserService.execute(authentication.getName(), request);
+    public UserResponse create(@RequestBody CreateUserRequest request, @AuthenticationPrincipal Jwt jwt) {
+        return createUserService.execute(jwt.getSubject(), jwt.getTokenValue(), request);
     }
 
     @PutMapping("/{id}")

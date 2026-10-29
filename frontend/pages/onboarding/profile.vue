@@ -19,11 +19,26 @@ const form = ref({
   maritalStatus: '',
 })
 
+// The backend takes the e-mail from Auth0, so only these codes need a specific message
+const profileErrorMessages: Record<string, string> = {
+  email_not_verified: 'Confirme seu e-mail pelo link que enviamos e tente novamente.',
+  email_already_registered: 'Este e-mail já está cadastrado em outra conta.',
+  user_already_registered: 'Seu perfil já foi criado. Recarregue a página para continuar.',
+  identity_unavailable: 'Não foi possível confirmar seu e-mail agora. Tente novamente em alguns instantes.',
+}
+
+function profileErrorMessage(e: unknown): string {
+  const data = (e as { data?: { message?: string } })?.data
+  const code = data?.message ?? ''
+
+  return profileErrorMessages[code] ?? 'Falha ao salvar seu perfil. Por favor, tente novamente.'
+}
+
 const genreOptions = ['Masculino', 'Feminino']
 const maritalStatusOptions = ['Solteiro(a)', 'Casado(a)', 'Divorciado(a)', 'Viúvo(a)', 'União estável']
 
 async function submit() {
-  if (!form.value.name || !form.value.email) {
+  if (!form.value.name) {
     return
   }
 
@@ -35,7 +50,6 @@ async function submit() {
       method: 'POST',
       body: {
         name: form.value.name,
-        email: form.value.email,
         nickname: form.value.nickname || null,
         phoneNumber: form.value.phoneNumber || null,
         birthdate: form.value.birthdate
@@ -59,8 +73,8 @@ async function submit() {
 
     await navigateTo(hasPendingInvites ? '/invites' : '/onboarding/space')
   }
-  catch {
-    setError('Falha ao salvar seu perfil. Por favor, tente novamente.')
+  catch (e) {
+    setError(profileErrorMessage(e))
   }
   finally {
     isSubmitting.value = false
@@ -101,9 +115,9 @@ async function submit() {
               v-model="form.email"
               label="E-mail"
               type="email"
-              placeholder="joao@exemplo.com"
-              :rules="[(v: string) => !!v || 'E-mail é obrigatório']"
-              required
+              hint="E-mail da sua conta de login"
+              persistent-hint
+              disabled
             />
           </VCol>
 

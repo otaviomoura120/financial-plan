@@ -23,6 +23,7 @@ public class UserEntityJpa {
     private String profilePhoto;
     private String observation;
     private Instant birthdate;
+    @Column(unique = true)
     private String email;
     @Column(name = "phone_number")
     private String phoneNumber;

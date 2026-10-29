@@ -3,7 +3,8 @@ export async function backendFetch<T = unknown>(
   options?: Parameters<typeof $fetch>[1],
 ): Promise<T> {
   try {
-    return await $fetch<T>(request, options)
+    // Backend URLs are external, so Nitro's internal route typing cannot infer the response
+    return await $fetch<T>(request, options) as T
   }
   catch (e) {
     const fetchError = e as { statusCode?: number; data?: unknown }

@@ -37,6 +37,7 @@ Flyway always runs **before** Hibernate, so the schema validated by Hibernate al
 | Version | File | Content |
 |---|---|---|
 | V1 | `V1__baseline_schema.sql` | Full schema (19 tables, FKs and indexes) as of 2026-10-21, generated from the JPA mappings with the MySQL 8 dialect, so it matches what `ddl-auto=update` would create on an empty database |
+| V2 | `V2__add_unique_email_to_users.sql` | Unique constraint on `users.email`. Fails on a database that already has duplicated e-mails, which must be resolved by hand first |
 
 ### Databases that existed before Flyway
 
