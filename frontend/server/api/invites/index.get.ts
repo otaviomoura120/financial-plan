@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
 
   return backendFetch('/invites', {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     headers: buildBackendHeaders(event, accessToken),
   })
 })

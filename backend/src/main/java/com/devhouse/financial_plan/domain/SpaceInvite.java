@@ -51,6 +51,25 @@ public class SpaceInvite {
         this.status = InviteStatus.DECLINED;
     }
 
+    /**
+     * Only a pending, unexpired invite can be accepted or declined. The codes are a contract with
+     * pages/invites/index.vue.
+     */
+    public void requireAnswerable() {
+        if (status == InviteStatus.CANCELLED) {
+            throw new DomainException("invite_cancelled");
+        }
+        if (status == InviteStatus.ACCEPTED) {
+            throw new DomainException("invite_already_accepted");
+        }
+        if (status == InviteStatus.DECLINED) {
+            throw new DomainException("invite_already_declined");
+        }
+        if (isExpired()) {
+            throw new DomainException("invite_expired");
+        }
+    }
+
     public boolean isExpired() {
         return expiresAt != null && Instant.now().isAfter(expiresAt);
     }

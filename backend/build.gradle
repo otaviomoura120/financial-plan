@@ -1,7 +1,7 @@
 plugins {
 	id 'java'
 	id("groovy")
-	id 'org.springframework.boot' version '4.0.6'
+	id 'org.springframework.boot' version '4.0.9'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -26,16 +26,14 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation("jakarta.annotation:jakarta.annotation-api")
-	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.0'
-	implementation 'com.fasterxml.jackson.core:jackson-core:2.22.3'
-	implementation 'org.apache.groovy:groovy:4.0.28'
 	implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 	testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
 
-	// Spock core and Spring integration
+	// Spock core and Spring integration (Groovy is only needed to compile and run the specs)
+	testImplementation 'org.apache.groovy:groovy:4.0.28'
 	testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
 	testImplementation 'org.spockframework:spock-spring:2.3-groovy-4.0'
 

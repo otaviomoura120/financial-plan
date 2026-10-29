@@ -2,7 +2,6 @@ package com.devhouse.financial_plan.application.invite;
 
 import com.devhouse.financial_plan.domain.SpaceInvite;
 import com.devhouse.financial_plan.domain.User;
-import com.devhouse.financial_plan.domain.enums.InviteStatus;
 import com.devhouse.financial_plan.domain.exception.DomainException;
 import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.SpaceInviteRepository;
@@ -24,18 +23,7 @@ public class DeclineInviteService {
         SpaceInvite invite = spaceInviteRepository.findByToken(token)
                 .orElseThrow(() -> new NotFoundException("Invite not found"));
 
-        if (invite.getStatus() == InviteStatus.CANCELLED) {
-            throw new DomainException("invite_cancelled");
-        }
-        if (invite.getStatus() == InviteStatus.ACCEPTED) {
-            throw new DomainException("invite_already_accepted");
-        }
-        if (invite.getStatus() == InviteStatus.DECLINED) {
-            throw new DomainException("invite_already_declined");
-        }
-        if (invite.isExpired()) {
-            throw new DomainException("invite_expired");
-        }
+        invite.requireAnswerable();
 
         User user = userRepository.findByAuth0Sub(auth0Sub);
         if (user == null) {

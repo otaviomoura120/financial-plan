@@ -49,7 +49,7 @@ public class InviteSpaceMemberService {
     public void execute(Long spaceId, InviteRequest request) {
         Space space = spaceRepository.findById(spaceId);
         Role role = roleRepository.findById(request.roleId());
-        if (!role.getSpace().getId().equals(spaceId)) {
+        if (role == null || !role.belongsToSpace(spaceId)) {
             throw new DomainException("Role must belong to this space");
         }
         spaceInviteRepository.findBySpaceIdAndEmail(spaceId, request.email())

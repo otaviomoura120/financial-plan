@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const query = getQuery(event)
 
   return backendFetch('/dashboard-widgets', {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     headers: buildBackendHeaders(event, accessToken),
     query,
   })

@@ -6,7 +6,7 @@ export default defineEventHandler(async event => {
   const body = await readBody(event)
 
   return backendFetch(`/spaces/${id}/members/${userId}`, {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'PUT',
     headers: buildBackendHeaders(event, accessToken),
     body,

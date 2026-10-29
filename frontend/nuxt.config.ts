@@ -97,12 +97,6 @@ export default defineNuxtConfig({
     '@db': fileURLToPath(new URL('./server/fake-db/', import.meta.url)),
     '@api-utils': fileURLToPath(new URL('./server/utils/', import.meta.url)),
   },
-  vue: {
-    compilerOptions: {
-      isCustomElement: tag => tag === 'swiper-container' || tag === 'swiper-slide',
-    },
-  },
-
   vite: {
     define: { 'process.env': {} },
 
@@ -154,9 +148,9 @@ export default defineNuxtConfig({
       appBaseUrl: `${process.env.NUXT_AUTH0_APP_BASE_URL}`,
       audience: `${process.env.NUXT_AUTH0_AUDIENCE}`,
     },
-    public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'https://api.example.com',
-    },
+
+    // Server-only: the browser talks to the Nitro proxy (server/api), never to the backend directly
+    apiBaseUrl: process.env.NUXT_API_BASE_URL || 'https://api.example.com',
   },
 
   // Security headers on every response (pages, /api routes and the Auth0 redirects).

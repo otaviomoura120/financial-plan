@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
 
   try {
     return await backendFetch(`/invites/${token}/decline`, {
-      baseURL: config.public.apiBaseUrl,
+      baseURL: config.apiBaseUrl,
       method: 'POST',
       headers: buildBackendHeaders(event, accessToken),
     })

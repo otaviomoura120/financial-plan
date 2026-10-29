@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
   const body = await readBody(event)
 
   return backendFetch(`/credit-card-transactions/installment-groups/${installmentGroupId}/anticipate`, {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'POST',
     headers: buildBackendHeaders(event, accessToken),
     body,

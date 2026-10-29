@@ -3,7 +3,7 @@ export default defineEventHandler(async event => {
   const config = useRuntimeConfig(event)
 
   return backendFetch('/group-menus', {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'GET',
     headers: buildBackendHeaders(event, accessToken),
   })

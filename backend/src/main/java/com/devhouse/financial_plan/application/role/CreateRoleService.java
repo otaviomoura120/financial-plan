@@ -34,6 +34,7 @@ public class CreateRoleService {
     }
 
     public RoleResponse execute(CreateRoleRequest request) {
+        Role.requireNotReservedName(request.name());
         Space space = spaceRepository.findById(request.spaceId());
         Role role = new Role(null, 0, space, request.name(), request.description(), Instant.now(), null);
         role.validate();

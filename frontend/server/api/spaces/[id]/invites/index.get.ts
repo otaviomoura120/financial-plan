@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const id = getRouterParam(event, 'id')
 
   return backendFetch(`/spaces/${id}/invites`, {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     headers: buildBackendHeaders(event, accessToken),
   })
 })

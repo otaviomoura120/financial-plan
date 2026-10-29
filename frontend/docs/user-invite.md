@@ -67,14 +67,17 @@ All paths relative to `backend/src/main/java/com/devhouse/financial_plan/`.
 1. invite exists                         → DomainException("Invite not found")
 2. invite.status == CANCELLED            → "invite_cancelled"
 3. invite.status == ACCEPTED             → "invite_already_accepted"
-4. invite.isExpired()                    → "invite_expired"
-5. user not found by auth0Sub            → "complete_onboarding"
-6. user.email != invite.email (case-insensitive) → "invite_email_mismatch"
-7. user already a SpaceMember of invite.space → "already_member"
+4. invite.status == DECLINED             → "invite_already_declined"
+5. invite.isExpired()                    → "invite_expired"
+6. user not found by auth0Sub            → "complete_onboarding"
+7. user.email != invite.email (case-insensitive) → "invite_email_mismatch"
+8. user already a SpaceMember of invite.space → "already_member"
 → otherwise: create SpaceMember, invite.accept(), persist
 ```
 
-**Step 6 is the anti-hijacking check**: it stops a logged-in user from accepting an invite
+Steps 2–5 live in `SpaceInvite.requireAnswerable()`, shared with DeclineInviteService.
+
+**Step 7 is the anti-hijacking check**: it stops a logged-in user from accepting an invite
 that was sent to a different email address. The error message shown to the end user must
 never reveal the invite's real recipient email. Since there's no public, unauthenticated
 invite-lookup endpoint anymore, `MyInviteResponse` (always scoped to the caller's own email)
@@ -106,7 +109,7 @@ JSON). This matters for the frontend — see "Nitro proxy hardening" below. Full
 |---|---|---|
 | `invite_cancelled` | Accept/Decline | invite was cancelled by an admin |
 | `invite_already_accepted` | Accept/Decline | invite already used |
-| `invite_already_declined` | Decline | invite was already declined by the recipient |
+| `invite_already_declined` | Accept/Decline | invite was already declined by the recipient |
 | `invite_expired` | Accept/Decline | past `expiresAt` (7 days) |
 | `complete_onboarding` | Accept/Decline | authenticated Auth0 user has no `User` row yet (new user) |
 | `invite_email_mismatch` | Accept/Decline | logged-in user's email ≠ invite's email |

@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const query = getQuery(event)
 
   return backendFetch('/credit-card-transactions/recurring', {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'GET',
     headers: buildBackendHeaders(event, accessToken),
     query,

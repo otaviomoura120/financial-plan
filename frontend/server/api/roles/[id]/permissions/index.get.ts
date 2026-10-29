@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const id = getRouterParam(event, 'id')
 
   return backendFetch(`/roles/${id}/permissions`, {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'GET',
     headers: buildBackendHeaders(event, accessToken),
   })

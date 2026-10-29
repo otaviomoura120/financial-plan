@@ -41,7 +41,7 @@ deactivating is a separate, reversible action via `PATCH .../status`
 | `server/api/bank-accounts/[id].delete.ts` | Proxies `DELETE /bank-accounts/{id}` — catches backend errors and re-throws via `createError({statusCode, statusMessage, data})` so the real `DomainException` message reaches the client |
 
 Nitro routes follow the same `useAuth0(event).getAccessToken()` + `buildBackendHeaders` +
-`config.public.apiBaseUrl` pattern as `server/api/categories/*` / `server/api/roles/*`.
+`config.apiBaseUrl` pattern as `server/api/categories/*` / `server/api/roles/*`.
 
 ## Page behavior
 

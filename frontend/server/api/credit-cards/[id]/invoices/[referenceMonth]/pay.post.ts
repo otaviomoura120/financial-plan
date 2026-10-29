@@ -7,7 +7,7 @@ export default defineEventHandler(async event => {
 
   try {
     return await backendFetch(`/credit-cards/${id}/invoices/${referenceMonth}/pay`, {
-      baseURL: config.public.apiBaseUrl,
+      baseURL: config.apiBaseUrl,
       method: 'POST',
       headers: buildBackendHeaders(event, accessToken),
       body,

@@ -37,7 +37,32 @@ public class Role {
         }
     }
 
+    /**
+     * The owner is recognised by the role name (SpaceMember.isOwner), so only CreateSpaceService may create a role
+     * with it. The check ignores case and spaces so a look-alike such as " owner" cannot pass for the owner role.
+     */
+    public static void requireNotReservedName(String name) {
+        if (name != null && OWNER_ROLE_NAME.equalsIgnoreCase(name.trim())) {
+            throw new DomainException("Role name " + OWNER_ROLE_NAME + " is reserved for the space owner");
+        }
+    }
+
+    public boolean belongsToSpace(Long spaceId) {
+        return space != null && Objects.equals(space.getId(), spaceId);
+    }
+
+    public boolean isOwnerRole() {
+        return OWNER_ROLE_NAME.equals(name);
+    }
+
     public void update(String name, String description) {
+        if (isOwnerRole()) {
+            if (!OWNER_ROLE_NAME.equals(name)) {
+                throw new DomainException("The space owner role cannot be renamed");
+            }
+        } else {
+            requireNotReservedName(name);
+        }
         this.name = name;
         this.description = description;
         this.updatedAt = Instant.now();

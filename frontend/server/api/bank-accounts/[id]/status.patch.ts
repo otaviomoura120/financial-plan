@@ -6,7 +6,7 @@ export default defineEventHandler(async event => {
 
   try {
     return await backendFetch(`/bank-accounts/${id}/status`, {
-      baseURL: config.public.apiBaseUrl,
+      baseURL: config.apiBaseUrl,
       method: 'PATCH',
       headers: buildBackendHeaders(event, accessToken),
       body,

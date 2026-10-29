@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const installmentGroupId = getRouterParam(event, 'installmentGroupId')
 
   return backendFetch(`/credit-card-transactions/installment-groups/${installmentGroupId}`, {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'GET',
     headers: buildBackendHeaders(event, accessToken),
   })

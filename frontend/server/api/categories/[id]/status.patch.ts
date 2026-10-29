@@ -6,7 +6,7 @@ export default defineEventHandler(async event => {
 
   try {
     return await backendFetch(`/categories/${id}/status`, {
-      baseURL: config.public.apiBaseUrl,
+      baseURL: config.apiBaseUrl,
       method: 'PATCH',
       headers: buildBackendHeaders(event, accessToken),
       body,

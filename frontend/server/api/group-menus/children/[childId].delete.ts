@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const childId = getRouterParam(event, 'childId')
 
   return backendFetch(`/group-menus/children/${childId}`, {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'DELETE',
     headers: buildBackendHeaders(event, accessToken),
   })

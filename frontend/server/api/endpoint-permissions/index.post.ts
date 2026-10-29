@@ -4,7 +4,7 @@ export default defineEventHandler(async event => {
   const body = await readBody(event)
 
   return backendFetch('/endpoint-permissions', {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'POST',
     headers: buildBackendHeaders(event, accessToken),
     body,

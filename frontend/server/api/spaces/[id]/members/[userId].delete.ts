@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
   const userId = getRouterParam(event, 'userId')
 
   return backendFetch(`/spaces/${id}/members/${userId}`, {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'DELETE',
     headers: buildBackendHeaders(event, accessToken),
   })

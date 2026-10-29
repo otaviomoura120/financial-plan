@@ -3,6 +3,7 @@ package com.devhouse.financial_plan.application.role;
 import com.devhouse.financial_plan.domain.Role;
 import com.devhouse.financial_plan.domain.SpaceMember;
 import com.devhouse.financial_plan.domain.exception.DomainException;
+import com.devhouse.financial_plan.domain.exception.NotFoundException;
 import com.devhouse.financial_plan.domain.repository.RoleRepository;
 import com.devhouse.financial_plan.domain.repository.SpaceMemberRepository;
 import org.springframework.stereotype.Service;
@@ -24,8 +25,9 @@ public class AssignRoleToUserService {
             throw new DomainException("User is not a member of this space");
         }
         Role role = roleRepository.findById(roleId);
-        if (!role.getSpace().getId().equals(spaceId)) {
-            throw new DomainException("Role must belong to the same space as the user's membership");
+        // The role is addressed by the URL (/roles/{id}/assign-user/...), so a missing or foreign role is a 404
+        if (role == null || !role.belongsToSpace(spaceId)) {
+            throw new NotFoundException("Role not found in this space");
         }
         member.assignRole(role);
         spaceMemberRepository.update(member);

@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
   const body = await readBody(event)
 
   return backendFetch(`/group-menus/children/${childId}`, {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     method: 'PUT',
     headers: buildBackendHeaders(event, accessToken),
     body,

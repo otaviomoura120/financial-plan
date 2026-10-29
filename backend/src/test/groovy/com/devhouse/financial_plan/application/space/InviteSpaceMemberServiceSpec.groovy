@@ -4,6 +4,7 @@ import com.devhouse.financial_plan.application.space.dto.InviteRequest
 import com.devhouse.financial_plan.domain.Role
 import com.devhouse.financial_plan.domain.Space
 import com.devhouse.financial_plan.domain.SpaceInvite
+import com.devhouse.financial_plan.domain.exception.DomainException
 import com.devhouse.financial_plan.domain.repository.RoleRepository
 import com.devhouse.financial_plan.domain.repository.SpaceInviteRepository
 import com.devhouse.financial_plan.domain.repository.SpaceRepository
@@ -72,6 +73,34 @@ class InviteSpaceMemberServiceSpec extends Specification {
 
         then:
         1 * spaceInviteRepository.save({ SpaceInvite invite -> invite.email == "maria@example.com" && invite.role.id == 2L })
+    }
+
+    def "execute rejects a role that does not exist without saving or sending anything"() {
+        given:
+        spaceRepository.findById(1L) >> new Space(1L, 0, "Família Silva", null, Instant.now(), null)
+        roleRepository.findById(99L) >> null
+
+        when:
+        service.execute(1L, new InviteRequest("maria@example.com", 99L))
+
+        then:
+        thrown(DomainException)
+        0 * spaceInviteRepository.save(_)
+        sentMessage == null
+    }
+
+    def "execute rejects a role from another space"() {
+        given:
+        spaceRepository.findById(1L) >> new Space(1L, 0, "Família Silva", null, Instant.now(), null)
+        Space otherSpace = new Space(5L, 0, "Outro", null, Instant.now(), null)
+        roleRepository.findById(2L) >> new Role(2L, 0, otherSpace, "Admin", null, Instant.now(), null)
+
+        when:
+        service.execute(1L, new InviteRequest("maria@example.com", 2L))
+
+        then:
+        thrown(DomainException)
+        0 * spaceInviteRepository.save(_)
     }
 
     private void givenSpaceAndRole(String spaceName, String roleName) {

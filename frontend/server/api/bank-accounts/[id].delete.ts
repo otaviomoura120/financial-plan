@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
 
   try {
     return await backendFetch(`/bank-accounts/${id}`, {
-      baseURL: config.public.apiBaseUrl,
+      baseURL: config.apiBaseUrl,
       method: 'DELETE',
       headers: buildBackendHeaders(event, accessToken),
     })

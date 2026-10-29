@@ -5,7 +5,7 @@ export default defineEventHandler(async event => {
   const query = getQuery(event)
 
   return backendFetch(`/spaces/${id}/members/search`, {
-    baseURL: config.public.apiBaseUrl,
+    baseURL: config.apiBaseUrl,
     headers: buildBackendHeaders(event, accessToken),
     query: { email: query.email },
   })

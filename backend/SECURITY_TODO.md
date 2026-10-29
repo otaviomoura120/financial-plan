@@ -37,11 +37,20 @@ Detalhes em `docs/auth-flow.md`, seção "The header is the only source of the S
 - **🟡 Data de início das recorrências sem limite no passado:** contas e assinaturas recorrentes geram um registro por mês desde a data de início, então um início em `0001-01-01` criava cerca de 24 mil linhas numa única requisição. Agora a data de início não pode ser anterior a 5 anos atrás (`RecurrenceStartPolicy`). O limite vale na criação e na edição que muda a data; uma recorrência que envelhece além dos 5 anos continua editável.
 - O erro TS2322 em `frontend/server/utils/backendFetch.ts` também foi corrigido.
 
+### ✅ Terceira revisão (2026-10-29)
+
+- **🟡 Nome `OWNER` reservado:** o dono do Space é reconhecido pelo nome do papel (`SpaceMember.isOwner`). Agora não é possível criar um papel chamado `OWNER` (sem diferenciar maiúsculas e espaços), renomear outro papel para esse nome, nem renomear o papel `OWNER`. A descrição dele continua editável (`Role.requireNotReservedName` / `Role.update`).
+- **🔴 Dependências do backend:** Spring Boot 4.0.6 → 4.0.9 (Tomcat 11.0.27, Spring 7.0.10, Jackson 3.1.7, Spring Data 4.0.8). Saíram os `jackson-*` 2.x declarados à mão (o código não usa) e o `groovy` passou para `testImplementation`. Nenhuma vulnerabilidade conhecida na base OSV após a troca.
+- **🔴 Dependências do frontend:** removidas as libs do template sem uso (`next-auth`, `@sidebase/nuxt-auth`, `swiper`, `@tiptap/*`, `shepherd.js`/`vue-shepherd`, `prismjs`/`vue-prism-component`, `mapbox-gl`, `jwt-decode`) e os componentes `TiptapEditor`/`ProductDescriptionEditor` do `@core`. Nuxt 4.2.0 → 4.6.3 (Vite 8), `@nuxtjs/i18n` 10.6.0, `@auth0/auth0-nuxt` 1.3.0, `@casl/ability` 6.7.5 e dependências indiretas atualizadas. `pnpm audit --prod`: 0 crítica, 0 alta, 0 média.
+- **🔵 Convite recusado:** aceitar um convite `DECLINED` agora retorna `invite_already_declined`. A checagem de status fica em `SpaceInvite.requireAnswerable()`, usada pelo aceite e pela recusa.
+- **🔵 Papel inexistente:** `roleId` inexistente no convite ou na troca de papel do membro dá 422, e em `/roles/{id}/assign-user` dá 404, em vez de 500.
+- **🔵 `apiBaseUrl` privado:** saiu de `runtimeConfig.public`; a variável agora é `NUXT_API_BASE_URL` (antes `NUXT_PUBLIC_API_BASE_URL`).
+- **🔵 Proxy:** `GET /api/spaces` aceita só `userId` numérico.
+
+
 ### ⏳ Pendências da segunda revisão
 
-- **🔵 Convite recusado pode ser aceito:** o `AcceptInviteService` não checa o status `DECLINED`.
 - **🔵 CSP para scripts:** exige nonce por requisição (módulo `nuxt-security`) e teste completo das telas.
-- **🔵 `apiBaseUrl` público:** a URL do backend está em `runtimeConfig.public`, mas só o servidor Nitro a usa. Pode ir para a parte privada da config.
 - **🔵 Envio de convites para qualquer e-mail:** quem pode convidar consegue disparar e-mails para endereços arbitrários. Entra no rate limit abaixo.
 ---
 

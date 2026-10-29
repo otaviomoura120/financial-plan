@@ -30,7 +30,7 @@ public class UpdateSpaceMemberRoleService {
             throw new DomainException("Cannot change the role of the space owner");
         }
         Role role = roleRepository.findById(request.roleId());
-        if (!role.getSpace().getId().equals(spaceId)) {
+        if (role == null || !role.belongsToSpace(spaceId)) {
             throw new DomainException("Role must belong to the same space");
         }
         member.setVersion(request.version());

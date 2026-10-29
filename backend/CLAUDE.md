@@ -1,6 +1,6 @@
 ## Project Overview
 - **Name:** financial-plan — family financial planning system
-- **Stack:** Java + Spring Boot 4.0.6, Spring Data JPA, MySQL 8, Gradle, Groovy/Spock for tests
+- **Stack:** Java + Spring Boot 4.0.9, Spring Data JPA, MySQL 8, Gradle, Groovy/Spock for tests
 - **Root package:** `com.devhouse.financial_plan`
 - **Database:** MySQL, schema `financial_plan`, port 3306 (configured in `application.properties`)
 - **DDL:** versioned by Flyway in `src/main/resources/db/migration`; Hibernate runs with `ddl-auto=validate` (overridable with `JPA_DDL_AUTO`). How it works and how to write migrations: `docs/database-migrations.md`

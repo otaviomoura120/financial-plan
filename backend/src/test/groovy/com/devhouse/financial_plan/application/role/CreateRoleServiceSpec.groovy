@@ -86,6 +86,22 @@ class CreateRoleServiceSpec extends Specification {
         0 * roleRepository.save(_)
     }
 
+    def "throws DomainException and saves nothing when the role name is the reserved owner name: '#name'"() {
+        given:
+        spaceRepository.findById(1L) >> buildSpace()
+
+        when:
+        service.execute(new CreateRoleRequest(1L, name, "description"))
+
+        then:
+        thrown(DomainException)
+        0 * roleRepository.save(_)
+        0 * roleEndpointPermissionRepository.saveAll(_)
+
+        where:
+        name << ["OWNER", "owner", " Owner "]
+    }
+
     def "throws DomainException when space is null"() {
         given:
         spaceRepository.findById(1L) >> null
